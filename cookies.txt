@@ -1,0 +1,1 @@
+[{'domain': 'www.fev.com', 'httpOnly': False, 'name': 'wp-wpml_current_language', 'path': '/', 'sameSite': 'Lax', 'secure': False, 'value': 'en'}]
