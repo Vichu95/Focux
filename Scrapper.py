@@ -10,6 +10,9 @@ import os
 import smtplib
 from email.message import EmailMessage
 from selenium.webdriver.common.alert import Alert
+import pickle
+
+
 
 # Function to read existing data from a file
 def read_existing_data(file_path):
@@ -54,17 +57,29 @@ options.add_argument("--disable-cookies")
 
 with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options) as driver: 
    
-
+    
    
     driver.get(url) 
+
+    driver.add_cookie({'domain': 'www.fev.com', 'httpOnly': False, 'name': 'wp-wpml_current_language', 'path': '/', 'sameSite': 'Lax', 'secure': False, 'value': 'en'})
+
+    driver.refresh()
+    
+    # Load cookies
+    # cookies = pickle.load(open("cookies.pkl", "rb"))
+    # for cookie in cookies:
+    #     driver.add_cookie(cookie)
+    # driver.refresh()
+
+
     print("Timer on)")
-    time.sleep(5)
+    # time.sleep(5)
     # driver.implicitly_wait(30)
 
-    wait = WebDriverWait(driver, 5)
-    iframe = wait.until(EC.element_to_be_clickable([By.CSS_SELECTOR, '#cnsw > iframe']))
-    driver.switch_to.frame(iframe)
-    
+    # Save cookies
+    # pickle.dump( driver.get_cookies() , open("cookies.pkl","wb"))
+
+
 
     # Wait for the button to be clickable
     # button = WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.CLASS_NAME, 'sc-dcJsrY jXFxaO')))
