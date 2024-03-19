@@ -9,8 +9,6 @@ import time
 import os
 import smtplib
 from email.message import EmailMessage
-from selenium.webdriver.common.alert import Alert
-import pickle
 
 
 
@@ -57,38 +55,21 @@ options.add_argument("--disable-cookies")
 
 with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options) as driver: 
    
-    
-   
-    driver.get(url) 
-    
-
+       
+    driver.get(url)
 
     print("Timer on)")
     time.sleep(5)
     # driver.implicitly_wait(30)
 
-    wait = WebDriverWait(driver, 20)
 
     shadow_host1 = driver.find_element(By.ID, "usercentrics-root")
     shadow_root1 = driver.execute_script('return arguments[0].shadowRoot', shadow_host1)
 
-    print("something hapend")
+    print("Extracted shadow host and root")
     print(shadow_host1)
     print(shadow_root1)
 
-    new_data = [element.text for element in shadow_root1.find_elements(By.ID, 'focus-lock-id')]
-    print("\n\nScrapped Data:\n",new_data)
-    
-
-    # try:
-    #     if(len(shadow_root1.find_elements(By.CLASS_NAME, 'sc-dcJsrY jXFxaO'))) > 0:
-    #         print("button that contains id accept, is seen in the UI")
-    #         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='uc-accept-all-button']"))).click()
-    #     else:
-    #         print("button is not seen")
-    # except:
-    #     print("something went wrong")
-    #     pass
 
     # Find the button element inside the shadow root
     button_element = shadow_root1.find_element(By.CSS_SELECTOR, "[data-testid='uc-accept-all-button']")
@@ -99,10 +80,7 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
     # Click on the button using JavaScript to bypass any potential visibility issues
     driver.execute_script("arguments[0].click();", button_element)
 
-    print("something22happnd")
-    # WebDriverWait(shadow_root1, 20).until(EC.visibility_of_element_located((By.CLASS_NAME, 'sc-dcJsrY jXFxaO')))
-    # print("something happnd")
-    
+
     
     # element = driver.find_elements(By.CLASS_NAME, 'M-JobSearchResultsGroup__list')
     # element = driver.find_elements(By.CLASS_NAME, 'items')
@@ -117,7 +95,6 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
 
 # File path to store existing data
 file_path = 'existing_data.txt'
-file_pathnew = 'existing_dataNew.txt'
 
 # Read existing data
 existing_data = read_existing_data(file_path)
@@ -131,6 +108,7 @@ difference = set(new_data) - set(existing_data)
 if difference:
     print("\n\nThere is difference!!\n\n", difference)
     # Write new data to the file
-    with open(file_pathnew, 'w') as file:
+    with open(file_path, 'w') as file:
         file.write('\n'.join(new_data))
-
+else:
+    print("\n\nThere are no difference!!\n\n")
