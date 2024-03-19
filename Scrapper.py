@@ -60,49 +60,48 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
     
    
     driver.get(url) 
-
-    driver.add_cookie({'domain': 'www.fev.com', 'httpOnly': False, 'name': 'wp-wpml_current_language', 'path': '/', 'sameSite': 'Lax', 'secure': False, 'value': 'en'})
-
-    driver.refresh()
     
-    # Load cookies
-    # cookies = pickle.load(open("cookies.pkl", "rb"))
-    # for cookie in cookies:
-    #     driver.add_cookie(cookie)
-    # driver.refresh()
 
 
     print("Timer on)")
-    # time.sleep(5)
+    time.sleep(5)
     # driver.implicitly_wait(30)
 
-    # Save cookies
-    # pickle.dump( driver.get_cookies() , open("cookies.pkl","wb"))
+    wait = WebDriverWait(driver, 20)
 
+    shadow_host1 = driver.find_element(By.ID, "usercentrics-root")
+    shadow_root1 = driver.execute_script('return arguments[0].shadowRoot', shadow_host1)
 
+    print("something hapend")
+    print(shadow_host1)
+    print(shadow_root1)
 
-    # Wait for the button to be clickable
-    # button = WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.CLASS_NAME, 'sc-dcJsrY jXFxaO')))
-# data-testid="uc-accept-all-button"
-
-    # Handle privacy settings pop-up if it appears
-    # try:
-    #     # Wait for the pop-up to appear
-    #     print("explicit wait on)")
-       
-    #     alert = driver.switch_to.alert
-    #     alert_text = alert.text
-    #     print(alert_text)
-    #     # Click on the accept all button
-    #     accept_button.click()
-    #     print("Privacy settings alert handled successfully.")
-
-    # except:
-    #     print("Privacy settings alert did not appear.")
-
-
-    WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.CLASS_NAME, 'item-title')))
+    new_data = [element.text for element in shadow_root1.find_elements(By.ID, 'focus-lock-id')]
+    print("\n\nScrapped Data:\n",new_data)
     
+
+    # try:
+    #     if(len(shadow_root1.find_elements(By.CLASS_NAME, 'sc-dcJsrY jXFxaO'))) > 0:
+    #         print("button that contains id accept, is seen in the UI")
+    #         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='uc-accept-all-button']"))).click()
+    #     else:
+    #         print("button is not seen")
+    # except:
+    #     print("something went wrong")
+    #     pass
+
+    # Find the button element inside the shadow root
+    button_element = shadow_root1.find_element(By.CSS_SELECTOR, "[data-testid='uc-accept-all-button']")
+
+    # Scroll to the button element to ensure it's in view
+    driver.execute_script("arguments[0].scrollIntoView();", button_element)
+
+    # Click on the button using JavaScript to bypass any potential visibility issues
+    driver.execute_script("arguments[0].click();", button_element)
+
+    print("something22happnd")
+    # WebDriverWait(shadow_root1, 20).until(EC.visibility_of_element_located((By.CLASS_NAME, 'sc-dcJsrY jXFxaO')))
+    # print("something happnd")
     
     
     # element = driver.find_elements(By.CLASS_NAME, 'M-JobSearchResultsGroup__list')
