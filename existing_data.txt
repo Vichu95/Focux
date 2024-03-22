@@ -1,42 +1,76 @@
-Bachelor / Master thesis Concept Study for a Separately Excited Synchronous Drive with Inductive Transmission of Rotor Excitation Current
-Intern (m/f/d) Data management in battery system development
-Intern (m/f/d) for the virtual Calibration of E-Bike EDU
-Intern (m/f/x) Hardware Development of Control Units, Power Electronics or Eletrical Machines
-Intern Cost & Value Management (m/f/d)
-Intern in Consulting (m/f/d)
-Intern/ Graduate worker (thesis) (m/f/d) Extension of a pre-design tool for electric vehicles and their powertrains
-Master student (m/f/d) Design of an inductive transformer for use in externally excited synchronous machines
-Master Thesis in Consulting (m/f/d)
-Master Thesis: Towards autonomous long-haul trucking
-Master Thesis: V2X in cities - Evaluation of a C-V2X introduction in cities utilizing indirect communication
-Master Thesis: A blueprint for efficient software development organizations in the era of software-defined vehicles
-Master Thesis: Analysis of the necessity of vehicle operating systems for future (software-defined) vehicles
-Master Thesis: Battery recycling – global supply and demand model
-Master Thesis: Cloud Services: Technology backbone & data monetization in automotive
-Master Thesis: Develop a digital workflow to CO2 footprint estimates for raw material in a global material database
-Master Thesis: Development of a Circular economy maturity assessment tool based on ISO 59020 etc.
-Master Thesis: Development of an automotive supplier database and user dashboard
-Master Thesis: Exploring AI implementation in software-defined vehicles
-Master Thesis: Exploring the impact of "Digital Twins" on streamlining vehicle development processes
-Master Thesis: Exploring the role of high-performance computing in future (software-defined) vehicles
-Master Thesis: How over-the-air update technology revolutionizes the development process and lifecycle orientation of Automotive OEMs
-Master Thesis: The potential of service-oriented software architectures
-Master Thesis: The role of Functional Safety & Cyber Security for Vehicle Development
-Master Thesis: The role of Modern Network Communication Technologies and E/E Architectures in the context of Software-Defined Vehicles
-Master Thesis: The strategic role of edge computing in Automotive for future vehicle architectures
-Masterthesis (m/f/d) Development of a tool chain for the application of Large Language Models in the context of Systems Engineering
-Masterthesis (m/f/d) Large Language Models in the Context of Systems Engineering - Use Case Analysis
-Student Assistant (m/f/d) - Hardware-in-the-Loop Testing
-Student Assistant (m/f/d) Calibration Battery Management Systems (BMS)
-Student Assistant (m/f/d) Function Development E-Mobility
-Student assistant (m/f/d) in the area of Virtual Dynamics documentation (EN)
-Student assistant (m/f/d) in the field of virtual dynamics multi-body simulation (EN)
-Student Assistant (m/f/d) Marketing
-Student assistant (m/f/d) Technical project assistance in requirements management
-Student assistant / intern (m/f/x) in the area of E/E - electric powertrains
-Student assistant / intern / thesis student (m/f/x) Energy management system
-Student assistant / intern / thesis student (m/f/x) GenAI for Systems Engineering of Electrified Powertrains
-Student assistant / intern / thesis student (m/f/x) Systems Engineering Electrified Powertrains
-Studentische Hilfskraft (m/w/d) Sound Design
-Working Student Cost & Value Management (m/f/d)
-Working Student in Consulting (m/f/d)
+Student im praxisintegriertem Studium Bauingenieurwesen (m/w/d)
+Kassel
+Other
+Published on 12.08.2023
+Auszubildender zum Chemielaborant (m/w/d)
+Salzgitter
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zum Elektroniker/in für Automatisierungstechnik (m/w/d)
+Wolfsburg
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zum Elektroniker/in für Automatisierungstechnik (m/w/d)
+Hannover
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zum Elektroniker/in für Automatisierungstechnik (m/w/d)
+Kassel
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zum Elektroniker/in für Automatisierungstechnik (m/w/d)
+Emden
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zum Elektroniker/in für Automatisierungstechnik (m/w/d)
+Salzgitter
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zum Elektroniker für Informations- und Systemtechnik (m/w/d)
+Wolfsburg
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zum Elektroniker für Informations- und Systemtechnik (m/w/d)
+Braunschweig
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zum Elektroniker für Informations- und Systemtechnik (m/w/d)
+Salzgitter
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zum Fachinformatiker (m/w/d)
+Wolfsburg
+IT & Digitalization
+Published on 02.08.2023
+Auszubildender zum Fachinformatiker (m/w/d)
+Emden
+IT & Digitalization
+Published on 02.08.2023
+Auszubildender zum Fachinformatiker Daten und Prozessanalyse (m/w/d)
+Hannover
+IT & Digitalization
+Published on 02.08.2023
+Auszubildender zum Fachinformatiker Daten und Prozessanalyse (m/w/d)
+Kassel
+IT & Digitalization
+Published on 02.08.2023
+Auszubildender zur Fachkraft für Lagerlogistik (m/w/d)
+Hannover
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zur Fachkraft für Lagerlogistik (m/w/d)
+Braunschweig
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zur Fachkraft für Lagerlogistik (m/w/d)
+Kassel
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zur Fachkraft für Lagerlogistik (m/w/d)
+Salzgitter
+Production and Logistics
+Published on 02.08.2023
+Auszubildender zum Gießereimechaniker Druck- und Kokillenguss (m/w/d)
+Braunschweig
+Production and Logistics
+Published on 02.08.2023

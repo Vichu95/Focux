@@ -40,9 +40,9 @@ def send_email(new_data):
 
  
 # url = 'https://jobs.bosch.com/en/?country=de&positionTypes=e4a3c0db-920d-4356-8ce0-c0b44a54e497,f524b939-fe55-407b-a0b0-e8f4eec28997,f3b92bc1-600d-4d33-9115-5aa27785f52b,8c682ec0-3d28-4e52-b53b-c63d440a32d3' 
-url = 'https://www.fev.com/en/jobs/?entryLevel=students&country=germany'
+# url = 'https://www.fev.com/en/jobs/?entryLevel=students&country=germany'
 # url = 'https://valeo.wd3.myworkdayjobs.com/de-DE/valeo_jobs?locationCountry=dcc5b7608d8644b3a93716604e78e995'
-# url = 'https://karriere.volkswagen.de/sap/bc/bsp/sap/zvw_hcmx_ui_ext/desktop.html#/SEARCH/SIMPLE/'
+url = 'https://karriere.volkswagen.de/sap/bc/bsp/sap/zvw_hcmx_ui_ext/desktop.html#/SEARCH/SIMPLE/'
  
 
 options = webdriver.ChromeOptions() #newly added 
@@ -60,10 +60,14 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
 
     print("Timer on)")
     time.sleep(5)
-    # driver.implicitly_wait(30)
+    # driver.implicitly_wait(100)
+
+    shadow_host1 = WebDriverWait(driver, 60).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="usercentrics-root"]'))
+    )
 
 
-    shadow_host1 = driver.find_element(By.ID, "usercentrics-root")
+    # shadow_host1 = driver.find_element(By.ID, "usercentrics-root")
     shadow_root1 = driver.execute_script('return arguments[0].shadowRoot', shadow_host1)
 
     print("Extracted shadow host and root")
@@ -72,7 +76,7 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
 
 
     # Find the button element inside the shadow root
-    button_element = shadow_root1.find_element(By.CSS_SELECTOR, "[data-testid='uc-accept-all-button']")
+    button_element = shadow_root1.find_element(By.CSS_SELECTOR, '[data-testid="uc-accept-all-button"]')
 
     # Scroll to the button element to ensure it's in view
     driver.execute_script("arguments[0].scrollIntoView();", button_element)
@@ -83,13 +87,18 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
 
     
     # element = driver.find_elements(By.CLASS_NAME, 'M-JobSearchResultsGroup__list')
+
+    element = WebDriverWait(driver, 60).until(
+        EC.presence_of_element_located((By.XPATH, '//*[@id="JOBRESULTLIST--jobList"]'))
+    )
+
     # element = driver.find_elements(By.CLASS_NAME, 'items')
     # element = driver.find_elements(By.CLASS_NAME, 'css-8j5iuw')
-    element = driver.find_elements(By.CLASS_NAME, 'item-title')
+    # element = driver.find_elements(By.CLASS_NAME, 'item-title')
     # element = driver.find_elements(By.ID, 'JOBRESULTLIST--jobList')
 
     # Scrape new data
-    new_data = [element.text for element in driver.find_elements(By.CLASS_NAME, 'item-title')]
+    new_data = [element.text for element in driver.find_elements(By.XPATH,'//*[@id="JOBRESULTLIST--jobList"]')]
     print("\n\nScrapped Data:\n",new_data)
 
 
