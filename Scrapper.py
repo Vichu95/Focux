@@ -19,7 +19,12 @@ import json
 ##############################
 ##     c o n f i g
 ##############################
+## Mention the path to the json file that contains the token values.
 token_path="../../.focux_params"
+## Mention path to the excel
+parserList_path = 'JobAlert.xlsx'
+
+
 
 ##############################
 ##     F U N C T I O N S 
@@ -34,8 +39,13 @@ def read_existing_data(file_path):
     else:
         return []
 
-# Setting up the bot
 
+
+######
+## Telegram Bot
+######
+
+# Read the tokens: Bot token, Chat ID
 def read_token_from_file( token_key):
     with open(token_path, 'r') as file:
         tokens = json.load(file)
@@ -43,81 +53,71 @@ def read_token_from_file( token_key):
 
 FOCUX_BOT_TOKEN=read_token_from_file('FOCUX_BOT_TOKEN')
 FOCUX_GROUP_CHATID=read_token_from_file('FOCUX_GROUP_CHATID')
-
+# Initialize bot
 bot = telebot.TeleBot(FOCUX_BOT_TOKEN)
+
+### Use below code to get the user or group id. 
+### Uncomment and run the script. Text the bot or text the group having bot.
 # @bot.message_handler(func=lambda message: True)
 # def handle_message(message):
 #     print("Chat ID:", message.chat.id)
-#     # Check if the message is from a group
-#     if message.chat.type == 'group':
-#         # Print the chat ID of the group
-#         print("Chat ID of the group:", message.chat.id)
-
-# msg = bot.send_message(FOCUX_GROUP_CHATID,"hahah")
 # # Start the bot
 # bot.polling()
 
 
- 
-# url = 'https://jobs.bosch.com/en/?country=de&positionTypes=e4a3c0db-920d-4356-8ce0-c0b44a54e497,f524b939-fe55-407b-a0b0-e8f4eec28997,f3b92bc1-600d-4d33-9115-5aa27785f52b,8c682ec0-3d28-4e52-b53b-c63d440a32d3' 
-# url = 'https://www.fev.com/en/jobs/?entryLevel=students&country=germany'
-# url = 'https://valeo.wd3.myworkdayjobs.com/de-DE/valeo_jobs?locationCountry=dcc5b7608d8644b3a93716604e78e995'
-# url = 'https://karriere.volkswagen.de/sap/bc/bsp/sap/zvw_hcmx_ui_ext/desktop.html#/SEARCH/SIMPLE/'
- 
-
-options = webdriver.ChromeOptions() #newly added 
+######
+## Chrome Parser
+######
+options = webdriver.ChromeOptions()
 options.add_argument("--disable-cookies")
 options.add_argument('--headless')
 
-jobalert_msg = ""
 
+jobalert_msg = ""
 # Read the Excel file into a DataFrame
-df = pd.read_excel('JobAlert.xlsx')
+df = pd.read_excel(parserList_path)
 # Display the DataFrame
 print(df)
 
 
-# driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install())) 
-
+# Main driver loop
 with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options) as driver: 
    
+   ## Iterate between each company career loop
     for index, jobalert in df.iterrows():
         
+        # Open the link
         driver.get(jobalert['CareerURL'])
 
-        print("Timer on)")
+        print("\nWaiting for sometime...")
         if pd.notnull(jobalert['LoadTime_s']):
             time.sleep(jobalert['LoadTime_s'])
         driver.implicitly_wait(100)
 
 
+        ## This part handles the cases where there is a shadowroot wrapping the popup like privacy or cookies settings
         if pd.notnull(jobalert['ShadowRoot_XPATH']):
+
             shadow_host1 = WebDriverWait(driver, 60).until(
                 EC.presence_of_element_located((By.XPATH, jobalert['ShadowRoot_XPATH']))
             )
 
-
-            
-            # shadow_host1 = driver.find_element(By.ID, "usercentrics-root")
             shadow_root1 = driver.execute_script('return arguments[0].shadowRoot', shadow_host1)
 
-            print("Extracted shadow host and root")
+            print("Extracted the shadow host and root")
             print(shadow_host1)
             print(shadow_root1)
 
 
             # Find the button element inside the shadow root
             button_element = shadow_root1.find_element(By.CSS_SELECTOR, "[" + jobalert['Button_CSS_Sel'] + "]")
-
             # Scroll to the button element to ensure it's in view
             driver.execute_script("arguments[0].scrollIntoView();", button_element)
-
             # Click on the button using JavaScript to bypass any potential visibility issues
             driver.execute_script("arguments[0].click();", button_element)
 
 
-        
-        # element = driver.find_elements(By.CLASS_NAME, 'M-JobSearchResultsGroup__list')
+        ## Scrap the data via XPATH or CSS_SELECTOR
         new_data = []
         if pd.notnull(jobalert['Job_XPATH']):            
             element = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH,  jobalert['Job_XPATH'])))
@@ -129,12 +129,6 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
             # Scrape new data
             new_data = [element.text for element in driver.find_elements(By.CSS_SELECTOR,"[" + jobalert['Job_CSS_Sel'] + "]")]
 
-
-        # element = driver.find_elements(By.CLASS_NAME, 'items')
-        # element = driver.find_elements(By.CLASS_NAME, 'css-8j5iuw')
-        # element = driver.find_elements(By.CLASS_NAME, 'item-title')
-        # element = driver.find_elements(By.ID, 'JOBRESULTLIST--jobList')
-
         
         print("\n\nScrapped Data:\n",new_data)
 
@@ -142,12 +136,8 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
         # File path to store existing data
         file_path = 'database/data_' + jobalert['CompanyName'] + '.txt'
 
-        # Read existing data
+        # Read existing job data
         existing_data = read_existing_data(file_path)
-
-
-        print("new data", new_data)
-        # Compare new data with existing data
 
 
         ## Handle case when the entire parsed data is in one string separated by \n
@@ -156,16 +146,19 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
             # Add each split element to the new set
             new_data = split_elements.split('\n')
 
+        # Compare new data with existing data
         difference = set(new_data) - set(existing_data)
 
         
-
-        # If there is a difference, update the existing data file and send an email
+        # If there is a difference, update the existing data file and store it in final message
         if difference:
             print("\n\nThere is difference!!\n\n", difference)
             
             # Add the differences to differences_str
-            jobalert_msg+=f"New Job openings in {jobalert['CompanyName']} [{jobalert['CareerURL']}]:\n {', '.join(difference)}\n\n\n"
+            jobalert_msg+=f"New openings in <a href='{jobalert['CareerURL']}'>{jobalert['CompanyName']}</a>\n* "
+
+            jobalert_msg += "\n* ".join(difference) + "\n\n\n"
+
 
             # Write new data to the file
             with open(file_path, 'w') as file:
@@ -176,5 +169,14 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
 
 
 if(jobalert_msg != ''):
-    print("jobalert_msg\n\n", jobalert_msg)
-    msg = bot.send_message(FOCUX_GROUP_CHATID,jobalert_msg)
+    print("\n\n\nJob Alert!!\n\n", jobalert_msg)
+
+    jobalert_msg = "JOB ALERTS!!\n\n" + jobalert_msg
+
+
+    ## Splitting the message if it is greater than 4k characters. Its said telegram has limit of 4096.
+    if len(jobalert_msg) > 4000:
+        for x in range(0, len(jobalert_msg), 4000):
+            msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg[x:x+4000], parse_mode = 'HTML')
+    else:
+        msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg, parse_mode = 'HTML')
