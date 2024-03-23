@@ -1,4 +1,7 @@
 
+##############################
+##        I M P O R T S 
+##############################
 from selenium import webdriver 
 from selenium.webdriver.chrome.service import Service as ChromeService 
 from selenium.webdriver.common.by import By
@@ -7,11 +10,19 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager 
 import time
 import os
-import smtplib
+import telebot
 from email.message import EmailMessage
 import pandas as pd
 
 
+
+##############################
+##     c o n f i g
+##############################
+
+##############################
+##     F U N C T I O N S 
+##############################
 
 # Function to read existing data from a file
 def read_existing_data(file_path):
@@ -22,21 +33,18 @@ def read_existing_data(file_path):
     else:
         return []
 
-# Function to send email notification
-def send_email(new_data):
-    EMAIL_ADDRESS = 'your_email@gmail.com'
-    EMAIL_PASSWORD = 'your_email_password'
+# Setting up the bot
+bot = telebot.TeleBot(FOCUX_BOT_TOKEN)
+# @bot.message_handler(func=lambda message: True)
+# def handle_message(message):
+#     print("Chat ID:", message.chat.id)
+#     # Check if the message is from a group
+#     if message.chat.type == 'group':
+#         # Print the chat ID of the group
+#         print("Chat ID of the group:", message.chat.id)
 
-    msg = EmailMessage()
-    msg['Subject'] = 'New Job Listings Available'
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = 'recipient_email@example.com'
-
-    msg.set_content('\n'.join(new_data))
-
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        smtp.send_message(msg)
+# # Start the bot
+# bot.polling()
 
 
  
@@ -156,5 +164,6 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
 
 
 
-
-print("jobalert_msg\n\n", jobalert_msg)
+if(jobalert_msg != ''):
+    print("jobalert_msg\n\n", jobalert_msg)
+    msg = bot.send_message(FOCUX_GROUP_CHATID,jobalert_msg)
