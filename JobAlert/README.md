@@ -69,6 +69,7 @@ Next, go to the Accept button and copy the unique property in its tag. As shown 
 Once this is done, close the pop-up.
 
 :small_blue_diamond: Right-click the job title and inspect it. Copy the XPATH or identifier that works reliably. Update this in Job_XPATH	or Job_CSS_Sel accordingly.
+![05_CopyIdentifier_Text](https://github.com/Vichu95/Focux/assets/21979768/6f3d5378-26eb-40ba-956d-3989649b5ee6)
 
 :small_blue_diamond: To run just the new website, mark 'x' in the Enable column. Additionally, set PARSE_ALL to false in the script config section.
 
