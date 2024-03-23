@@ -20,10 +20,10 @@ import json
 ##     c o n f i g
 ##############################
 ## Mention the path to the json file that contains the token values.
-token_path="../../.focux_params"
+token_path="../../../.focux_params"
 ## Mention path to the excel
 parserList_path = 'JobAlert_List.xlsx'
-
+PARSE_ALL = True
 
 
 ##############################
@@ -86,85 +86,88 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
    ## Iterate between each company career loop
     for index, jobalert in df.iterrows():
         
-        # Open the link
-        driver.get(jobalert['CareerURL'])
+        ## Check if all websites has to be parsed or only enabled ones
+        if(PARSE_ALL == True or pd.notnull(jobalert['Enable'])):
 
-        print("\nWaiting for sometime...")
-        if pd.notnull(jobalert['LoadTime_s']):
-            time.sleep(jobalert['LoadTime_s'])
-        driver.implicitly_wait(100)
+            # Open the link
+            driver.get(jobalert['CareerURL'])
 
-
-        ## This part handles the cases where there is a shadowroot wrapping the popup like privacy or cookies settings
-        if pd.notnull(jobalert['ShadowRoot_XPATH']):
-
-            shadow_host1 = WebDriverWait(driver, 60).until(
-                EC.presence_of_element_located((By.XPATH, jobalert['ShadowRoot_XPATH']))
-            )
-
-            shadow_root1 = driver.execute_script('return arguments[0].shadowRoot', shadow_host1)
-
-            print("Extracted the shadow host and root")
-            print(shadow_host1)
-            print(shadow_root1)
+            print("\nWaiting for sometime...")
+            if pd.notnull(jobalert['LoadTime_s']):
+                time.sleep(jobalert['LoadTime_s'])
+            driver.implicitly_wait(100)
 
 
-            # Find the button element inside the shadow root
-            button_element = shadow_root1.find_element(By.CSS_SELECTOR, "[" + jobalert['Button_CSS_Sel'] + "]")
-            # Scroll to the button element to ensure it's in view
-            driver.execute_script("arguments[0].scrollIntoView();", button_element)
-            # Click on the button using JavaScript to bypass any potential visibility issues
-            driver.execute_script("arguments[0].click();", button_element)
+            ## This part handles the cases where there is a shadowroot wrapping the popup like privacy or cookies settings
+            if pd.notnull(jobalert['ShadowRoot_XPATH']):
+
+                shadow_host1 = WebDriverWait(driver, 60).until(
+                    EC.presence_of_element_located((By.XPATH, jobalert['ShadowRoot_XPATH']))
+                )
+
+                shadow_root1 = driver.execute_script('return arguments[0].shadowRoot', shadow_host1)
+
+                print("Extracted the shadow host and root")
+                print(shadow_host1)
+                print(shadow_root1)
 
 
-        ## Scrap the data via XPATH or CSS_SELECTOR
-        new_data = []
-        if pd.notnull(jobalert['Job_XPATH']):            
-            element = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH,  jobalert['Job_XPATH'])))
-            # Scrape new data
-            new_data = [element.text for element in driver.find_elements(By.XPATH, jobalert['Job_XPATH'])]
-        
-        elif pd.notnull(jobalert['Job_CSS_Sel']):
-            element = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, "[" + jobalert['Job_CSS_Sel'] + "]")))
-            # Scrape new data
-            new_data = [element.text for element in driver.find_elements(By.CSS_SELECTOR,"[" + jobalert['Job_CSS_Sel'] + "]")]
-
-        
-        print("\n\nScrapped Data:\n",new_data)
+                # Find the button element inside the shadow root
+                button_element = shadow_root1.find_element(By.CSS_SELECTOR, "[" + jobalert['Button_CSS_Sel'] + "]")
+                # Scroll to the button element to ensure it's in view
+                driver.execute_script("arguments[0].scrollIntoView();", button_element)
+                # Click on the button using JavaScript to bypass any potential visibility issues
+                driver.execute_script("arguments[0].click();", button_element)
 
 
-        # File path to store existing data
-        file_path = 'database/data_' + jobalert['CompanyName'] + '.txt'
-
-        # Read existing job data
-        existing_data = read_existing_data(file_path)
-
-
-        ## Handle case when the entire parsed data is in one string separated by \n
-        if(len(new_data)==1):
-            split_elements = new_data[0]
-            # Add each split element to the new set
-            new_data = split_elements.split('\n')
-
-        # Compare new data with existing data
-        difference = set(new_data) - set(existing_data)
-
-        
-        # If there is a difference, update the existing data file and store it in final message
-        if difference:
-            print("\n\nThere is difference!!\n\n", difference)
+            ## Scrap the data via XPATH or CSS_SELECTOR
+            new_data = []
+            if pd.notnull(jobalert['Job_XPATH']):            
+                element = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH,  jobalert['Job_XPATH'])))
+                # Scrape new data
+                new_data = [element.text for element in driver.find_elements(By.XPATH, jobalert['Job_XPATH'])]
             
-            # Add the differences to differences_str
-            jobalert_msg+=f"New openings in <a href='{jobalert['CareerURL']}'>{jobalert['CompanyName']}</a>\n* "
+            elif pd.notnull(jobalert['Job_CSS_Sel']):
+                element = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, "[" + jobalert['Job_CSS_Sel'] + "]")))
+                # Scrape new data
+                new_data = [element.text for element in driver.find_elements(By.CSS_SELECTOR,"[" + jobalert['Job_CSS_Sel'] + "]")]
 
-            jobalert_msg += "\n* ".join(difference) + "\n\n\n"
+            
+            print("\n\nScrapped Data:\n",new_data)
 
 
-            # Write new data to the file
-            with open(file_path, 'w') as file:
-                file.write('\n'.join(new_data))
-        else:
-            print("\n\nThere are no difference!!\n\n")
+            # File path to store existing data
+            file_path = 'database/data_' + jobalert['CompanyName'] + '.txt'
+
+            # Read existing job data
+            existing_data = read_existing_data(file_path)
+
+
+            ## Handle case when the entire parsed data is in one string separated by \n
+            if(len(new_data)==1):
+                split_elements = new_data[0]
+                # Add each split element to the new set
+                new_data = split_elements.split('\n')
+
+            # Compare new data with existing data
+            difference = set(new_data) - set(existing_data)
+
+            
+            # If there is a difference, update the existing data file and store it in final message
+            if difference:
+                print("\n\nThere is difference!!\n\n", difference)
+                
+                # Add the differences to differences_str
+                jobalert_msg+=f"New openings in <a href='{jobalert['CareerURL']}'>{jobalert['CompanyName']}</a>\n* "
+
+                jobalert_msg += "\n* ".join(difference) + "\n\n\n"
+
+
+                # Write new data to the file
+                with open(file_path, 'w') as file:
+                    file.write('\n'.join(new_data))
+            else:
+                print("\n\nThere are no difference!!\n\n")
 
 
 
