@@ -11,14 +11,15 @@ from webdriver_manager.chrome import ChromeDriverManager
 import time
 import os
 import telebot
-from email.message import EmailMessage
 import pandas as pd
+import json
 
 
 
 ##############################
 ##     c o n f i g
 ##############################
+token_path="../../.focux_params"
 
 ##############################
 ##     F U N C T I O N S 
@@ -34,6 +35,15 @@ def read_existing_data(file_path):
         return []
 
 # Setting up the bot
+
+def read_token_from_file( token_key):
+    with open(token_path, 'r') as file:
+        tokens = json.load(file)
+    return tokens.get(token_key)
+
+FOCUX_BOT_TOKEN=read_token_from_file('FOCUX_BOT_TOKEN')
+FOCUX_GROUP_CHATID=read_token_from_file('FOCUX_GROUP_CHATID')
+
 bot = telebot.TeleBot(FOCUX_BOT_TOKEN)
 # @bot.message_handler(func=lambda message: True)
 # def handle_message(message):
@@ -43,6 +53,7 @@ bot = telebot.TeleBot(FOCUX_BOT_TOKEN)
 #         # Print the chat ID of the group
 #         print("Chat ID of the group:", message.chat.id)
 
+# msg = bot.send_message(FOCUX_GROUP_CHATID,"hahah")
 # # Start the bot
 # bot.polling()
 
