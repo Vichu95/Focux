@@ -48,8 +48,9 @@ def send_email(new_data):
 
 options = webdriver.ChromeOptions() #newly added 
 options.add_argument("--disable-cookies")
-# options.add_argument('--headless')
+options.add_argument('--headless')
 
+jobalert_msg = ""
 
 # Read the Excel file into a DataFrame
 df = pd.read_excel('JobAlert.xlsx')
@@ -126,15 +127,34 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
         existing_data = read_existing_data(file_path)
 
 
+        print("new data", new_data)
         # Compare new data with existing data
+
+
+        ## Handle case when the entire parsed data is in one string separated by \n
+        if(len(new_data)==1):
+            split_elements = new_data[0]
+            # Add each split element to the new set
+            new_data = split_elements.split('\n')
+
         difference = set(new_data) - set(existing_data)
 
+        
 
         # If there is a difference, update the existing data file and send an email
         if difference:
             print("\n\nThere is difference!!\n\n", difference)
+            
+            # Add the differences to differences_str
+            jobalert_msg+=f"New Job openings in {jobalert['CompanyName']} [{jobalert['CareerURL']}]:\n {', '.join(difference)}\n\n\n"
+
             # Write new data to the file
             with open(file_path, 'w') as file:
                 file.write('\n'.join(new_data))
         else:
             print("\n\nThere are no difference!!\n\n")
+
+
+
+
+print("jobalert_msg\n\n", jobalert_msg)

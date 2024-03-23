@@ -1,10 +1,6 @@
-Bachelor / Master thesis Concept Study for a Separately Excited Synchronous Drive with Inductive Transmission of Rotor Excitation Current
-Intern (m/f/d) for the virtual Calibration of E-Bike EDU
-Intern (m/f/x) Hardware Development of Control Units, Power Electronics or Eletrical Machines
 Intern Cost & Value Management (m/f/d)
 Intern in Consulting (m/f/d)
-Intern/ Graduate worker (thesis) (m/f/d) Extension of a pre-design tool for electric vehicles and their powertrains
-Master student (m/f/d) Design of an inductive transformer for use in externally excited synchronous machines
+Master Student (m/f/x) Function development for real-time capable analysis of dynamic vehicle operation parameters on FPGA hardware
 Master Thesis in Consulting (m/f/d)
 Master Thesis: Towards autonomous long-haul trucking
 Master Thesis: V2X in cities - Evaluation of a C-V2X introduction in cities utilizing indirect communication
@@ -22,15 +18,10 @@ Master Thesis: The potential of service-oriented software architectures
 Master Thesis: The role of Functional Safety & Cyber Security for Vehicle Development
 Master Thesis: The role of Modern Network Communication Technologies and E/E Architectures in the context of Software-Defined Vehicles
 Master Thesis: The strategic role of edge computing in Automotive for future vehicle architectures
-Masterthesis (m/f/d) Development of a tool chain for the application of Large Language Models in the context of Systems Engineering
-Masterthesis (m/f/d) Large Language Models in the Context of Systems Engineering - Use Case Analysis
 Student Assistant (m/f/d) - Hardware-in-the-Loop Testing
-Student Assistant (m/f/d) Function Development E-Mobility
 Student assistant (m/f/d) in the area of Virtual Dynamics documentation (EN)
 Student assistant (m/f/d) in the field of virtual dynamics multi-body simulation (EN)
-Student assistant / intern (m/f/x) in the area of E/E - electric powertrains
-Student assistant / intern / thesis student (m/f/x) Energy management system
-Student assistant / intern / thesis student (m/f/x) GenAI for Systems Engineering of Electrified Powertrains
-Student assistant / intern / thesis student (m/f/x) Systems Engineering Electrified Powertrains
+Studentische Hilfskraft (m/w/d) oder Praktikant (m/w/d) Im Bereich Rapid Control Prototyping Systeme
+Studentische Hilfskraft (m/w/d) oder Praktikant (m/w/d) Im Bereich Rapid Control Prototyping Systeme
 Working Student Cost & Value Management (m/f/d)
 Working Student in Consulting (m/f/d)
