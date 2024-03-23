@@ -45,8 +45,14 @@ Finally, once the scraping and comparison are complete, a notification is sent v
 :small_blue_diamond: Open the website to parse, preferably in Incognito mode, to understand how the website behaves for the first time.
 
 :small_blue_diamond: Check if there are any pop-ups blocking the view of the job list. In this case, there are none, so you don't have to mention the ShadowRoot_XPATH and Button_CSS_Sel columns in the Excel file.
+![01_OpenTheWebsite](https://github.com/Vichu95/Focux/assets/21979768/1175c60a-d038-4d66-b933-220c0d8d4347)
 
-:small_blue_diamond: In case there are pop-ups, like on this website, right-click the Accept button and select "Inspect." Then, navigate to the tags related to this button and right-click to copy the JS Path.
+
+:small_blue_diamond: In case there are pop-ups, like on this website, right-click the Accept button and select "Inspect."
+![02_RightClickInspect](https://github.com/Vichu95/Focux/assets/21979768/62dfc5f6-cb16-4a0f-8597-eabbae386399)
+Then, navigate to the tags related to this button and right-click to copy the JS Path.
+![03_CopyJSPath](https://github.com/Vichu95/Focux/assets/21979768/59dad2e6-60dd-40a3-bd04-a5cf2fb9f430)
+
 ```
 document.querySelector("#usercentrics-root").shadowRoot.querySelector("#focus-lock-id > div.sc-kpDqfm.ckjpsZ > div > div.sc-eBMEME.dRvQzh > div > div > div.sc-jsJBEP.iXSECa > div > button:nth-child(2)")
 ```
@@ -54,13 +60,15 @@ This provides a hint of the shadowRoot element we are interested in. In this cas
 ```
 //*[@id="usercentrics-root"]
 ```
+![04_CopyXPATH_Shadowroot](https://github.com/Vichu95/Focux/assets/21979768/52c330d3-0fc6-41f1-a581-b95449c9d46b)
+
 Next, go to the Accept button and copy the unique property in its tag. As shown below, we can choose 'data-testid'. Copy that entire tag with its value and update it in the Button_CSS_Sel column (fill -> data-testid="uc-accept-all-button").
 ```
 <button role="button" data-testid="uc-accept-all-button" class="sc-dcJsrY jXFxaO" style="margin: 0px 6px;">Accept All</button>
 ```
 Once this is done, close the pop-up.
 
-:small_blue_diamond: Right-click the job title and inspect it. Copy the XPATH or identifier that works reliably. Update this in Job_XPATH	:bar_chart: or Job_CSS_Sel accordingly.
+:small_blue_diamond: Right-click the job title and inspect it. Copy the XPATH or identifier that works reliably. Update this in Job_XPATH	or Job_CSS_Sel accordingly.
 
 :small_blue_diamond: To run just the new website, mark 'x' in the Enable column. Additionally, set PARSE_ALL to false in the script config section.
 
