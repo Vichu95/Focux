@@ -22,7 +22,7 @@ import json
 ## Mention the path to the json file that contains the token values.
 token_path="../../.focux_params"
 ## Mention path to the excel
-parserList_path = 'JobAlert.xlsx'
+parserList_path = 'JobAlert_List.xlsx'
 
 
 
