@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Index</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <button class="button" id="readGermanButton">Reading</button>
+    <button class="button" id="watchGermanButton">Watch Videos</button>
+    <button class="button" id="watchGermanButton">Watch Videos</button>
+  </div>
+  <script>    
+    document.getElementById('readGermanButton').addEventListener('click', () => {
+      window.api.readGermanFunc();
+    });
+
+    document.getElementById('watchGermanButton').addEventListener('click', () => {
+      window.api.watchGermanFunc();
+    });
+  </script>
+</body>
+</html>

@@ -22,12 +22,6 @@ function setupIPCListeners() {
   });
 
   
-//   ipcMain.on('learn-german', () => {
-//     shell.openPath("D:\\Learn\\Infoshare\\LearnGerman");
-//     shell.openExternal('https://konjugator.reverso.net/konjugation-deutsch.html');
-//     app.quit();
-//   });
-
     ipcMain.on('learn-german', () => {
         // Get the primary display's size
         const primaryDisplay = screen.getPrimaryDisplay();
@@ -70,16 +64,6 @@ function setupIPCListeners() {
         allScreens.forEach((display, index) => {
             if (index === 0) return; // Skip the primary display
 
-  // Print details of each display
-
-    console.log(`Display ${index + 1}:`);
-    console.log(`  Size: ${display.size.width}x${display.size.height}`);
-    console.log(`  Bounds: ${display.bounds.x},${display.bounds.y},${display.bounds.width},${display.bounds.height}`);
-    console.log(`  WorkArea: ${display.workArea.x},${display.workArea.y},${display.workArea.width},${display.workArea.height}`);
-    console.log(`  Scale Factor: ${display.scaleFactor}`);
-    console.log(`  Primary: ${display.id === screen.getPrimaryDisplay().id}`);
-    console.log();
-
 
             const secondaryWindowTL = new BrowserWindow({
             width: display.size.width,
@@ -119,26 +103,31 @@ function setupIPCListeners() {
 
             
             const secondaryWindowBL = new BrowserWindow({
-                width: display.size.width + display.size.width/2 ,
-                height: display.size.height/2 - 10,
+                width: display.size.width/2 + 200 ,// + display.size.width/2,
+                height: display.size.height/2 - 100,
                 x: display.bounds.x,
-                y: display.workArea.height -display.size.height/2 - 100,            
-                // fullscreen: true,
+                y: display.workArea.height -display.size.height/2 - 100,        
+                frame: false, // Hide window frame (including title bar)
                 title: '',
-                autoHideMenuBar: true,
+                autoHideMenuBar: true, 
+                // backgroundColor: '#FFFFFF', // Set background color to white
+                transparent: true, // Make window transparent
+                resizable: false, // Disable window resizing
+                alwaysOnTop: true, // Keep window always on top
                 webPreferences: {
-                    nodeIntegration: true
+                    nodeIntegration: true,
+                    preload: path.join(main_path, 'preload.js') // Add preload script
                 }
                 });
                 // secondaryWindowBL.loadURL('https://chat.openai.com/c/1147723c-43af-44fd-a65d-4545b37fa2b3');
-                secondaryWindowBL.loadFile(renderer_path + '/TimingDetail.html');
+                secondaryWindowBL.loadFile(renderer_path + '\\learnGermanHome.html');
 
 
 
                  
             const secondaryWindowBR = new BrowserWindow({
                 width: display.size.width/2 - 200,
-                height: display.size.height/2 - 120,
+                height: display.size.height/2 - 110,
                 x: display.bounds.x + display.size.width/2 + 200,
                 y: display.workArea.height -display.size.height/2 - 100, 
                 // fullscreen: true,
@@ -158,6 +147,15 @@ function setupIPCListeners() {
 
 
         });
+
+
+
+
+        
+  ipcMain.on('readGermanFunc', () => {
+    shell.openPath("D:\\Learn\\Infoshare\\LearnGerman");
+  });
+
 
 
 

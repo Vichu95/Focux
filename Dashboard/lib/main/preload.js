@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('api', {
   openFolder: (path) => ipcRenderer.send('open-folder',path),
   openLink: () => ipcRenderer.send('open-link'),
   quitApp: () => ipcRenderer.send('quit-app'),
-  learnGermanButton: () => ipcRenderer.send('learn-german')
+  learnGermanButton: () => ipcRenderer.send('learn-german'),
+  readGermanFunc: () => ipcRenderer.send('readGermanFunc'),
+  watchGermanFunc: () => ipcRenderer.send('watchGermanFunc')
 });
 
