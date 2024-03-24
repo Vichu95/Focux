@@ -51,6 +51,7 @@ function setupIPCListeners() {
         // Load the first website
         mainWindow1.loadURL('https://konjugator.reverso.net/konjugation-deutsch.html');
 
+        
         // Create the second BrowserWindow instance for the second website
         const mainWindow2 = new BrowserWindow({
             width: windowWidth + 20,
@@ -158,9 +159,10 @@ function setupIPCListeners() {
                 secondaryWindowBR.loadFile(renderer_path+ '\\TimingDetail.html');
 
 
-        });
+        }); //foreach disaply
 
 
+    }); //learnGErman
 
 
         
@@ -223,14 +225,13 @@ function setupIPCListeners() {
 
       })
 
-});
-
-
-
-
-
-
     });
+
+
+
+
+
+
 
 }
 
