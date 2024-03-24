@@ -2,7 +2,7 @@
   "name": "focux",
   "version": "2.0.0",
   "description": "Focux Dashboard",
-  "main": "main.js",
+  "main": "lib/main/main.js",
   "scripts": {
     "start": "electron ."
   },

@@ -1,6 +1,10 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 
+
+const renderer_path = "../renderer";
+
+
 let mainWindow;
 
 function createMainWindow() {
@@ -16,23 +20,7 @@ function createMainWindow() {
     }
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
-}
-
-function createStartWindow() {
-  const startWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    fullscreen: true,
-    title: '',
-    autoHideMenuBar: true,
-    webPreferences: {
-      nodeIntegration: true,
-      preload: path.join(__dirname, 'preload.js') // Add preload script
-    }
-  });
-
-  startWindow.loadFile(path.join(__dirname, 'start.html'));
+  mainWindow.loadFile(path.join(__dirname, renderer_path + '/index.html'));
 }
 
 app.whenReady().then(createMainWindow);
