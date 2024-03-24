@@ -7,7 +7,10 @@ const path = require('path');
 const main_path = "D:\\Learn\\Projects\\Focux\\Focux\\Dashboard\\lib\\main";
 const renderer_path = "D:\\Learn\\Projects\\Focux\\Focux\\Dashboard\\lib\\renderer";
 
+
+
 function setupIPCListeners() {
+
   ipcMain.on('open-folder', (event,path) => {
     shell.openPath(path);
   });
@@ -37,6 +40,10 @@ function setupIPCListeners() {
             height: screenHeight,
             x: 0, // Position at the left edge of the screen
             y: 0, // Position at the top edge of the screen
+            frame: false, // Hide window frame (including title bar)
+            title: '',
+            autoHideMenuBar: true, 
+            alwaysOnTop: true, // Keep window always on top
             webPreferences: {
                 nodeIntegration: false // Disable Node.js integration for security
             }
@@ -50,6 +57,10 @@ function setupIPCListeners() {
             height: screenHeight,
             x: windowWidth - 20, // Position at the right edge of the screen
             y: 0, // Position at the top edge of the screen
+            frame: false, // Hide window frame (including title bar)
+            title: '',
+            autoHideMenuBar: true, 
+            alwaysOnTop: true, // Keep window always on top
             webPreferences: {
                 nodeIntegration: false // Disable Node.js integration for security
             }
@@ -65,33 +76,34 @@ function setupIPCListeners() {
             if (index === 0) return; // Skip the primary display
 
 
-            const secondaryWindowTL = new BrowserWindow({
-            width: display.size.width,
-            height: display.size.height + 100,
-            x: display.bounds.x,
-            y: display.bounds.y,
+            // const secondaryWindowTL = new BrowserWindow({
+            // width: display.size.width - 450,
+            // height: display.size.height + 100,
+            // x: display.bounds.x,
+            // y: display.bounds.y,
 
         
-            // fullscreen: true,
-            title: '',
-            autoHideMenuBar: true,
-            webPreferences: {
-                nodeIntegration: true
-            }
-            });
-            secondaryWindowTL.loadURL('https://german.net/reading/tom/');
+            // // fullscreen: true,
+            // title: '',
+            // autoHideMenuBar: true,
+            // webPreferences: {
+            //     nodeIntegration: true
+            // }
+            // });
+            // secondaryWindowTL.loadURL('https://german.net/reading/tom/');
 
 
 
             
             const secondaryWindowTR = new BrowserWindow({
-                width: display.size.width/2,
+                width: display.size.width/2 - 25,
                 height: display.size.height,
-                x: display.bounds.x + display.size.width/2 + 200,
+                x: display.bounds.x + display.size.width/2 + 220,
                 y: display.bounds.y,            
-                // fullscreen: true,
+                frame: false, // Hide window frame (including title bar)
                 title: '',
-                autoHideMenuBar: true,
+                autoHideMenuBar: true, 
+                alwaysOnTop: true, // Keep window always on top
                 webPreferences: {
                     nodeIntegration: true
                 }
@@ -153,8 +165,66 @@ function setupIPCListeners() {
 
         
   ipcMain.on('readGermanFunc', () => {
-    shell.openPath("D:\\Learn\\Infoshare\\LearnGerman");
+    
+    
+
+          // Create secondary windows for each secondary display
+          const allScreens = screen.getAllDisplays();
+          allScreens.forEach((display, index) => {
+              if (index === 0) return; // Skip the primary display
+  
+  
+              const secondaryWindowTL = new BrowserWindow({
+              width: display.size.width - 450,
+              height: display.size.height + 100,
+              x: display.bounds.x,
+              y: display.bounds.y,
+  
+          
+              // fullscreen: true,
+              title: '',
+              autoHideMenuBar: true,
+              webPreferences: {
+                  nodeIntegration: true
+              }
+              });
+              secondaryWindowTL.loadURL('https://german.net/reading/tom/');
+
+            })
+
   });
+
+  
+  ipcMain.on('watchGermanFunc', () => {
+    
+    
+
+    // Create secondary windows for each secondary display
+    const allScreens = screen.getAllDisplays();
+    allScreens.forEach((display, index) => {
+        if (index === 0) return; // Skip the primary display
+
+
+        const secondaryWindowTL = new BrowserWindow({
+        width: display.size.width - 450,
+        height: display.size.height + 100,
+        x: display.bounds.x,
+        y: display.bounds.y,
+
+    
+        // fullscreen: true,
+        title: '',
+        autoHideMenuBar: true,
+        webPreferences: {
+            nodeIntegration: true
+        }
+        });
+        secondaryWindowTL.loadURL('https://www.youtube.com/playlist?list=PLk1fjOl39-50kWobutO8NVFzbw9PHtbbg');
+
+      })
+
+});
+
 
 
 

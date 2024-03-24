@@ -48,7 +48,9 @@ function createMainWindow() {
         nodeIntegration: true
       }
     });
-    secondaryWindow.loadURL('about:blank'); // Load a blank page
+    secondaryWindow.loadURL('about:blank'); // Load a blank page    
+    // Disable user interactions with the window
+    secondaryWindow.setIgnoreMouseEvents(true);
   });
 }
 
