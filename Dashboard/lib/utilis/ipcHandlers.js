@@ -1,5 +1,11 @@
 // ipcHandlers.js
 const { ipcMain, shell, app, BrowserWindow, screen } = require('electron');
+const path = require('path');
+
+
+
+const main_path = "D:\\Learn\\Projects\\Focux\\Focux\\Dashboard\\lib\\main";
+const renderer_path = "D:\\Learn\\Projects\\Focux\\Focux\\Dashboard\\lib\\renderer";
 
 function setupIPCListeners() {
   ipcMain.on('open-folder', (event,path) => {
@@ -124,24 +130,31 @@ function setupIPCListeners() {
                     nodeIntegration: true
                 }
                 });
-                secondaryWindowBL.loadURL('https://chat.openai.com/c/1147723c-43af-44fd-a65d-4545b37fa2b3');
+                // secondaryWindowBL.loadURL('https://chat.openai.com/c/1147723c-43af-44fd-a65d-4545b37fa2b3');
+                secondaryWindowBL.loadFile(renderer_path + '/TimingDetail.html');
 
 
 
                  
             const secondaryWindowBR = new BrowserWindow({
-                width: display.size.width/2,
-                height: display.size.height/2 - 10,
+                width: display.size.width/2 - 200,
+                height: display.size.height/2 - 120,
                 x: display.bounds.x + display.size.width/2 + 200,
                 y: display.workArea.height -display.size.height/2 - 100, 
                 // fullscreen: true,
+                frame: false, // Hide window frame (including title bar)
                 title: '',
-                autoHideMenuBar: true,
+                autoHideMenuBar: true, 
+                backgroundColor: '#FFFFFF', // Set background color to white
+                transparent: true, // Make window transparent
+                resizable: false, // Disable window resizing
+                alwaysOnTop: true, // Keep window always on top
                 webPreferences: {
-                    nodeIntegration: true
+                    nodeIntegration: true,
+                    preload: path.join(main_path, 'preload.js') // Add preload script
                 }
                 });
-                secondaryWindowBR.loadURL('https://chat.openai.com/c/1147723c-43af-44fd-a65d-4545b37fa2b3');
+                secondaryWindowBR.loadFile(renderer_path+ '\\TimingDetail.html');
 
 
         });

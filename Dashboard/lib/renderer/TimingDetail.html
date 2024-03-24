@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time Display & Stopwatch</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="lower-right"></body>
+    <button class="quit-button" id="quitButton">Quit</button>
+  
+
+  <script>
+  
+    document.getElementById('quitButton').addEventListener('click', () => {
+        window.api.quitApp();
+        });
+</script>
+</body>
+</html>
