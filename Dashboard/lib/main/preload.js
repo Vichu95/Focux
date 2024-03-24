@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   quitApp: () => ipcRenderer.send('quit-app'),
   learnGermanButton: () => ipcRenderer.send('learn-german'),
   readGermanFunc: () => ipcRenderer.send('readGermanFunc'),
-  watchGermanFunc: () => ipcRenderer.send('watchGermanFunc')
+  watchGermanFunc: () => ipcRenderer.send('watchGermanFunc'),
+  jobApplyFunc: () => ipcRenderer.send('jobApplyFunc')
 });
 

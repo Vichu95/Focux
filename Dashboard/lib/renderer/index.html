@@ -9,12 +9,12 @@
 <body>
   <div class="container">
     <button class="button" id="learnGermanButton">Learn German</button>
-    <button class="button" id="startButton">Job</button>
+    <button class="button" id="jobApplyButton">Job</button>
     <button class="button" id="quitButton">Quit</button>
   </div>
   <script>
-    document.getElementById('startButton').addEventListener('click', () => {
-      window.location.href = 'twoWebsite.html';
+    document.getElementById('jobApplyButton').addEventListener('click', () => {
+      window.api.jobApplyFunc();
     });
     
     document.getElementById('learnGermanButton').addEventListener('click', () => {

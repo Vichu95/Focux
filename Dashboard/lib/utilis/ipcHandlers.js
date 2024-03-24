@@ -1,5 +1,7 @@
 // ipcHandlers.js
 const { ipcMain, shell, app, BrowserWindow, screen } = require('electron');
+const { spawn } = require('child_process');
+
 const path = require('path');
 
 
@@ -225,9 +227,64 @@ function setupIPCListeners() {
 
       })
 
+
     });
 
 
+
+
+
+     
+  ipcMain.on('jobApplyFunc', () => { 
+
+            
+        
+    shell.openPath("D:\\My\\Personal Files\\My_Docs");
+    shell.openPath("D:\\Learn\\Anhalt\\4_SSC_Portal");
+    shell.openPath("D:\\Learn\\Anhalt\\0_Study\\5_Thesis\\Applications\\Applied.xlsx");
+    shell.openExternal('https://www.linkedin.com/notifications/?filter=all');
+
+
+    
+         scriptPath = "D:\\Learn\\Projects\\Focux\\Focux\\JobAlert\\runJobAlert.bat"
+        // Run the batch script
+            const bat = spawn(scriptPath);
+             // Spawn a new process to run the batch script
+            // const bat = spawn(scriptPath, [], { detached: true, stdio: 'ignore' });
+
+            // // Detach the child process to let it run independently from the parent process
+            // bat.unref();
+
+
+            // Log output from the batch script
+            bat.stdout.on('data', (data) => {
+                console.log(data.toString());
+                
+                // event.reply('batch-script-output', data.toString());
+            });
+
+            // Log errors from the batch script
+            bat.stderr.on('data', (data) => {
+                console.error(data.toString());
+                // event.reply('batch-script-error', data.toString());
+            });
+
+            // Handle script completion
+            bat.on('exit', (code) => {
+                console.log(`Batch script exited with code ${code}`);
+                // event.reply('batch-script-exit', code);
+            });
+
+
+
+
+          app.quit();
+            
+
+
+            
+
+    });
 
 
 

@@ -22,7 +22,8 @@ import json
 ## Mention the path to the json file that contains the token values.
 token_path="../../../.focux_params"
 ## Mention path to the excel
-parserList_path = 'JobAlert_List.xlsx'
+parserList_path = "D:\Learn\Projects\Focux\Focux\JobAlert\JobAlert_List.xlsx"
+database_path = "D:\Learn\Projects\Focux\Focux\JobAlert\database"
 PARSE_ALL = True
 
 
@@ -137,7 +138,7 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
 
 
             # File path to store existing data
-            file_path = 'database/data_' + jobalert['CompanyName'] + '.txt'
+            file_path = database_path + '/data_' + jobalert['CompanyName'] + '.txt'
 
             # Read existing job data
             existing_data = read_existing_data(file_path)
