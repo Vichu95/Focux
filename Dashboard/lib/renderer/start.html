@@ -7,15 +7,20 @@
 </head>
 <body>
   <button id="openFolderButton">Open Folder</button>
-  <button id="openLinkButton">Open Link</button>
+  <button id="openLinkButton">Open Link</button>  
+  <button id="quitButton">Quit</button>
 
   <script>
     document.getElementById('openFolderButton').addEventListener('click', () => {
-      window.api.openFolder();
+      window.api.openFolder("D:\\Learn\\Projects");
     });
 
     document.getElementById('openLinkButton').addEventListener('click', () => {
       window.api.openLink();
+    });
+    
+    document.getElementById('quitButton').addEventListener('click', () => {
+      window.api.quitApp();
     });
   </script>
 </body>

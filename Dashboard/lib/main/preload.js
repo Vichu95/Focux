@@ -3,8 +3,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-  openFolder: () => ipcRenderer.send('open-folder'),
+  openFolder: (path) => ipcRenderer.send('open-folder',path),
   openLink: () => ipcRenderer.send('open-link'),
-  quitApp: () => ipcRenderer.send('quit-app')
+  quitApp: () => ipcRenderer.send('quit-app'),
+  learnGermanButton: () => ipcRenderer.send('learn-german')
 });
 
