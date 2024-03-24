@@ -1,13 +1,18 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell , screen} = require('electron');
 const path = require('path');
 
 
 const renderer_path = "../renderer";
 
-
+//////////////////////////////////
+////   Creating the windows
+//////////////////////////////////
 let mainWindow;
-
 function createMainWindow() {
+  const mainScreen = screen.getPrimaryDisplay();
+  const allScreens = screen.getAllDisplays();
+  
+  // Create main window
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -19,9 +24,28 @@ function createMainWindow() {
       preload: path.join(__dirname, 'preload.js') // Add preload script
     }
   });
-
   mainWindow.loadFile(path.join(__dirname, renderer_path + '/index.html'));
+
+  // Create secondary windows for each secondary display
+  allScreens.forEach((display, index) => {
+    if (index === 0) return; // Skip the primary display
+    const secondaryWindow = new BrowserWindow({
+      width: display.size.width,
+      height: display.size.height,
+      x: display.bounds.x,
+      y: display.bounds.y,
+      fullscreen: true,
+      title: '',
+      autoHideMenuBar: true,
+      backgroundColor: '#000000', // Set background color to white
+      webPreferences: {
+        nodeIntegration: true
+      }
+    });
+    secondaryWindow.loadURL('about:blank'); // Load a blank page
+  });
 }
+
 
 app.whenReady().then(createMainWindow);
 
@@ -36,6 +60,12 @@ app.on('activate', () => {
     createMainWindow();
   }
 });
+
+
+
+//////////////////////////////////
+////   Communication
+//////////////////////////////////
 
 ipcMain.on('open-folder', () => {
   shell.openPath('/path/to/your/folder');
