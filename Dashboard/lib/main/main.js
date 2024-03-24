@@ -16,6 +16,7 @@ let mainWindow;
 function createMainWindow() {
   const mainScreen = screen.getPrimaryDisplay();
   const allScreens = screen.getAllDisplays();
+
   
   // Create main window
   mainWindow = new BrowserWindow({
