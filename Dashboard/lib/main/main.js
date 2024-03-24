@@ -3,6 +3,11 @@ const path = require('path');
 
 
 const renderer_path = "../renderer";
+const utilis_path = "../utilis";
+
+//IMPORT
+const { setupIPCListeners } = require(utilis_path + '/ipcHandlers.js');
+
 
 //////////////////////////////////
 ////   Creating the windows
@@ -21,6 +26,7 @@ function createMainWindow() {
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: true,
       preload: path.join(__dirname, 'preload.js') // Add preload script
     }
   });
@@ -46,8 +52,10 @@ function createMainWindow() {
   });
 }
 
-
-app.whenReady().then(createMainWindow);
+app.whenReady().then(() => {
+  createMainWindow();
+  setupIPCListeners(); // Set up IPC event listeners
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -61,20 +69,3 @@ app.on('activate', () => {
   }
 });
 
-
-
-//////////////////////////////////
-////   Communication
-//////////////////////////////////
-
-ipcMain.on('open-folder', () => {
-  shell.openPath('/path/to/your/folder');
-});
-
-ipcMain.on('open-link', () => {
-  shell.openExternal('https://example.com');
-});
-
-ipcMain.on('quit-app', () => {
-  app.quit();
-});
