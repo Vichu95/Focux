@@ -119,14 +119,18 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
                 print(shadow_host1)
                 print(shadow_root1)
 
-
-                # Find the button element inside the shadow root
-                button_element = shadow_root1.find_element(By.CSS_SELECTOR, "[" + jobalert['Button_CSS_Sel'] + "]")
-                # Scroll to the button element to ensure it's in view
-                driver.execute_script("arguments[0].scrollIntoView();", button_element)
-                # Click on the button using JavaScript to bypass any potential visibility issues
-                driver.execute_script("arguments[0].click();", button_element)
-
+                
+                try:
+                    # Find the button element inside the shadow root
+                    button_element = shadow_root1.find_element(By.CSS_SELECTOR, "[" + jobalert['Button_CSS_Sel'] + "]")
+                    # Scroll to the button element to ensure it's in view
+                    driver.execute_script("arguments[0].scrollIntoView();", button_element)
+                    # Click on the button using JavaScript to bypass any potential visibility issues
+                    driver.execute_script("arguments[0].click();", button_element)
+                except Exception as e:
+                    # Print the exception message
+                    print("An exception occurred:", str(e))
+                    pass 
 
             ## Scrap the data via XPATH or CSS_SELECTOR
             new_data = []
