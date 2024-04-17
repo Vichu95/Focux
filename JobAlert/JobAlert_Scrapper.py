@@ -150,7 +150,6 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
 
             # File path to store existing data
             file_path = database_path + '/data_' + jobalert['CompanyName'] + '.txt'
-
             # Read existing job data
             existing_data = read_existing_data(file_path)
 
@@ -178,9 +177,17 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
                 # Write new data to the file
                 with open(file_path, 'w') as file:
                     file.write('\n'.join(new_data))
+
+                
             else:
                 print("\n\nThere are no difference!!\n\n")
 
+
+
+alert_bkp_path = database_path + 'alert_bkp.txt'
+# Write new data to the file
+with open(alert_bkp_path, 'w') as file:
+    file.write(("Alert : "+ jobalert_msg))
 
 
 if(jobalert_msg != ''):
@@ -195,3 +202,6 @@ if(jobalert_msg != ''):
             msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg[x:x+4000], parse_mode = 'HTML')
     else:
         msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg, parse_mode = 'HTML')
+        
+else:
+     msg = bot.send_message(FOCUX_GROUP_CHATID, "No new job found.")

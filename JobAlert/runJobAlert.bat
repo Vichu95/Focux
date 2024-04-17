@@ -1,2 +1,2 @@
-python "D:/Learn/Projects/Focux/Focux/JobAlert/JobAlert_Scrapper.py" > log.txt
+python "D:/Learn/Projects/Focux/Focux/JobAlert/JobAlert_Scrapper.py"
 pause
