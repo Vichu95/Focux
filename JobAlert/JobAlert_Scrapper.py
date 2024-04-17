@@ -155,7 +155,7 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
 
             
             # If there is a difference, update the existing data file and store it in final message
-            if difference:
+            if any(difference):
                 print("\n\nThere is difference!!\n\n", difference)
                 
                 # Add the differences to differences_str
