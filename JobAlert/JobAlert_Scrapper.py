@@ -80,6 +80,9 @@ df = pd.read_excel(parserList_path)
 # Display the DataFrame
 print(df)
 
+PARSE_ALL = not('Debug' in df.columns)
+print("\nPARSE_ALL = ", PARSE_ALL)
+
 
 # Main driver loop
 with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options) as driver: 
@@ -89,7 +92,11 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
         
         ## Check if all websites has to be parsed or only enabled ones
         if(PARSE_ALL == True or pd.notnull(jobalert['Enable'])):
-
+            
+            
+            print("\n\n\nParsing " + jobalert['CompanyName'] + " \n\n")
+            
+            
             # Open the link
             driver.get(jobalert['CareerURL'])
 
