@@ -230,6 +230,37 @@ function setupIPCListeners() {
 
     });
 
+    ipcMain.on('openVocabPracFunc', () => {
+    
+    
+
+      // Create full screen secondary window
+      const allScreens = screen.getAllDisplays();
+      allScreens.forEach((display, index) => {
+          if (index === 0) return; // Skip the primary display
+  
+  
+          const secondaryWindow = new BrowserWindow({
+            width: display.size.width,
+            height: display.size.height,
+            x: display.bounds.x,
+            y: display.bounds.y,
+  
+      
+          fullscreen: true,
+          title: '',
+          //autoHideMenuBar: true,
+          alwaysOnTop: true, // Keep window always on top
+          webPreferences: {
+              nodeIntegration: true
+          }
+          });
+          secondaryWindow.loadFile(renderer_path+ '\\Open3pdf.html');
+  
+        })
+  
+  
+      });
 
 
 
@@ -237,12 +268,11 @@ function setupIPCListeners() {
      
   ipcMain.on('jobApplyFunc', () => { 
 
-            
         
-    shell.openPath("D:\\My\\Personal Files\\My_Docs");
-    shell.openPath("D:\\Learn\\Anhalt\\4_SSC_Portal");
+    shell.openPath("D:\\My\\Personal Files\\Job\\Applying\\ApplyShortcut");
     shell.openPath("D:\\Learn\\Anhalt\\0_Study\\5_Thesis\\Applications\\Applied.xlsx");
     shell.openExternal('https://www.linkedin.com/notifications/?filter=all');
+    shell.openExternal('https://embeddedsysteminfoshare.wordpress.com/');
 
 
     
