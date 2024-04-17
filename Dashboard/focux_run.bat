@@ -1,2 +1,2 @@
-npm --prefix "D:\Learn\Projects\Focux\Focux\Dashboard" run start
+npm --prefix "D:\Learn\Projects\Focux\Focux\Dashboard" run start   >  log.txt
 pause
