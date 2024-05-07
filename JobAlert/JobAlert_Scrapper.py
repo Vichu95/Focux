@@ -144,43 +144,51 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
                 # Scrape new data
                 new_data = [element.text for element in driver.find_elements(By.CSS_SELECTOR,"[" + jobalert['Job_CSS_Sel'] + "]")]
 
-            
-            print("\n\nScrapped Data:\n",new_data)
+            try:
+                print("\n\nScrapped Data:\n", new_data)
 
 
-            # File path to store existing data
-            file_path = database_path + '/data_' + jobalert['CompanyName'] + '.txt'
-            # Read existing job data
-            existing_data = read_existing_data(file_path)
+                # File path to store existing data
+                file_path = database_path + '/data_' + jobalert['CompanyName'] + '.txt'
+                # Read existing job data
+                existing_data = read_existing_data(file_path)
 
 
-            ## Handle case when the entire parsed data is in one string separated by \n
-            if(len(new_data)==1):
-                split_elements = new_data[0]
-                # Add each split element to the new set
-                new_data = split_elements.split('\n')
+                ## Handle case when the entire parsed data is in one string separated by \n
+                if(len(new_data)==1):
+                    split_elements = new_data[0]
+                    # Add each split element to the new set
+                    new_data = split_elements.split('\n')
 
-            # Compare new data with existing data
-            difference = set(new_data) - set(existing_data)
+                # Compare new data with existing data
+                difference = set(new_data) - set(existing_data)
 
-            
-            # If there is a difference, update the existing data file and store it in final message
-            if any(difference):
-                print("\n\nThere is difference!!\n\n", difference)
                 
+                # If there is a difference, update the existing data file and store it in final message
+                if any(difference):
+                    print("\n\nThere is difference!!\n\n", difference)
+                    
+                    # Add the differences to differences_str
+                    jobalert_msg+=f"New openings in <a href='{jobalert['CareerURL']}'>{jobalert['CompanyName']}</a>\n* "
+
+                    jobalert_msg += "\n* ".join(difference) + "\n\n\n"
+
+
+                    # Write new data to the file
+                    with open(file_path, 'w') as file:
+                        file.write('\n'.join(new_data))
+
+                    
+                else:
+                    print("\n\nThere are no difference!!\n\n")
+                    
+                    
+                    
+            except UnicodeEncodeError:
+                print("\n\nError in scrapped Data\n")
+                new_data = ['Error in Scrapped Data']
                 # Add the differences to differences_str
-                jobalert_msg+=f"New openings in <a href='{jobalert['CareerURL']}'>{jobalert['CompanyName']}</a>\n* "
-
-                jobalert_msg += "\n* ".join(difference) + "\n\n\n"
-
-
-                # Write new data to the file
-                with open(file_path, 'w') as file:
-                    file.write('\n'.join(new_data))
-
-                
-            else:
-                print("\n\nThere are no difference!!\n\n")
+                jobalert_msg+=f"Error Parsing <a href='{jobalert['CareerURL']}'>{jobalert['CompanyName']}</a>\n"
 
 
 
@@ -199,9 +207,12 @@ if(jobalert_msg != ''):
     ## Splitting the message if it is greater than 4k characters. Its said telegram has limit of 4096.
     if len(jobalert_msg) > 4000:
         for x in range(0, len(jobalert_msg), 4000):
-            msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg[x:x+4000], parse_mode = 'HTML')
+            msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg[x:x+4000], parse_mode = 'HTML', timeout = 60)
+            print(msg)
     else:
-        msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg, parse_mode = 'HTML')
+        msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg, parse_mode = 'HTML', timeout = 60)
+        print(msg)
         
 else:
-     msg = bot.send_message(FOCUX_GROUP_CHATID, "No new job found.")
+     msg = bot.send_message(FOCUX_GROUP_CHATID, "No new job found.", timeout = 60)
+     print(msg)
