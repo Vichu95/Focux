@@ -261,6 +261,42 @@ function setupIPCListeners() {
   
   
       });
+      
+
+    ipcMain.on('openLocalHTMLFunc', () => {    
+    
+
+      // Create full screen secondary window
+      const allScreens = screen.getAllDisplays();
+      allScreens.forEach((display, index) => {
+          if (index === 0) return; // Skip the primary display
+  
+  
+          const secondaryWindow = new BrowserWindow({
+            width: display.size.width,
+            height: display.size.height,
+            x: display.bounds.x,
+            y: display.bounds.y,
+  
+      
+          fullscreen: true,
+          title: '',
+          //autoHideMenuBar: true,
+          alwaysOnTop: true, // Keep window always on top
+          webPreferences: {
+              nodeIntegration: true
+          }
+          });
+          
+          // Set the default zoom level (adjust the value as needed)
+          secondaryWindow.webContents.setZoomLevel(1.6);
+
+          secondaryWindow.loadFile(renderer_path+ '\\readDBZ_Manga.html');
+  
+        })
+  
+  
+      });
 
 
 
