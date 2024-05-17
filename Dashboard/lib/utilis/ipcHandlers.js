@@ -97,68 +97,126 @@ function setupIPCListeners() {
 
 
 
-            
-            const secondaryWindowTR = new BrowserWindow({
-                width: display.size.width/2 - 25,
-                height: display.size.height,
-                x: display.bounds.x + display.size.width/2 + 220,
-                y: display.bounds.y,            
-                frame: false, // Hide window frame (including title bar)
+            const scaleFactor = display.scaleFactor;
+            const displayWidth = display.size.width;
+            const displayHeight = display.size.height;
+
+            console.log(`Display ${index}:`);
+            console.log(`  Scale Factor: ${scaleFactor}`);
+            console.log(`  Width: ${displayWidth}, Adjusted Width: ${displayWidth}`);
+            console.log(`  Height: ${displayHeight}, Adjusted Height: ${displayHeight}`);
+            console.log(`  Bounds: ${JSON.stringify(display.bounds)}`);
+
+            // Create the left window
+            const secondaryWindowLeft = new BrowserWindow({
+                width: displayWidth / 2,
+                height: displayHeight,
+                x: display.bounds.x,
+                y: display.bounds.y,
+                frame: false,
                 title: '',
-                autoHideMenuBar: true, 
-                alwaysOnTop: true, // Keep window always on top
+                autoHideMenuBar: true,
+                alwaysOnTop: true,
                 webPreferences: {
                     nodeIntegration: true
                 }
-                });
-                secondaryWindowTR.loadURL('https://chat.openai.com/c/1147723c-43af-44fd-a65d-4545b37fa2b3');
+            });
+            secondaryWindowLeft.loadURL('https://example-left.com'); // Replace with your URL
+
+            // Create the right window
+            const secondaryWindowRight = new BrowserWindow({
+                width: displayWidth / 2,
+                height: displayHeight,
+                x: display.bounds.x + displayWidth / 2,
+                y: display.bounds.y,
+                frame: false,
+                title: '',
+                autoHideMenuBar: true,
+                alwaysOnTop: true,
+                webPreferences: {
+                    nodeIntegration: true
+                }
+            });
+            secondaryWindowRight.loadURL('https://example-right.com'); // Replace with your URL
+
+            // Adjust the bounds using setBounds to consider the scaling factor
+            secondaryWindowLeft.setBounds({
+                x: display.bounds.x,
+                y: display.bounds.y,
+                width: Math.floor(displayWidth / 2 * scaleFactor),
+                height: Math.floor(displayHeight * scaleFactor)
+            });
+
+            secondaryWindowRight.setBounds({
+                x: Math.floor(display.bounds.x + displayWidth / 2 * scaleFactor),
+                y: display.bounds.y,
+                width: Math.floor(displayWidth / 2 * scaleFactor),
+                height: Math.floor(displayHeight * scaleFactor)
+            });
+
+
+            
+            // const secondaryWindowTR = new BrowserWindow({
+            //     width: display.size.width/2 - 25,
+            //     height: display.size.height,
+            //     x: display.bounds.x + display.size.width/2 + 220,
+            //     y: display.bounds.y,            
+            //     frame: false, // Hide window frame (including title bar)
+            //     title: '',
+            //     autoHideMenuBar: true, 
+            //     alwaysOnTop: true, // Keep window always on top
+            //     webPreferences: {
+            //         nodeIntegration: true
+            //     }
+            //     });
+            //     secondaryWindowTR.loadURL('https://chat.openai.com/c/1147723c-43af-44fd-a65d-4545b37fa2b3');
 
 
                 
 
             
-            const secondaryWindowBL = new BrowserWindow({
-                width: display.size.width/2 + 200 ,// + display.size.width/2,
-                height: display.size.height/2 - 100,
-                x: display.bounds.x,
-                y: display.workArea.height -display.size.height/2 - 100,        
-                frame: false, // Hide window frame (including title bar)
-                title: '',
-                autoHideMenuBar: true, 
-                // backgroundColor: '#FFFFFF', // Set background color to white
-                transparent: true, // Make window transparent
-                resizable: false, // Disable window resizing
-                alwaysOnTop: true, // Keep window always on top
-                webPreferences: {
-                    nodeIntegration: true,
-                    preload: path.join(main_path, 'preload.js') // Add preload script
-                }
-                });
-                // secondaryWindowBL.loadURL('https://chat.openai.com/c/1147723c-43af-44fd-a65d-4545b37fa2b3');
-                secondaryWindowBL.loadFile(renderer_path + '\\learnGermanHome.html');
+            // const secondaryWindowBL = new BrowserWindow({
+            //     width: display.size.width/2 + 200 ,// + display.size.width/2,
+            //     height: display.size.height/2 - 100,
+            //     x: display.bounds.x,
+            //     y: display.workArea.height -display.size.height/2 - 100,        
+            //     frame: false, // Hide window frame (including title bar)
+            //     title: '',
+            //     autoHideMenuBar: true, 
+            //     // backgroundColor: '#FFFFFF', // Set background color to white
+            //     transparent: true, // Make window transparent
+            //     resizable: false, // Disable window resizing
+            //     alwaysOnTop: true, // Keep window always on top
+            //     webPreferences: {
+            //         nodeIntegration: true,
+            //         preload: path.join(main_path, 'preload.js') // Add preload script
+            //     }
+            //     });
+            //     // secondaryWindowBL.loadURL('https://chat.openai.com/c/1147723c-43af-44fd-a65d-4545b37fa2b3');
+            //     secondaryWindowBL.loadFile(renderer_path + '\\learnGermanHome.html');
 
 
 
                  
-            const secondaryWindowBR = new BrowserWindow({
-                width: display.size.width/2 - 200,
-                height: display.size.height/2 - 110,
-                x: display.bounds.x + display.size.width/2 + 200,
-                y: display.workArea.height -display.size.height/2 - 100, 
-                // fullscreen: true,
-                frame: false, // Hide window frame (including title bar)
-                title: '',
-                autoHideMenuBar: true, 
-                backgroundColor: '#FFFFFF', // Set background color to white
-                transparent: true, // Make window transparent
-                resizable: false, // Disable window resizing
-                alwaysOnTop: true, // Keep window always on top
-                webPreferences: {
-                    nodeIntegration: true,
-                    preload: path.join(main_path, 'preload.js') // Add preload script
-                }
-                });
-                secondaryWindowBR.loadFile(renderer_path+ '\\TimingDetail.html');
+            // const secondaryWindowBR = new BrowserWindow({
+            //     width: display.size.width/2 - 200,
+            //     height: display.size.height/2 - 110,
+            //     x: display.bounds.x + display.size.width/2 + 200,
+            //     y: display.workArea.height -display.size.height/2 - 100, 
+            //     // fullscreen: true,
+            //     frame: false, // Hide window frame (including title bar)
+            //     title: '',
+            //     autoHideMenuBar: true, 
+            //     backgroundColor: '#FFFFFF', // Set background color to white
+            //     transparent: true, // Make window transparent
+            //     resizable: false, // Disable window resizing
+            //     alwaysOnTop: true, // Keep window always on top
+            //     webPreferences: {
+            //         nodeIntegration: true,
+            //         preload: path.join(main_path, 'preload.js') // Add preload script
+            //     }
+            //     });
+            //     secondaryWindowBR.loadFile(renderer_path+ '\\TimingDetail.html');
 
 
         }); //foreach disaply
