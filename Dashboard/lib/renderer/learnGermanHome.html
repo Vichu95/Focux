@@ -7,11 +7,14 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <button class="button" id="readGermanButton">Reading</button>
-    <button class="button" id="watchGermanButton">Watch Videos</button>
-    <button class="button" id="openGermanFolderButton">Open Folder</button>
-  </div>
+      <div class="container">
+        <button class="button" id="readGermanButton">Reading</button>
+        <button class="button" id="watchGermanButton">Watch Videos</button>
+        <button class="button" id="openGermanFolderButton">Open Folder</button>
+        <button class="button" id="openVocabPracButton">Vocab Practice</button>
+        <button class="button" id="quitButton">Quit</button>
+      </div>
+
   <script>    
     document.getElementById('readGermanButton').addEventListener('click', () => {
       window.api.readGermanFunc();
@@ -24,6 +27,17 @@
     document.getElementById('openGermanFolderButton').addEventListener('click', () => {
       window.api.openFolder("D:\\Learn\\Infoshare\\LearnGerman\\A2_EuroBhasha\\Documents");
     });
+
+    
+    document.getElementById('openVocabPracButton').addEventListener('click', () => {
+      window.api.openVocabPracFunc();
+    });
+
+    
+    document.getElementById('quitButton').addEventListener('click', () => {
+      window.api.quitApp();
+    });
+
   </script>
 </body>
 </html>

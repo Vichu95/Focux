@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('api', {
   learnGermanButton: () => ipcRenderer.send('learn-german'),
   readGermanFunc: () => ipcRenderer.send('readGermanFunc'),
   watchGermanFunc: () => ipcRenderer.send('watchGermanFunc'),
-  jobApplyFunc: () => ipcRenderer.send('jobApplyFunc')
+  jobApplyFunc: () => ipcRenderer.send('jobApplyFunc'),
+  openVocabPracFunc: () => ipcRenderer.send('openVocabPracFunc'),
+  openLocalHTMLFunc: () => ipcRenderer.send('openLocalHTMLFunc')
 });
 

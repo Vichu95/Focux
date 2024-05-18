@@ -80,6 +80,9 @@ df = pd.read_excel(parserList_path)
 # Display the DataFrame
 print(df)
 
+PARSE_ALL = not('Debug' in df.columns)
+print("\nPARSE_ALL = ", PARSE_ALL)
+
 
 # Main driver loop
 with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options) as driver: 
@@ -89,7 +92,11 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
         
         ## Check if all websites has to be parsed or only enabled ones
         if(PARSE_ALL == True or pd.notnull(jobalert['Enable'])):
-
+            
+            
+            print("\n\n\nParsing " + jobalert['CompanyName'] + " \n\n")
+            
+            
             # Open the link
             driver.get(jobalert['CareerURL'])
 
@@ -112,14 +119,18 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
                 print(shadow_host1)
                 print(shadow_root1)
 
-
-                # Find the button element inside the shadow root
-                button_element = shadow_root1.find_element(By.CSS_SELECTOR, "[" + jobalert['Button_CSS_Sel'] + "]")
-                # Scroll to the button element to ensure it's in view
-                driver.execute_script("arguments[0].scrollIntoView();", button_element)
-                # Click on the button using JavaScript to bypass any potential visibility issues
-                driver.execute_script("arguments[0].click();", button_element)
-
+                
+                try:
+                    # Find the button element inside the shadow root
+                    button_element = shadow_root1.find_element(By.CSS_SELECTOR, "[" + jobalert['Button_CSS_Sel'] + "]")
+                    # Scroll to the button element to ensure it's in view
+                    driver.execute_script("arguments[0].scrollIntoView();", button_element)
+                    # Click on the button using JavaScript to bypass any potential visibility issues
+                    driver.execute_script("arguments[0].click();", button_element)
+                except Exception as e:
+                    # Print the exception message
+                    print("An exception occurred:", str(e))
+                    pass 
 
             ## Scrap the data via XPATH or CSS_SELECTOR
             new_data = []
@@ -133,43 +144,58 @@ with webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), op
                 # Scrape new data
                 new_data = [element.text for element in driver.find_elements(By.CSS_SELECTOR,"[" + jobalert['Job_CSS_Sel'] + "]")]
 
-            
-            print("\n\nScrapped Data:\n",new_data)
+            try:
+                print("\n\nScrapped Data:\n", new_data)
 
 
-            # File path to store existing data
-            file_path = database_path + '/data_' + jobalert['CompanyName'] + '.txt'
+                # File path to store existing data
+                file_path = database_path + '/data_' + jobalert['CompanyName'] + '.txt'
+                # Read existing job data
+                existing_data = read_existing_data(file_path)
 
-            # Read existing job data
-            existing_data = read_existing_data(file_path)
 
+                ## Handle case when the entire parsed data is in one string separated by \n
+                if(len(new_data)==1):
+                    split_elements = new_data[0]
+                    # Add each split element to the new set
+                    new_data = split_elements.split('\n')
 
-            ## Handle case when the entire parsed data is in one string separated by \n
-            if(len(new_data)==1):
-                split_elements = new_data[0]
-                # Add each split element to the new set
-                new_data = split_elements.split('\n')
+                # Compare new data with existing data
+                difference = set(new_data) - set(existing_data)
 
-            # Compare new data with existing data
-            difference = set(new_data) - set(existing_data)
-
-            
-            # If there is a difference, update the existing data file and store it in final message
-            if difference:
-                print("\n\nThere is difference!!\n\n", difference)
                 
+                # If there is a difference, update the existing data file and store it in final message
+                if any(difference):
+                    print("\n\nThere is difference!!\n\n", difference)
+                    
+                    # Add the differences to differences_str
+                    jobalert_msg+=f"New openings in <a href='{jobalert['CareerURL']}'>{jobalert['CompanyName']}</a>\n* "
+
+                    jobalert_msg += "\n* ".join(difference) + "\n\n\n"
+
+
+                    # Write new data to the file
+                    with open(file_path, 'w') as file:
+                        file.write('\n'.join(new_data))
+
+                    
+                else:
+                    print("\n\nThere are no difference!!\n\n")
+                    
+                    
+                    
+            except UnicodeEncodeError:
+                print("\n\nError in scrapped Data\n")
+                new_data = ['Error in Scrapped Data']
                 # Add the differences to differences_str
-                jobalert_msg+=f"New openings in <a href='{jobalert['CareerURL']}'>{jobalert['CompanyName']}</a>\n* "
-
-                jobalert_msg += "\n* ".join(difference) + "\n\n\n"
+                jobalert_msg+=f"Error Parsing <a href='{jobalert['CareerURL']}'>{jobalert['CompanyName']}</a>\n"
 
 
-                # Write new data to the file
-                with open(file_path, 'w') as file:
-                    file.write('\n'.join(new_data))
-            else:
-                print("\n\nThere are no difference!!\n\n")
 
+alert_bkp_path = database_path + 'alert_bkp.txt'
+# Write new data to the file
+with open(alert_bkp_path, 'w') as file:
+    file.write(("Alert : "+ jobalert_msg))
 
 
 if(jobalert_msg != ''):
@@ -181,6 +207,12 @@ if(jobalert_msg != ''):
     ## Splitting the message if it is greater than 4k characters. Its said telegram has limit of 4096.
     if len(jobalert_msg) > 4000:
         for x in range(0, len(jobalert_msg), 4000):
-            msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg[x:x+4000], parse_mode = 'HTML')
+            msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg[x:x+4000], parse_mode = 'HTML', timeout = 60)
+            print(msg)
     else:
-        msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg, parse_mode = 'HTML')
+        msg = bot.send_message(FOCUX_GROUP_CHATID, jobalert_msg, parse_mode = 'HTML', timeout = 60)
+        print(msg)
+        
+else:
+     msg = bot.send_message(FOCUX_GROUP_CHATID, "No new job found.", timeout = 60)
+     print(msg)

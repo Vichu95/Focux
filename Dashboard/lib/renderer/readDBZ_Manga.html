@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manga Viewer</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+        .iframe-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: space-between;
+            width: 80%;
+            margin-bottom: 20px;
+        }
+        .frame {
+            width: calc(50% - 5px);
+            height: 100%;
+            border: none;
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            width: 80%;
+        }
+        button {
+            width: calc(33.33% - 5px);
+            height: 40px;
+            border: none;
+            border-radius: 20px;
+            background-color: #4CAF50; /* Green */
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        input[type="number"] {
+            width: 100px;
+            height: 40px;
+            border: none;
+            border-radius: 20px;
+            padding: 0 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body onload="loadPage()">
+    <div class="container">
+        <div class="iframe-container">
+            <iframe class="frame" src="" name="frame1"></iframe>
+            <iframe class="frame" src="" name="frame2"></iframe>
+        </div>
+        <div class="button-container">
+            <button onclick="previousPage()">Previous</button>
+            <button onclick="nextPage()">Next</button>
+            <input type="number" id="pageNumberInput" placeholder="Page Number">
+            <button onclick="goToPage()">Go to Page</button>
+            <button onclick="closeViewer()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        function loadPage() {
+            var pageNumber = parseInt(localStorage.getItem('pageNumber') || '89'); // Default page number is 89
+            var pageURL_EN = 'https://www.dragonball-multiverse.com/en/page-' + pageNumber + '.html#h_read';
+            var pageURL_DE = 'https://www.dragonball-multiverse.com/de/page-' + pageNumber + '.html#h_read';
+			
+            document.querySelector('iframe[name="frame1"]').src = pageURL_DE;
+            document.querySelector('iframe[name="frame2"]').src = pageURL_EN;
+        }
+
+        function goToPage() {
+            var pageNumber = document.getElementById('pageNumberInput').value;
+            localStorage.setItem('pageNumber', pageNumber);
+            loadPage();
+        }
+
+        function previousPage() {
+            var pageNumber = parseInt(localStorage.getItem('pageNumber') || '89');
+            pageNumber = Math.max(1, pageNumber - 1); // Ensure page number doesn't go below 1
+            localStorage.setItem('pageNumber', pageNumber);
+            loadPage();
+        }
+
+        function nextPage() {
+            var pageNumber = parseInt(localStorage.getItem('pageNumber') || '89');
+            pageNumber += 1;
+            localStorage.setItem('pageNumber', pageNumber);
+            loadPage();
+        }
+
+        function closeViewer() {
+            window.close();
+        }
+    </script>
+</body>
+</html>

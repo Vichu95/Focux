@@ -7,6 +7,7 @@ const utilis_path = "../utilis";
 
 //IMPORT
 const { setupIPCListeners } = require(utilis_path + '/ipcHandlers.js');
+const { createWindows } = require(utilis_path + '/windowHandler'); // Import window handling functions
 
 
 //////////////////////////////////
@@ -57,6 +58,7 @@ function createMainWindow() {
 app.whenReady().then(() => {
   createMainWindow();
   setupIPCListeners(); // Set up IPC event listeners
+  createWindows();
 });
 
 app.on('window-all-closed', () => {
