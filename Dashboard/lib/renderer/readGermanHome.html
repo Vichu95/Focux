@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Index</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <button class="button" id="openWebsiteButton1">German.net Short Para</button>
+    <button class="button" id="openWebsiteButton2">nachrichtenleicht</button>
+    <button class="button" id="openLocalHTMLButton">Read DB Manga</button>
+  </div>
+  <script>
+    document.getElementById('openWebsiteButton1').addEventListener('click', () => {
+        window.location.href = 'https://german.net/reading/schule/';
+    });
+
+     document.getElementById('openWebsiteButton2').addEventListener('click', () => {
+        window.location.href = 'https://www.nachrichtenleicht.de/';
+    });
+    
+    document.getElementById('openLocalHTMLButton').addEventListener('click', () => {
+        window.location.href = 'readDBZ_Manga.html';
+    });
+  </script>
+</body>
+</html>

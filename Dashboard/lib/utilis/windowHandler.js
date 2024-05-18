@@ -1,8 +1,15 @@
-const { BrowserWindow, screen } = require('electron');
+const { ipcMain, shell, app, BrowserWindow, screen } = require('electron');
+const { spawn } = require('child_process');
+
 const path = require('path');
 
 const main_path = "D:\\Learn\\Projects\\Focux\\Focux\\Dashboard\\lib\\main";
 const renderer_path = "D:\\Learn\\Projects\\Focux\\Focux\\Dashboard\\lib\\renderer";
+
+
+
+// const { setupIPCListeners } = require(utilis_path + '/ipcHandlers.js');
+
 
 function createWindows(action) {
   // Logic for creating windows based on the action
@@ -107,65 +114,66 @@ mainWindow3.loadFile(renderer_path + '\\learnGermanHome.html');
      // secondaryWindowTL.loadURL('https://german.net/reading/tom/');
 
 
+// //--------------
+//      const scaleFactor = display.scaleFactor;
+//      const displayWidth = display.size.width;
+//      const displayHeight = display.size.height;
 
-     const scaleFactor = display.scaleFactor;
-     const displayWidth = display.size.width;
-     const displayHeight = display.size.height;
+//      console.log(`Display ${index}:`);
+//      console.log(`  Scale Factor: ${scaleFactor}`);
+//      console.log(`  Width: ${displayWidth}, Adjusted Width: ${displayWidth}`);
+//      console.log(`  Height: ${displayHeight}, Adjusted Height: ${displayHeight}`);
+//      console.log(`  Bounds: ${JSON.stringify(display.bounds)}`);
 
-     console.log(`Display ${index}:`);
-     console.log(`  Scale Factor: ${scaleFactor}`);
-     console.log(`  Width: ${displayWidth}, Adjusted Width: ${displayWidth}`);
-     console.log(`  Height: ${displayHeight}, Adjusted Height: ${displayHeight}`);
-     console.log(`  Bounds: ${JSON.stringify(display.bounds)}`);
+//      // Create the left window
+//      const secondaryWindowLeft = new BrowserWindow({
+//          width: displayWidth / 2,
+//          height: displayHeight,
+//          x: display.bounds.x,
+//          y: display.bounds.y,
+//          frame: false,
+//          title: '',
+//          autoHideMenuBar: true,
+//          alwaysOnTop: true,
+//          webPreferences: {
+//              nodeIntegration: true
+//          }
+//      });
+//      secondaryWindowLeft.loadURL('https://example-left.com'); // Replace with your URL
 
-     // Create the left window
-     const secondaryWindowLeft = new BrowserWindow({
-         width: displayWidth / 2,
-         height: displayHeight,
-         x: display.bounds.x,
-         y: display.bounds.y,
-         frame: false,
-         title: '',
-         autoHideMenuBar: true,
-         alwaysOnTop: true,
-         webPreferences: {
-             nodeIntegration: true
-         }
-     });
-     secondaryWindowLeft.loadURL('https://example-left.com'); // Replace with your URL
+//      // Create the right window
+//      const secondaryWindowRight = new BrowserWindow({
+//          width: displayWidth / 2,
+//          height: displayHeight,
+//          x: display.bounds.x + displayWidth / 2,
+//          y: display.bounds.y,
+//          frame: false,
+//          title: '',
+//          autoHideMenuBar: true,
+//          alwaysOnTop: true,
+//          webPreferences: {
+//              nodeIntegration: true
+//          }
+//      });
+//      secondaryWindowRight.loadURL('https://example-right.com'); // Replace with your URL
 
-     // Create the right window
-     const secondaryWindowRight = new BrowserWindow({
-         width: displayWidth / 2,
-         height: displayHeight,
-         x: display.bounds.x + displayWidth / 2,
-         y: display.bounds.y,
-         frame: false,
-         title: '',
-         autoHideMenuBar: true,
-         alwaysOnTop: true,
-         webPreferences: {
-             nodeIntegration: true
-         }
-     });
-     secondaryWindowRight.loadURL('https://example-right.com'); // Replace with your URL
+//      // Adjust the bounds using setBounds to consider the scaling factor
+//      secondaryWindowLeft.setBounds({
+//          x: display.bounds.x,
+//          y: display.bounds.y,
+//          width: Math.floor(displayWidth / 2 * scaleFactor),
+//          height: Math.floor(displayHeight * scaleFactor)
+//      });
 
-     // Adjust the bounds using setBounds to consider the scaling factor
-     secondaryWindowLeft.setBounds({
-         x: display.bounds.x,
-         y: display.bounds.y,
-         width: Math.floor(displayWidth / 2 * scaleFactor),
-         height: Math.floor(displayHeight * scaleFactor)
-     });
-
-     secondaryWindowRight.setBounds({
-         x: Math.floor(display.bounds.x + displayWidth / 2 * scaleFactor),
-         y: display.bounds.y,
-         width: Math.floor(displayWidth / 2 * scaleFactor),
-         height: Math.floor(displayHeight * scaleFactor)
-     });
+//      secondaryWindowRight.setBounds({
+//          x: Math.floor(display.bounds.x + displayWidth / 2 * scaleFactor),
+//          y: display.bounds.y,
+//          width: Math.floor(displayWidth / 2 * scaleFactor),
+//          height: Math.floor(displayHeight * scaleFactor)
+//      });
 
 
+// //--------------
      
      // const secondaryWindowTR = new BrowserWindow({
      //     width: display.size.width/2 - 25,
@@ -241,24 +249,38 @@ function createReadGermanWindows() {
           allScreens.forEach((display, index) => {
               if (index === 0) return; // Skip the primary display
   
+              const scaleFactor = display.scaleFactor;
+                 const displayWidth = display.size.width;
+                 const displayHeight = display.size.height;
+
   
               const secondaryWindowTL = new BrowserWindow({
-              width: display.size.width - 450,
-              height: display.size.height + 100,
+       
+              width: display.size.width,
+              height: display.size.height,
               x: display.bounds.x,
               y: display.bounds.y,
-  
-          
-              // fullscreen: true,
+            //   fullscreen: true,
               title: '',
-              autoHideMenuBar: true,
+              autoHideMenuBar: false,
               webPreferences: {
                   nodeIntegration: true
               }
               });
-              secondaryWindowTL.loadURL('https://german.net/reading/tom/');
+              secondaryWindowTL.loadFile(renderer_path + '\\readGermanHome.html');
+
+
+              
+                 // Adjust the bounds using setBounds to consider the scaling factor
+            secondaryWindowTL.setBounds({
+            x: display.bounds.x,
+            y: display.bounds.y,
+            width: Math.floor(displayWidth  * scaleFactor),
+            height: Math.floor(displayHeight * scaleFactor)
+                });
 
             })
+
 
 }
 

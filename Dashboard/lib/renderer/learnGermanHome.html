@@ -12,7 +12,7 @@
         <button class="button" id="watchGermanButton">Watch Videos</button>
         <button class="button" id="openGermanFolderButton">Open Folder</button>
         <button class="button" id="openVocabPracButton">Vocab Practice</button>
-        <button class="button" id="openLocalHTMLButton">Read DB Manga</button>
+        <button class="button" id="quitButton">Quit</button>
       </div>
 
   <script>    
@@ -34,8 +34,8 @@
     });
 
     
-    document.getElementById('openLocalHTMLButton').addEventListener('click', () => {      
-      window.api.openLocalHTMLFunc();
+    document.getElementById('quitButton').addEventListener('click', () => {
+      window.api.quitApp();
     });
 
   </script>
