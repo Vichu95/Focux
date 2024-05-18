@@ -1,6 +1,6 @@
 # Focux
 
-***version 2.0***
+***version 2.1***
 ## Features :trident:
 - Minimalistic dashboard for focussed work
 - Supports my german learning
