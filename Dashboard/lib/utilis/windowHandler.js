@@ -1,8 +1,8 @@
 const { BrowserWindow, screen } = require('electron');
 const path = require('path');
 
-const mainPath = "D:\\Learn\\Projects\\Focux\\Focux\\Dashboard\\lib\\main";
-const rendererPath = "D:\\Learn\\Projects\\Focux\\Focux\\Dashboard\\lib\\renderer";
+const main_path = "D:\\Learn\\Projects\\Focux\\Focux\\Dashboard\\lib\\main";
+const renderer_path = "D:\\Learn\\Projects\\Focux\\Focux\\Dashboard\\lib\\renderer";
 
 function createWindows(action) {
   // Logic for creating windows based on the action
@@ -31,8 +31,8 @@ function createLearnGermanWindows() {
 
  // Create the first BrowserWindow instance for the first website
  const mainWindow1 = new BrowserWindow({
-     width: windowWidth,
-     height: screenHeight,
+     width: windowWidth -50,
+     height: screenHeight * 0.85,
      x: 0, // Position at the left edge of the screen
      y: 0, // Position at the top edge of the screen
      frame: false, // Hide window frame (including title bar)
@@ -44,14 +44,14 @@ function createLearnGermanWindows() {
      }
  });
  // Load the first website
- mainWindow1.loadURL('https://konjugator.reverso.net/konjugation-deutsch.html');
+ mainWindow1.loadURL('https://chat.openai.com/c/1147723c-43af-44fd-a65d-4545b37fa2b3');
 
  
  // Create the second BrowserWindow instance for the second website
  const mainWindow2 = new BrowserWindow({
-     width: windowWidth + 20,
-     height: screenHeight,
-     x: windowWidth - 20, // Position at the right edge of the screen
+     width: windowWidth + 50,
+     height: screenHeight * 0.85,
+     x: windowWidth - 50, // Position at the right edge of the screen
      y: 0, // Position at the top edge of the screen
      frame: false, // Hide window frame (including title bar)
      title: '',
@@ -64,6 +64,24 @@ function createLearnGermanWindows() {
  // Load the second website
  mainWindow2.loadURL('https://www.deepl.com/translator');
 
+ 
+ // Create the second BrowserWindow instance for the second website
+ const mainWindow3 = new BrowserWindow({
+    width: screenWidth,
+    height: screenHeight * 0.25,
+    x: 0, // Position at the right edge of the screen
+    y: 600, // Position at the top edge of the screen
+    frame: false, // Hide window frame (including title bar)
+    title: '',
+    autoHideMenuBar: true, 
+    alwaysOnTop: true, // Keep window always on top
+    webPreferences: {
+                nodeIntegration: true,
+                preload: path.join(main_path, 'preload.js') // Add preload script
+    }
+});
+// Load the second website
+mainWindow3.loadFile(renderer_path + '\\learnGermanHome.html');
 
 
    // Create secondary windows for each secondary display
