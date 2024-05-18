@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Index</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <button class="button" id="openWebsiteButton1">Easy German</button>
+    <button class="button" id="openWebsiteButton2">ZDF Live TV</button>
+    <button class="button" id="openWebsiteButton3">Friends</button>
+  </div>
+  <script>
+    document.getElementById('openWebsiteButton1').addEventListener('click', () => {
+        window.location.href = 'https://www.youtube.com/playlist?list=PLk1fjOl39-50kWobutO8NVFzbw9PHtbbg';
+    });
+
+     document.getElementById('openWebsiteButton2').addEventListener('click', () => {
+        window.location.href = 'https://www.zdf.de/live-tv';
+    });
+    
+     document.getElementById('openWebsiteButton3').addEventListener('click', () => {
+        
+      window.location.href = 'https://www.netflix.com/title/70153404';
+    });
+    
+  </script>
+</body>
+</html>

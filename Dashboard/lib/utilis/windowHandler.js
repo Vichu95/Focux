@@ -288,31 +288,7 @@ function createReadGermanWindows() {
 
 function createWatchGermanWindows() {
 
-
-    // Create secondary windows for each secondary display
-    const allScreens = screen.getAllDisplays();
-    allScreens.forEach((display, index) => {
-        if (index === 0) return; // Skip the primary display
-
-
-        const secondaryWindowTL = new BrowserWindow({
-        width: display.size.width - 450,
-        height: display.size.height + 100,
-        x: display.bounds.x,
-        y: display.bounds.y,
-
-    
-        // fullscreen: true,
-        title: '',
-        autoHideMenuBar: true,
-        webPreferences: {
-            nodeIntegration: true
-        }
-        });
-        secondaryWindowTL.loadURL('https://www.youtube.com/playlist?list=PLk1fjOl39-50kWobutO8NVFzbw9PHtbbg');
-
-      })
-
+  shell.openExternal(renderer_path + '\\watchGermanHome.html');
 }
 
 module.exports = { createWindows };
