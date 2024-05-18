@@ -268,6 +268,9 @@ function createReadGermanWindows() {
               }
               });
               secondaryWindowTL.loadFile(renderer_path + '\\readGermanHome.html');
+              
+              // Open the window maximized
+              secondaryWindowTL.maximize();
 
 
               
