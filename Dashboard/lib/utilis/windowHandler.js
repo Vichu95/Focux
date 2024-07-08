@@ -45,7 +45,7 @@ function createLearnGermanWindows() {
      frame: false, // Hide window frame (including title bar)
      title: '',
      autoHideMenuBar: true, 
-     alwaysOnTop: true, // Keep window always on top
+     //alwaysOnTop: true, // Keep window always on top
      webPreferences: {
          nodeIntegration: false // Disable Node.js integration for security
      }
@@ -63,7 +63,7 @@ function createLearnGermanWindows() {
      frame: false, // Hide window frame (including title bar)
      title: '',
      autoHideMenuBar: true, 
-     alwaysOnTop: true, // Keep window always on top
+     //alwaysOnTop: true, // Keep window always on top
      webPreferences: {
          nodeIntegration: false // Disable Node.js integration for security
      }
@@ -81,7 +81,7 @@ function createLearnGermanWindows() {
     frame: false, // Hide window frame (including title bar)
     title: '',
     autoHideMenuBar: true, 
-    alwaysOnTop: true, // Keep window always on top
+    //alwaysOnTop: true, // Keep window always on top
     webPreferences: {
                 nodeIntegration: true,
                 preload: path.join(main_path, 'preload.js') // Add preload script
