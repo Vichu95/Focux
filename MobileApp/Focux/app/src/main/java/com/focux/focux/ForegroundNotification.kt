@@ -21,13 +21,18 @@ object ForegroundNotification {
             context, 0, tapIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        return NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("Focux tracking active")
-            .setContentText("Logging screen & unlock events")
+            .setContentText("Monitoring phone usage silently in the background.")
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentIntent(contentIntent)
             .setOngoing(true)
-            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.foregroundServiceBehavior = Notification.FOREGROUND_SERVICE_IMMEDIATE
+        }
+
+        return builder.build()
     }
 
     fun createChannel(context: Context) {

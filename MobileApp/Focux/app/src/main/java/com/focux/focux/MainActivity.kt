@@ -25,6 +25,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import com.focux.focux.ui.theme.FocuxTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -162,7 +163,26 @@ private fun MainScreen(
     stateProvider: () -> Pair<Boolean, Boolean>,
 ) {
     var logText by remember { mutableStateOf("") }
-    var (perm, enabled) = stateProvider()
+    var perm by remember { mutableStateOf(stateProvider().first) }
+    var enabled by remember { mutableStateOf(stateProvider().second) }
+
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+
+    fun refreshState() {
+        val p = stateProvider()
+        perm = p.first
+        enabled = p.second
+    }
+
+    // Auto-scroll to bottom when log text changes
+    LaunchedEffect(logText) {
+        if (logText.isNotBlank()) {
+            scope.launch {
+                scrollState.animateScrollTo(scrollState.maxValue)
+            }
+        }
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Focux — Milestone 2", fontWeight = FontWeight.Bold) }) }
@@ -179,8 +199,8 @@ private fun MainScreen(
             Text("App notifications toggle: " + if (enabled) "ENABLED" else "DISABLED")
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { onStart(); val p = stateProvider(); perm = p.first; enabled = p.second }) { Text("Start Tracking") }
-                OutlinedButton(onClick = { onStop() }) { Text("Stop Tracking") }
+                Button(onClick = { onStart(); refreshState() }) { Text("Start Tracking") }
+                OutlinedButton(onClick = { onStop(); refreshState() }) { Text("Stop Tracking") }
             }
 
             if (!perm || !enabled) {
@@ -188,7 +208,7 @@ private fun MainScreen(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { logText = readLog() }) { Text("View Log") }
+                Button(onClick = { logText = readLog(); refreshState() }) { Text("View Log") }
                 OutlinedButton(onClick = { onClear(); logText = "" }) { Text("Clear Log") }
             }
 
@@ -199,7 +219,7 @@ private fun MainScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
             )
         }
     }
