@@ -1,6 +1,9 @@
 package com.focux.focux
 
+import android.app.AppOpsManager
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -25,6 +28,8 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
+import android.app.usage.UsageStatsManager
 
 class MainActivity : ComponentActivity() {
 
@@ -40,14 +45,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun MainDashboard() {
         val db = remember { AppDatabase.getDatabase(this) }
         var dashboardStats by remember { mutableStateOf(DashboardStats()) }
+        var hasUsagePerm by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
 
         fun refreshStats() {
             scope.launch {
+                hasUsagePerm = hasUsageStatsPermission()
+                if (hasUsagePerm) {
+                    manualFetchUsageStats(db)
+                }
                 dashboardStats = calculateDashboardStats(db)
             }
         }
@@ -57,7 +68,7 @@ class MainActivity : ComponentActivity() {
         }
 
         Scaffold(
-            topBar = { DashboardTopBar() }
+            topBar = { TopAppBar(title = { Text("Focux Dashboard", fontWeight = FontWeight.Bold) }) }
         ) { padding ->
             Column(
                 modifier = Modifier
@@ -66,7 +77,6 @@ class MainActivity : ComponentActivity() {
                     .fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // Control buttons
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { startTracking() }, modifier = Modifier.weight(1f)) { Text("Start", fontSize = 12.sp) }
                     Button(onClick = { stopTracking() }, modifier = Modifier.weight(1f)) { Text("Stop", fontSize = 12.sp) }
@@ -74,6 +84,10 @@ class MainActivity : ComponentActivity() {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { scope.launch { db.logEventDao().clear(); refreshStats() } }, modifier = Modifier.weight(1f)) { Text("Clear DB", fontSize = 12.sp) }
                     OutlinedButton(onClick = { exportDatabase() }, modifier = Modifier.weight(1f)) { Text("Export DB", fontSize = 12.sp) }
+                }
+                
+                if (!hasUsagePerm) {
+                    OutlinedButton(onClick = { openUsageStatsSettings() }) { Text("Enable Usage Stats", fontSize = 12.sp) }
                 }
                 OutlinedButton(onClick = { openAccessibilitySettings() }) { Text("Accessibility Settings", fontSize = 12.sp) }
 
@@ -93,33 +107,30 @@ class MainActivity : ComponentActivity() {
 
                 Text("Recent Events", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(dashboardStats.recentEvents) { event ->
-                        Text(event.toFormattedString(), fontSize = 10.sp, lineHeight = 12.sp)
+                    items(dashboardStats.recentEvents) {
+                        Text(it.toFormattedString(), fontSize = 10.sp, lineHeight = 12.sp)
                     }
                 }
-
+                
                 Button(onClick = { refreshStats() }) { Text("Refresh Stats") }
             }
         }
     }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    private fun DashboardTopBar() {
-        TopAppBar(title = { Text("Focux Dashboard", fontWeight = FontWeight.Bold) })
-    }
-
+    
     private fun startTracking() {
-        val intent = Intent(this, EventListenerService::class.java)
-        startService(intent)
+        startService(Intent(this, EventListenerService::class.java))
     }
 
     private fun stopTracking() {
         stopService(Intent(this, EventListenerService::class.java))
     }
-
+    
     private fun openAccessibilitySettings() {
         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+    }
+
+    private fun openUsageStatsSettings() {
+        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
     }
 
     private fun exportDatabase() {
@@ -157,6 +168,37 @@ class MainActivity : ComponentActivity() {
             recentEvents = dao.getRecentTen()
         )
     }
+
+    private suspend fun manualFetchUsageStats(db: AppDatabase) {
+        if (!hasUsageStatsPermission()) return
+
+        val usm = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val endTime = System.currentTimeMillis()
+        val startTime = endTime - TimeUnit.DAYS.toMillis(1) // Fetch last 24 hours for manual refresh
+        val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
+
+        stats.forEach { stat ->
+            val totalTime = TimeUnit.MILLISECONDS.toMinutes(stat.totalTimeInForeground)
+            if (totalTime > 0) {
+                val logEvent = LogEvent(
+                    eventType = "APP_USAGE",
+                    eventAction = stat.packageName,
+                    eventValue = totalTime.toString()
+                )
+                db.logEventDao().insert(logEvent)
+            }
+        }
+    }
+
+    private fun hasUsageStatsPermission(): Boolean {
+        val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), packageName)
+        } else {
+            appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), packageName)
+        }
+        return mode == AppOpsManager.MODE_ALLOWED
+    }
 }
 
 data class DashboardStats(
@@ -181,4 +223,10 @@ fun LogEvent.toFormattedString(): String {
     val sdf = SimpleDateFormat("HH:mm:ss", Locale.US)
     val time = sdf.format(Date(this.timestamp))
     return "$time | ${this.eventAction} | ${this.packageName ?: "-"}"
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DashboardTopBar() {
+    TopAppBar(title = { Text("Focux Dashboard", fontWeight = FontWeight.Bold) })
 }
