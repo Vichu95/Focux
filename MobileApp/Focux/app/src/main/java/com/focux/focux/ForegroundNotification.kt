@@ -10,37 +10,64 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 
 object ForegroundNotification {
-    const val CHANNEL_ID = "focux_tracking"
-    const val CHANNEL_NAME = "Focux Background Tracking"
+    private const val TRACKING_CHANNEL_ID = "focux_tracking"
+    private const val ALERT_CHANNEL_ID = "focux_alerts"
+
     const val NOTIF_ID = 1001
+    const val ALERT_NOTIF_ID = 1002
 
     fun build(context: Context): Notification {
-        createChannel(context)
+        createTrackingChannel(context)
         val tapIntent = Intent(context, MainActivity::class.java)
         val contentIntent = PendingIntent.getActivity(
             context, 0, tapIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        return NotificationCompat.Builder(context, TRACKING_CHANNEL_ID)
             .setContentTitle("Focux tracking active")
-            .setContentText("Monitoring phone usage silently in the background.")
+            .setContentText("Logging screen & unlock events")
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentIntent(contentIntent)
             .setOngoing(true)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            builder.foregroundServiceBehavior = Notification.FOREGROUND_SERVICE_IMMEDIATE
-        }
-
-        return builder.build()
+            .build()
     }
 
-    fun createChannel(context: Context) {
+    fun buildTrackingStoppedNotification(context: Context): Notification {
+        createAlertChannel(context)
+        val tapIntent = Intent(context, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
+        val contentIntent = PendingIntent.getActivity(
+            context, 1, tapIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        return NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+            .setContentTitle("Focux Tracking Stopped")
+            .setContentText("Tap to restart the tracking service.")
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentIntent(contentIntent)
+            .setAutoCancel(true)
+            .build()
+    }
+
+    fun createTrackingChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            if (nm.getNotificationChannel(CHANNEL_ID) == null) {
+            if (nm.getNotificationChannel(TRACKING_CHANNEL_ID) == null) {
                 val ch = NotificationChannel(
-                    CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_MIN
+                    TRACKING_CHANNEL_ID, "Focux Background Tracking", NotificationManager.IMPORTANCE_MIN
+                )
+                nm.createNotificationChannel(ch)
+            }
+        }
+    }
+
+    private fun createAlertChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (nm.getNotificationChannel(ALERT_CHANNEL_ID) == null) {
+                val ch = NotificationChannel(
+                    ALERT_CHANNEL_ID, "Focux Alerts", NotificationManager.IMPORTANCE_HIGH
                 )
                 nm.createNotificationChannel(ch)
             }

@@ -68,7 +68,7 @@ class MainActivity : ComponentActivity() {
         }
 
         Scaffold(
-            topBar = { TopAppBar(title = { Text("Focux Dashboard", fontWeight = FontWeight.Bold) }) }
+            topBar = { DashboardTopBar() }
         ) { padding ->
             Column(
                 modifier = Modifier
@@ -122,7 +122,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun stopTracking() {
-        stopService(Intent(this, EventListenerService::class.java))
+        val intent = Intent(this, EventListenerService::class.java).apply {
+            action = "STOP_SERVICE"
+        }
+        startService(intent)
     }
     
     private fun openAccessibilitySettings() {

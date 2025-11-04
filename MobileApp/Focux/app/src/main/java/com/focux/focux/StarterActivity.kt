@@ -41,7 +41,7 @@ class StarterActivity : ComponentActivity() {
             openNotifSettings(); finish(); return
         }
 
-        ForegroundNotification.createChannel(this)
+        ForegroundNotification.createTrackingChannel(this)
         val notif: Notification = ForegroundNotification.build(this)
 
         NotificationManagerCompat.from(this)
