@@ -1,27 +1,46 @@
 package com.focux.focux
 
 import android.content.Context
-import java.io.File
+import com.focux.focux.db.AppDatabase
+import com.focux.focux.db.LogEvent
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 object LogWriter {
-    private const val FILE_NAME = "usage_log.txt"
+
     private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
 
+    /**
+     * Appends a line to the log database in the background.
+     */
     fun append(context: Context, line: String) {
-        val f = File(context.filesDir, FILE_NAME)
-        f.appendText("${sdf.format(Date())} - $line\n")
+        val dao = AppDatabase.getDatabase(context).logEventDao()
+        // Use GlobalScope for fire-and-forget logging from anywhere.
+        GlobalScope.launch {
+            dao.insert(LogEvent(eventData = line))
+        }
     }
 
+    /**
+     * Reads the entire log from the database, blocking the current thread.
+     */
     fun read(context: Context): String {
-        val f = File(context.filesDir, FILE_NAME)
-        return if (f.exists()) f.readText() else ""
+        val dao = AppDatabase.getDatabase(context).logEventDao()
+        // runBlocking is used here because the caller (MainActivity) expects a synchronous String result.
+        // This is acceptable for this prototype but should be replaced with a proper ViewModel/Flow later.
+        val events = runBlocking { dao.getAll() }
+        return events.joinToString("\n") { "${sdf.format(Date(it.timestamp))} - ${it.eventData}" }
     }
 
+    /**
+     * Clears the entire log from the database, blocking the current thread.
+     */
     fun clear(context: Context) {
-        val f = File(context.filesDir, FILE_NAME)
-        if (f.exists()) f.writeText("")
+        val dao = AppDatabase.getDatabase(context).logEventDao()
+        runBlocking { dao.clear() }
     }
 }

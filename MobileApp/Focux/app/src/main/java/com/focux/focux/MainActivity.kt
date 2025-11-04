@@ -25,8 +25,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.focux.focux.ui.theme.FocuxTheme
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
@@ -113,6 +115,27 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun exportDatabase() {
+        val dbFile = getDatabasePath("focux_database")
+        if (!dbFile.exists()) {
+            LogWriter.append(this, "EXPORT: Database file not found.")
+            return
+        }
+
+        val uri = FileProvider.getUriForFile(
+            this,
+            "${packageName}.provider",
+            dbFile
+        )
+
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/octet-stream"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(intent, "Export Database"))
+    }
+
     private fun startTrackingViaShim() {
         startActivity(Intent(this, StarterActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION))
         LogWriter.append(this, "MAIN:STARTER_ACTIVITY_LAUNCHED")
@@ -136,6 +159,7 @@ class MainActivity : ComponentActivity() {
                             onClear = { LogWriter.clear(this) },
                             readLog = { LogWriter.read(this) },
                             fetchUsage = { fetchUsageStats() },
+                            onExport = { exportDatabase() },
                             openSettings = { openAppNotificationSettings() },
                             openAccessibilitySettings = { openAccessibilitySettings() },
                             openUsageStatsSettings = { openUsageStatsSettings() },
@@ -169,6 +193,7 @@ private fun MainScreen(
     onClear: () -> Unit,
     readLog: () -> String,
     fetchUsage: () -> Unit,
+    onExport: () -> Unit,
     openSettings: () -> Unit,
     openAccessibilitySettings: () -> Unit,
     openUsageStatsSettings: () -> Unit,
@@ -230,7 +255,10 @@ private fun MainScreen(
                 OutlinedButton(onClick = { onClear(); logText = "" }) { Text("Clear Log") }
             }
 
-            Button(onClick = { fetchUsage(); logText = readLog() }) { Text("Fetch Usage Stats") }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = { fetchUsage(); logText = readLog() }) { Text("Fetch Usage Stats") }
+                OutlinedButton(onClick = { onExport() }) { Text("Export Log") }
+            }
 
             Divider()
             Text("Log:")
