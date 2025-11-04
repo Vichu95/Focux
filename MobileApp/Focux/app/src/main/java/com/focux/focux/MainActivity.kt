@@ -2,28 +2,46 @@ package com.focux.focux
 
 import android.Manifest
 import android.app.Notification
-import android.app.NotificationManager
-import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.TextUtils
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import android.content.pm.PackageManager
 import com.focux.focux.ui.theme.FocuxTheme
 import kotlinx.coroutines.launch
 
@@ -58,67 +76,22 @@ class MainActivity : ComponentActivity() {
         })
     }
 
-    /** Try posting a tiny notification NOW; return true if it succeeds. */
-    private fun tryPostProbeNotification(): Boolean {
-        return runCatching {
-            ForegroundNotification.createChannel(this)
-            val n: Notification = NotificationCompat.Builder(this, ForegroundNotification.CHANNEL_ID)
-                .setContentTitle("Focux probe")
-                .setContentText("Testing notification permission")
-                .setSmallIcon(android.R.drawable.stat_notify_sync)
-                .setAutoCancel(true)
-                .build()
-            NotificationManagerCompat.from(this).notify(9999, n)
-            true
-        }.onFailure {
-            LogWriter.append(this, "PROBE_NOTIFY_FAILED:${it::class.java.simpleName}")
-        }.getOrDefault(false)
+    private fun isAccessibilityServiceEnabled(): Boolean {
+        val service = "${packageName}/${GlobalTouchService::class.java.canonicalName}"
+        val enabledServices = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        )
+        return enabledServices?.contains(service) == true
     }
 
-    private fun requestNotifPermissionIfNeeded(onDone: (Boolean) -> Unit) {
-        if (Build.VERSION.SDK_INT >= 33 && !hasNotifRuntimePermission()) {
-            onNotifPermissionResult = { granted -> onDone(granted) }
-            notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        } else onDone(true)
+    private fun openAccessibilitySettings() {
+        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
     }
 
-    // inside MainActivity
     private fun startTrackingViaShim() {
         startActivity(Intent(this, StarterActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION))
         LogWriter.append(this, "MAIN:STARTER_ACTIVITY_LAUNCHED")
-    }
-
-    private fun startTrackingService() {
-        // Step 1: runtime permission
-        requestNotifPermissionIfNeeded { granted ->
-            if (!granted) {
-                LogWriter.append(this, "POST_NOTIFICATIONS_DENIED")
-                openAppNotificationSettings()
-                return@requestNotifPermissionIfNeeded
-            }
-
-            // Step 2: user toggle
-            if (!areAppNotificationsEnabled()) {
-                LogWriter.append(this, "NOTIF_TOGGLE_DISABLED")
-                openAppNotificationSettings()
-                return@requestNotifPermissionIfNeeded
-            }
-
-            // Step 3: probe-post a notification; if this fails, don’t start service
-            if (!tryPostProbeNotification()) {
-                openAppNotificationSettings()
-                return@requestNotifPermissionIfNeeded
-            }
-
-            // Step 4: start the foreground service
-            val intent = Intent(this, EventListenerService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent)
-            } else {
-                startService(intent)
-            }
-            LogWriter.append(this, "SERVICE_START_REQUESTED_OK")
-        }
     }
 
     private fun stopTrackingService() {
@@ -139,10 +112,12 @@ class MainActivity : ComponentActivity() {
                             onClear = { LogWriter.clear(this) },
                             readLog = { LogWriter.read(this) },
                             openSettings = { openAppNotificationSettings() },
+                            openAccessibilitySettings = { openAccessibilitySettings() },
                             stateProvider = {
                                 val perm = hasNotifRuntimePermission()
                                 val enabled = areAppNotificationsEnabled()
-                                perm to enabled
+                                val accessibility = isAccessibilityServiceEnabled()
+                                Triple(perm, enabled, accessibility)
                             }
                         )
                     }
@@ -160,22 +135,22 @@ private fun MainScreen(
     onClear: () -> Unit,
     readLog: () -> String,
     openSettings: () -> Unit,
-    stateProvider: () -> Pair<Boolean, Boolean>,
+    openAccessibilitySettings: () -> Unit,
+    stateProvider: () -> Triple<Boolean, Boolean, Boolean>,
 ) {
     var logText by remember { mutableStateOf("") }
-    var perm by remember { mutableStateOf(stateProvider().first) }
-    var enabled by remember { mutableStateOf(stateProvider().second) }
+    var (perm, enabled, accessibility) = stateProvider()
 
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
 
-    fun refreshState() {
-        val p = stateProvider()
-        perm = p.first
-        enabled = p.second
+    fun refreshStates() {
+        val (p, e, a) = stateProvider()
+        perm = p
+        enabled = e
+        accessibility = a
     }
 
-    // Auto-scroll to bottom when log text changes
     LaunchedEffect(logText) {
         if (logText.isNotBlank()) {
             scope.launch {
@@ -197,18 +172,23 @@ private fun MainScreen(
             Text("Background logging + boot persistence via Foreground Service.")
             Text("Notification permission: " + if (perm) "GRANTED" else "NOT GRANTED")
             Text("App notifications toggle: " + if (enabled) "ENABLED" else "DISABLED")
+            Text("Accessibility service: " + if (accessibility) "ENABLED" else "DISABLED")
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { onStart(); refreshState() }) { Text("Start Tracking") }
-                OutlinedButton(onClick = { onStop(); refreshState() }) { Text("Stop Tracking") }
+                Button(onClick = { onStart(); refreshStates() }) { Text("Start Tracking") }
+                OutlinedButton(onClick = { onStop(); refreshStates() }) { Text("Stop Tracking") }
             }
 
             if (!perm || !enabled) {
                 OutlinedButton(onClick = openSettings) { Text("Open notification settings") }
             }
 
+            if (!accessibility) {
+                OutlinedButton(onClick = openAccessibilitySettings) { Text("Enable Touch Tracking") }
+            }
+
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { logText = readLog(); refreshState() }) { Text("View Log") }
+                Button(onClick = { logText = readLog(); refreshStates() }) { Text("View Log") }
                 OutlinedButton(onClick = { onClear(); logText = "" }) { Text("Clear Log") }
             }
 

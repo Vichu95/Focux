@@ -2,11 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- ADD: permissions -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE"
+        tools:ignore="ProtectedPermissions" />
 
     <application
         android:allowBackup="true"
@@ -24,7 +25,6 @@
             android:theme="@style/Theme.Focux">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -32,32 +32,37 @@
         <activity
             android:name=".StarterActivity"
             android:exported="false"
-            android:theme="@style/Theme.Focux">
+            android:theme="@style/Theme.Focux" />
 
-        </activity>
 
-        <!-- ADD: Foreground service -->
-        <!-- inside <application> -->
         <service
             android:name=".EventListenerService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <service
+            android:name=".GlobalTouchService"
+            android:exported="false"
+            android:label="Focux Event Tracking"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
 
-        <!-- ADD: Boot receiver -->
         <receiver
             android:name=".BootReceiver"
             android:enabled="true"
             android:exported="true"
             android:directBootAware="true">
             <intent-filter>
-                <!-- Sent after user unlock on most devices -->
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <!-- Sent right after boot, before user unlock on some OEMs -->
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
-
 
     </application>
 
