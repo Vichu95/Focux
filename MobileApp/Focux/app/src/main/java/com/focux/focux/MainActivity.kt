@@ -1,41 +1,23 @@
 package com.focux.focux
 
 import android.Manifest
+import android.app.AppOpsManager
 import android.app.Notification
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.text.TextUtils
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -89,6 +71,28 @@ class MainActivity : ComponentActivity() {
         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
     }
 
+    private fun hasUsageStatsPermission(): Boolean {
+        val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                packageName
+            )
+        } else {
+            appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                packageName
+            )
+        }
+        return mode == AppOpsManager.MODE_ALLOWED
+    }
+
+    private fun openUsageStatsSettings() {
+        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+    }
+
     private fun startTrackingViaShim() {
         startActivity(Intent(this, StarterActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION))
         LogWriter.append(this, "MAIN:STARTER_ACTIVITY_LAUNCHED")
@@ -113,11 +117,13 @@ class MainActivity : ComponentActivity() {
                             readLog = { LogWriter.read(this) },
                             openSettings = { openAppNotificationSettings() },
                             openAccessibilitySettings = { openAccessibilitySettings() },
+                            openUsageStatsSettings = { openUsageStatsSettings() },
                             stateProvider = {
                                 val perm = hasNotifRuntimePermission()
                                 val enabled = areAppNotificationsEnabled()
                                 val accessibility = isAccessibilityServiceEnabled()
-                                Triple(perm, enabled, accessibility)
+                                val usageStats = hasUsageStatsPermission()
+                                AppState(perm, enabled, accessibility, usageStats)
                             }
                         )
                     }
@@ -126,6 +132,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+data class AppState(
+    val notifPerm: Boolean,
+    val notifEnabled: Boolean,
+    val accessibilityEnabled: Boolean,
+    val usageStatsEnabled: Boolean
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,19 +149,17 @@ private fun MainScreen(
     readLog: () -> String,
     openSettings: () -> Unit,
     openAccessibilitySettings: () -> Unit,
-    stateProvider: () -> Triple<Boolean, Boolean, Boolean>,
+    openUsageStatsSettings: () -> Unit,
+    stateProvider: () -> AppState,
 ) {
     var logText by remember { mutableStateOf("") }
-    var (perm, enabled, accessibility) = stateProvider()
+    var appState by remember { mutableStateOf(stateProvider()) }
 
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
 
     fun refreshStates() {
-        val (p, e, a) = stateProvider()
-        perm = p
-        enabled = e
-        accessibility = a
+        appState = stateProvider()
     }
 
     LaunchedEffect(logText) {
@@ -170,21 +181,26 @@ private fun MainScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text("Background logging + boot persistence via Foreground Service.")
-            Text("Notification permission: " + if (perm) "GRANTED" else "NOT GRANTED")
-            Text("App notifications toggle: " + if (enabled) "ENABLED" else "DISABLED")
-            Text("Accessibility service: " + if (accessibility) "ENABLED" else "DISABLED")
+            Text("Notification permission: " + if (appState.notifPerm) "GRANTED" else "NOT GRANTED")
+            Text("App notifications toggle: " + if (appState.notifEnabled) "ENABLED" else "DISABLED")
+            Text("Accessibility service: " + if (appState.accessibilityEnabled) "ENABLED" else "DISABLED")
+            Text("Usage stats access: " + if (appState.usageStatsEnabled) "GRANTED" else "NOT GRANTED")
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = { onStart(); refreshStates() }) { Text("Start Tracking") }
                 OutlinedButton(onClick = { onStop(); refreshStates() }) { Text("Stop Tracking") }
             }
 
-            if (!perm || !enabled) {
+            if (!appState.notifPerm || !appState.notifEnabled) {
                 OutlinedButton(onClick = openSettings) { Text("Open notification settings") }
             }
 
-            if (!accessibility) {
+            if (!appState.accessibilityEnabled) {
                 OutlinedButton(onClick = openAccessibilitySettings) { Text("Enable Touch Tracking") }
+            }
+
+            if (!appState.usageStatsEnabled) {
+                OutlinedButton(onClick = openUsageStatsSettings) { Text("Enable Usage Stats") }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
