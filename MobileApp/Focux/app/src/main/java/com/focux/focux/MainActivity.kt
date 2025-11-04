@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -30,6 +31,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import android.app.usage.UsageStatsManager
+import android.content.ComponentName
 
 class MainActivity : ComponentActivity() {
 
@@ -50,21 +52,24 @@ class MainActivity : ComponentActivity() {
     fun MainDashboard() {
         val db = remember { AppDatabase.getDatabase(this) }
         var dashboardStats by remember { mutableStateOf(DashboardStats()) }
-        var hasUsagePerm by remember { mutableStateOf(false) }
+        var permissionsState by remember { mutableStateOf(PermissionsState()) }
+        var isServiceRunning by remember { mutableStateOf(EventListenerService.isRunning) }
+
         val scope = rememberCoroutineScope()
 
-        fun refreshStats() {
+        fun refreshState() {
             scope.launch {
-                hasUsagePerm = hasUsageStatsPermission()
-                if (hasUsagePerm) {
+                permissionsState = checkPermissions()
+                isServiceRunning = EventListenerService.isRunning
+                if (isServiceRunning && permissionsState.hasUsageStats) {
                     manualFetchUsageStats(db)
                 }
                 dashboardStats = calculateDashboardStats(db)
             }
         }
 
-        LaunchedEffect(Unit) {
-            refreshStats()
+        LaunchedEffect(Unit, isServiceRunning) {
+            refreshState()
         }
 
         Scaffold(
@@ -75,44 +80,63 @@ class MainActivity : ComponentActivity() {
                     .padding(padding)
                     .padding(8.dp)
                     .fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // --- Controls ---
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { startTracking() }, modifier = Modifier.weight(1f)) { Text("Start", fontSize = 12.sp) }
-                    Button(onClick = { stopTracking() }, modifier = Modifier.weight(1f)) { Text("Stop", fontSize = 12.sp) }
+                    Button(onClick = { startTracking(); refreshState() }, enabled = !isServiceRunning, modifier = Modifier.weight(1f)) { Text("Start", fontSize = 12.sp) }
+                    Button(onClick = { stopTracking(); refreshState() }, enabled = isServiceRunning, modifier = Modifier.weight(1f)) { Text("Stop", fontSize = 12.sp) }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { scope.launch { db.logEventDao().clear(); refreshStats() } }, modifier = Modifier.weight(1f)) { Text("Clear DB", fontSize = 12.sp) }
+                    OutlinedButton(onClick = { scope.launch { db.logEventDao().clear(); refreshState() } }, modifier = Modifier.weight(1f)) { Text("Clear DB", fontSize = 12.sp) }
                     OutlinedButton(onClick = { exportDatabase() }, modifier = Modifier.weight(1f)) { Text("Export DB", fontSize = 12.sp) }
                 }
-                
-                if (!hasUsagePerm) {
-                    OutlinedButton(onClick = { openUsageStatsSettings() }) { Text("Enable Usage Stats", fontSize = 12.sp) }
+
+                // --- Permissions ---
+                if (!permissionsState.hasUsageStats || !permissionsState.isAccessibilityEnabled) {
+                    Divider(modifier = Modifier.padding(vertical = 4.dp))
+                    Text("Required Permissions", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    if (!permissionsState.isAccessibilityEnabled) {
+                        OutlinedButton(onClick = { openAccessibilitySettings() }) { Text("Enable Accessibility Service", fontSize = 12.sp) }
+                    }
+                    if (!permissionsState.hasUsageStats) {
+                        OutlinedButton(onClick = { openUsageStatsSettings() }) { Text("Enable Usage Stats", fontSize = 12.sp) }
+                    }
                 }
-                OutlinedButton(onClick = { openAccessibilitySettings() }) { Text("Accessibility Settings", fontSize = 12.sp) }
 
                 Divider(modifier = Modifier.padding(vertical = 4.dp))
 
-                Text("Screen Events (Today)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                StatRow("Unlocked:", dashboardStats.screenUnlocks.toString())
-                StatRow("Locked:", dashboardStats.screenLocks.toString())
+                // --- Dashboard Content ---
+                if (isServiceRunning) {
+                    Text("Screen Events (Today)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    StatRow("Unlocked:", dashboardStats.screenUnlocks.toString())
+                    StatRow("Locked:", dashboardStats.screenLocks.toString())
 
-                Divider(modifier = Modifier.padding(vertical = 4.dp))
+                    Divider(modifier = Modifier.padding(vertical = 4.dp))
 
-                Text("App Usage (Today / Avg Daily)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                StatRow("YouTube:", "${dashboardStats.youtubeToday}min / ${dashboardStats.youtubeAvg.toInt()}min")
-                StatRow("WhatsApp:", "${dashboardStats.whatsappToday}min / ${dashboardStats.whatsappAvg.toInt()}min")
+                    Text("App Usage (Today / Avg Daily)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    StatRow("YouTube:", "${dashboardStats.youtubeToday}min / ${dashboardStats.youtubeAvg.toInt()}min")
+                    StatRow("WhatsApp:", "${dashboardStats.whatsappToday}min / ${dashboardStats.whatsappAvg.toInt()}min")
 
-                Divider(modifier = Modifier.padding(vertical = 4.dp))
+                    Divider(modifier = Modifier.padding(vertical = 4.dp))
 
-                Text("Recent Events", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(dashboardStats.recentEvents) {
-                        Text(it.toFormattedString(), fontSize = 10.sp, lineHeight = 12.sp)
+                    Text("Recent Events", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        items(dashboardStats.recentEvents) {
+                            Text(it.toFormattedString(), fontSize = 10.sp, lineHeight = 12.sp)
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Tracking is stopped.", fontSize = 16.sp, textAlign = TextAlign.Center)
                     }
                 }
                 
-                Button(onClick = { refreshStats() }) { Text("Refresh Stats") }
+                Button(onClick = { refreshState() }) { Text("Refresh Stats") }
             }
         }
     }
@@ -122,9 +146,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun stopTracking() {
-        val intent = Intent(this, EventListenerService::class.java).apply {
-            action = "STOP_SERVICE"
-        }
+        val intent = Intent(this, EventListenerService::class.java).apply { action = "STOP_SERVICE" }
         startService(intent)
     }
     
@@ -193,6 +215,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun checkPermissions(): PermissionsState {
+        return PermissionsState(
+            hasUsageStats = hasUsageStatsPermission(),
+            isAccessibilityEnabled = isAccessibilityServiceEnabled()
+        )
+    }
+
     private fun hasUsageStatsPermission(): Boolean {
         val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
         val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -202,7 +231,18 @@ class MainActivity : ComponentActivity() {
         }
         return mode == AppOpsManager.MODE_ALLOWED
     }
+
+    private fun isAccessibilityServiceEnabled(): Boolean {
+        val cName = ComponentName(this, GlobalTouchService::class.java)
+        val enabledServices = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+        return enabledServices?.contains(cName.flattenToString()) == true
+    }
 }
+
+data class PermissionsState(
+    val hasUsageStats: Boolean = false,
+    val isAccessibilityEnabled: Boolean = false
+)
 
 data class DashboardStats(
     val screenLocks: Int = 0,

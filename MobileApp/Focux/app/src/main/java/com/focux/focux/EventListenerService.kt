@@ -15,6 +15,11 @@ import java.util.concurrent.TimeUnit
 
 class EventListenerService : Service() {
 
+    companion object {
+        @Volatile
+        var isRunning = false
+    }
+
     private val screenReceiver = ScreenReceiver()
     private var registered = false
     private var foregroundStarted = false
@@ -30,6 +35,7 @@ class EventListenerService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        isRunning = true
         logLifecycleEvent("SERVICE_LIFECYCLE", "SERVICE_CREATED")
     }
 
@@ -55,6 +61,7 @@ class EventListenerService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        isRunning = false
         unregisterScreenReceiver()
         handler.removeCallbacks(usageStatsRunnable)
         logLifecycleEvent("SERVICE_LIFECYCLE", "SERVICE_DESTROYED")
@@ -106,13 +113,33 @@ class EventListenerService : Service() {
     }
 
     private fun fetchUsageStats() {
-        // ... (implementation is the same)
+        val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val endTime = System.currentTimeMillis()
+        val beginTime = endTime - TimeUnit.HOURS.toMillis(2)
+        val usageStatsList = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_BEST, beginTime, endTime)
+
+        for (usageStats in usageStatsList) {
+            if (usageStats.totalTimeInForeground > 0) {
+                val usageInSeconds = TimeUnit.MILLISECONDS.toSeconds(usageStats.totalTimeInForeground)
+                logAppUsageEvent("APP_USAGE", usageStats.packageName, usageInSeconds.toString())
+            }
+        }
     }
 
     private fun logLifecycleEvent(type: String, action: String, value: String? = null) {
         val logEvent = LogEvent(
             eventType = type,
             eventAction = action,
+            eventValue = value
+        )
+        LogWriter.append(this, logEvent)
+    }
+
+    private fun logAppUsageEvent(type: String, packageName: String, value: String?) {
+        val logEvent = LogEvent(
+            eventType = type,
+            eventAction = "USAGE",
+            packageName = packageName,
             eventValue = value
         )
         LogWriter.append(this, logEvent)
