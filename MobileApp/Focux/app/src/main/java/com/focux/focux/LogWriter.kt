@@ -14,31 +14,22 @@ object LogWriter {
 
     private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
 
-    /**
-     * Appends a line to the log database in the background.
-     */
-    fun append(context: Context, line: String) {
+    fun append(context: Context, logEvent: LogEvent) {
         val dao = AppDatabase.getDatabase(context).logEventDao()
-        // Use GlobalScope for fire-and-forget logging from anywhere.
         GlobalScope.launch {
-            dao.insert(LogEvent(eventData = line))
+            dao.insert(logEvent)
         }
     }
 
-    /**
-     * Reads the entire log from the database, blocking the current thread.
-     */
+    // This will be replaced by specific queries for the dashboard
     fun read(context: Context): String {
         val dao = AppDatabase.getDatabase(context).logEventDao()
-        // runBlocking is used here because the caller (MainActivity) expects a synchronous String result.
-        // This is acceptable for this prototype but should be replaced with a proper ViewModel/Flow later.
         val events = runBlocking { dao.getAll() }
-        return events.joinToString("\n") { "${sdf.format(Date(it.timestamp))} - ${it.eventData}" }
+        return events.joinToString("\n") { event ->
+            "${sdf.format(Date(event.timestamp))} | ${event.eventType} | ${event.eventAction} | ${event.packageName ?: "-"} | ${event.eventValue ?: "-"}"
+        }
     }
 
-    /**
-     * Clears the entire log from the database, blocking the current thread.
-     */
     fun clear(context: Context) {
         val dao = AppDatabase.getDatabase(context).logEventDao()
         runBlocking { dao.clear() }

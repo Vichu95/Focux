@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [LogEvent::class], version = 1, exportSchema = false)
+@Database(entities = [LogEvent::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun logEventDao(): LogEventDao
 
@@ -19,7 +19,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "focux_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration() // Wipes the old database on version change
+                .build()
                 INSTANCE = instance
                 instance
             }

@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.focux.focux.db.LogEvent
 
 class StarterActivity : ComponentActivity() {
 
@@ -17,7 +18,7 @@ class StarterActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (!granted) {
-            LogWriter.append(this, "STARTER:POST_NOTIFICATIONS_DENIED")
+            logLifecycleEvent("POST_NOTIFICATIONS_DENIED")
             openNotifSettings(); finish(); return@registerForActivityResult
         }
         proceed()
@@ -35,28 +36,24 @@ class StarterActivity : ComponentActivity() {
     }
 
     private fun proceed() {
-        // Ensure user toggle is ON
         if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
-            LogWriter.append(this, "STARTER:NOTIF_TOGGLE_DISABLED")
+            logLifecycleEvent("NOTIF_TOGGLE_DISABLED")
             openNotifSettings(); finish(); return
         }
 
-        // Build the REAL foreground notification here
         ForegroundNotification.createChannel(this)
         val notif: Notification = ForegroundNotification.build(this)
 
-        // IMPORTANT: post it once so system is warmed up
         NotificationManagerCompat.from(this)
             .notify(ForegroundNotification.NOTIF_ID, notif)
 
-        // Start service and PASS the notification object
         val svc = Intent(this, EventListenerService::class.java).apply {
             putExtra("bootstrap_notification", notif)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(svc)
         else startService(svc)
 
-        LogWriter.append(this, "STARTER:SERVICE_REQUESTED_WITH_NOTIF")
+        logLifecycleEvent("SERVICE_REQUESTED_WITH_NOTIF")
         finish(); overridePendingTransition(0, 0)
     }
 
@@ -65,5 +62,13 @@ class StarterActivity : ComponentActivity() {
             putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         })
+    }
+
+    private fun logLifecycleEvent(action: String) {
+        val logEvent = LogEvent(
+            eventType = "STARTER_LIFECYCLE",
+            eventAction = action
+        )
+        LogWriter.append(this, logEvent)
     }
 }

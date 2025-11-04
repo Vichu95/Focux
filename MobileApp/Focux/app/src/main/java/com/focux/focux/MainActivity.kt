@@ -1,142 +1,141 @@
 package com.focux.focux
 
-import android.Manifest
-import android.app.AppOpsManager
-import android.app.Notification
-import android.app.usage.UsageStatsManager
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
+import com.focux.focux.db.AppDatabase
+import com.focux.focux.db.LogEvent
 import com.focux.focux.ui.theme.FocuxTheme
 import kotlinx.coroutines.launch
 import java.io.File
-import java.util.concurrent.TimeUnit
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
-    private var onNotifPermissionResult: ((Boolean) -> Unit)? = null
-
-    private val notifPermLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        onNotifPermissionResult?.invoke(granted)
-        onNotifPermissionResult = null
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            FocuxTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    MainDashboard()
+                }
+            }
+        }
     }
 
-    private fun hasNotifRuntimePermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= 33) {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        } else true
+    @Composable
+    fun MainDashboard() {
+        val db = remember { AppDatabase.getDatabase(this) }
+        var dashboardStats by remember { mutableStateOf(DashboardStats()) }
+        val scope = rememberCoroutineScope()
+
+        fun refreshStats() {
+            scope.launch {
+                dashboardStats = calculateDashboardStats(db)
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            refreshStats()
+        }
+
+        Scaffold(
+            topBar = { DashboardTopBar() }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .padding(padding)
+                    .padding(8.dp)
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Control buttons
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { startTracking() }, modifier = Modifier.weight(1f)) { Text("Start", fontSize = 12.sp) }
+                    Button(onClick = { stopTracking() }, modifier = Modifier.weight(1f)) { Text("Stop", fontSize = 12.sp) }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { scope.launch { db.logEventDao().clear(); refreshStats() } }, modifier = Modifier.weight(1f)) { Text("Clear DB", fontSize = 12.sp) }
+                    OutlinedButton(onClick = { exportDatabase() }, modifier = Modifier.weight(1f)) { Text("Export DB", fontSize = 12.sp) }
+                }
+                OutlinedButton(onClick = { openAccessibilitySettings() }) { Text("Accessibility Settings", fontSize = 12.sp) }
+
+                Divider(modifier = Modifier.padding(vertical = 4.dp))
+
+                Text("Screen Events (Today)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                StatRow("Unlocked:", dashboardStats.screenUnlocks.toString())
+                StatRow("Locked:", dashboardStats.screenLocks.toString())
+
+                Divider(modifier = Modifier.padding(vertical = 4.dp))
+
+                Text("App Usage (Today / Avg Daily)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                StatRow("YouTube:", "${dashboardStats.youtubeToday}min / ${dashboardStats.youtubeAvg.toInt()}min")
+                StatRow("WhatsApp:", "${dashboardStats.whatsappToday}min / ${dashboardStats.whatsappAvg.toInt()}min")
+
+                Divider(modifier = Modifier.padding(vertical = 4.dp))
+
+                Text("Recent Events", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    items(dashboardStats.recentEvents) { event ->
+                        Text(event.toFormattedString(), fontSize = 10.sp, lineHeight = 12.sp)
+                    }
+                }
+
+                Button(onClick = { refreshStats() }) { Text("Refresh Stats") }
+            }
+        }
     }
 
-    private fun areAppNotificationsEnabled(): Boolean {
-        return NotificationManagerCompat.from(this).areNotificationsEnabled()
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun DashboardTopBar() {
+        TopAppBar(title = { Text("Focux Dashboard", fontWeight = FontWeight.Bold) })
     }
 
-    private fun openAppNotificationSettings() {
-        startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-            putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        })
+    private fun startTracking() {
+        val intent = Intent(this, EventListenerService::class.java)
+        startService(intent)
     }
 
-    private fun isAccessibilityServiceEnabled(): Boolean {
-        val service = "${packageName}/${GlobalTouchService::class.java.canonicalName}"
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        )
-        return enabledServices?.contains(service) == true
+    private fun stopTracking() {
+        stopService(Intent(this, EventListenerService::class.java))
     }
 
     private fun openAccessibilitySettings() {
         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
     }
 
-    private fun hasUsageStatsPermission(): Boolean {
-        val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            appOps.unsafeCheckOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                android.os.Process.myUid(),
-                packageName
-            )
-        } else {
-            appOps.checkOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                android.os.Process.myUid(),
-                packageName
-            )
-        }
-        return mode == AppOpsManager.MODE_ALLOWED
-    }
-
-    private fun openUsageStatsSettings() {
-        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-    }
-
-    private fun fetchUsageStats() {
-        if (!hasUsageStatsPermission()) {
-            LogWriter.append(this, "USAGE_STATS: Permission not granted")
-            return
-        }
-        val usm = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val endTime = System.currentTimeMillis()
-        val startTime = endTime - TimeUnit.DAYS.toMillis(1)
-        val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
-        stats.forEach { stat ->
-            val appName = stat.packageName
-            val totalTime = TimeUnit.MILLISECONDS.toMinutes(stat.totalTimeInForeground)
-            if (totalTime > 0) {
-                LogWriter.append(this, "USAGE_STATS: $appName - ${totalTime}min")
-            }
-        }
-    }
-
     private fun exportDatabase() {
         val exportDir = File(cacheDir, "exported_data")
-        // Clean up previous exports before creating a new one
         if (exportDir.exists()) {
             exportDir.deleteRecursively()
         }
         exportDir.mkdirs()
 
         val dbFile = getDatabasePath("focux_database")
-        if (!dbFile.exists()) {
-            LogWriter.append(this, "EXPORT: Database file not found.")
-            return
-        }
+        if (!dbFile.exists()) return
 
         val tempFile = File(exportDir, dbFile.name)
         dbFile.copyTo(tempFile, overwrite = true)
 
-        val uri = FileProvider.getUriForFile(
-            this,
-            "${packageName}.provider",
-            tempFile
-        )
+        val uri = FileProvider.getUriForFile(this, "${packageName}.provider", tempFile)
 
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "application/octet-stream"
@@ -146,139 +145,40 @@ class MainActivity : ComponentActivity() {
         startActivity(Intent.createChooser(intent, "Export Database"))
     }
 
-    private fun startTrackingViaShim() {
-        startActivity(Intent(this, StarterActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION))
-        LogWriter.append(this, "MAIN:STARTER_ACTIVITY_LAUNCHED")
-    }
-
-    private fun stopTrackingService() {
-        stopService(Intent(this, EventListenerService::class.java))
-        LogWriter.append(this, "SERVICE_STOP_REQUESTED")
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            FocuxTheme {
-                MaterialTheme {
-                    Surface(Modifier.fillMaxSize()) {
-                        MainScreen(
-                            onStart = { startTrackingViaShim() },
-                            onStop = { stopTrackingService() },
-                            onClear = { LogWriter.clear(this) },
-                            readLog = { LogWriter.read(this) },
-                            fetchUsage = { fetchUsageStats() },
-                            onExport = { exportDatabase() },
-                            openSettings = { openAppNotificationSettings() },
-                            openAccessibilitySettings = { openAccessibilitySettings() },
-                            openUsageStatsSettings = { openUsageStatsSettings() },
-                            stateProvider = {
-                                val perm = hasNotifRuntimePermission()
-                                val enabled = areAppNotificationsEnabled()
-                                val accessibility = isAccessibilityServiceEnabled()
-                                val usageStats = hasUsageStatsPermission()
-                                AppState(perm, enabled, accessibility, usageStats)
-                            }
-                        )
-                    }
-                }
-            }
-        }
+    private suspend fun calculateDashboardStats(db: AppDatabase): DashboardStats {
+        val dao = db.logEventDao()
+        return DashboardStats(
+            screenLocks = dao.countScreenEventsToday("SCREEN_OFF"),
+            screenUnlocks = dao.countScreenEventsToday("UNLOCKED"),
+            youtubeToday = dao.getUsageToday("com.google.android.youtube") ?: 0L,
+            whatsappToday = dao.getUsageToday("com.whatsapp") ?: 0L,
+            youtubeAvg = dao.getAverageUsage("com.google.android.youtube") ?: 0.0,
+            whatsappAvg = dao.getAverageUsage("com.whatsapp") ?: 0.0,
+            recentEvents = dao.getRecentTen()
+        )
     }
 }
 
-data class AppState(
-    val notifPerm: Boolean,
-    val notifEnabled: Boolean,
-    val accessibilityEnabled: Boolean,
-    val usageStatsEnabled: Boolean
+data class DashboardStats(
+    val screenLocks: Int = 0,
+    val screenUnlocks: Int = 0,
+    val youtubeToday: Long = 0,
+    val whatsappToday: Long = 0,
+    val youtubeAvg: Double = 0.0,
+    val whatsappAvg: Double = 0.0,
+    val recentEvents: List<LogEvent> = emptyList()
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MainScreen(
-    onStart: () -> Unit,
-    onStop: () -> Unit,
-    onClear: () -> Unit,
-    readLog: () -> String,
-    fetchUsage: () -> Unit,
-    onExport: () -> Unit,
-    openSettings: () -> Unit,
-    openAccessibilitySettings: () -> Unit,
-    openUsageStatsSettings: () -> Unit,
-    stateProvider: () -> AppState,
-) {
-    var logText by remember { mutableStateOf("") }
-    var appState by remember { mutableStateOf(stateProvider()) }
-
-    val scrollState = rememberScrollState()
-    val scope = rememberCoroutineScope()
-
-    fun refreshStates() {
-        appState = stateProvider()
+fun StatRow(label: String, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(100.dp))
+        Text(value, fontSize = 12.sp)
     }
+}
 
-    LaunchedEffect(logText) {
-        if (logText.isNotBlank()) {
-            scope.launch {
-                scrollState.animateScrollTo(scrollState.maxValue)
-            }
-        }
-    }
-
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Focux — Milestone 2", fontWeight = FontWeight.Bold) }) }
-    ) { padding ->
-        Column(
-            Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text("Background logging + boot persistence via Foreground Service.")
-            Text("Notification permission: " + if (appState.notifPerm) "GRANTED" else "NOT GRANTED")
-            Text("App notifications toggle: " + if (appState.notifEnabled) "ENABLED" else "DISABLED")
-            Text("Accessibility service: " + if (appState.accessibilityEnabled) "ENABLED" else "DISABLED")
-            Text("Usage stats access: " + if (appState.usageStatsEnabled) "GRANTED" else "NOT GRANTED")
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { onStart(); refreshStates() }) { Text("Start Tracking") }
-                OutlinedButton(onClick = { onStop(); refreshStates() }) { Text("Stop Tracking") }
-            }
-
-            if (!appState.notifPerm || !appState.notifEnabled) {
-                OutlinedButton(onClick = openSettings) { Text("Open notification settings") }
-            }
-
-            if (!appState.accessibilityEnabled) {
-                OutlinedButton(onClick = openAccessibilitySettings) { Text("Enable Touch Tracking") }
-            }
-
-            if (!appState.usageStatsEnabled) {
-                OutlinedButton(onClick = openUsageStatsSettings) { Text("Enable Usage Stats") }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { logText = readLog(); refreshStates() }) { Text("View Log") }
-                OutlinedButton(onClick = { onClear(); logText = "" }) { Text("Clear Log") }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { fetchUsage(); logText = readLog() }) { Text("Fetch Usage Stats") }
-                OutlinedButton(onClick = { onExport() }) { Text("Export Log") }
-            }
-
-            Divider()
-            Text("Log:")
-            Text(
-                text = if (logText.isBlank()) "(empty)" else logText,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(scrollState)
-            )
-        }
-    }
+fun LogEvent.toFormattedString(): String {
+    val sdf = SimpleDateFormat("HH:mm:ss", Locale.US)
+    val time = sdf.format(Date(this.timestamp))
+    return "$time | ${this.eventAction} | ${this.packageName ?: "-"}"
 }
