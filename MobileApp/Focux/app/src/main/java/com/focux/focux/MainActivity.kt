@@ -3,6 +3,7 @@ package com.focux.focux
 import android.Manifest
 import android.app.AppOpsManager
 import android.app.Notification
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -26,6 +27,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.focux.focux.ui.theme.FocuxTheme
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
@@ -93,6 +95,24 @@ class MainActivity : ComponentActivity() {
         startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
     }
 
+    private fun fetchUsageStats() {
+        if (!hasUsageStatsPermission()) {
+            LogWriter.append(this, "USAGE_STATS: Permission not granted")
+            return
+        }
+        val usm = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val endTime = System.currentTimeMillis()
+        val startTime = endTime - TimeUnit.DAYS.toMillis(1)
+        val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
+        stats.forEach { stat ->
+            val appName = stat.packageName
+            val totalTime = TimeUnit.MILLISECONDS.toMinutes(stat.totalTimeInForeground)
+            if (totalTime > 0) {
+                LogWriter.append(this, "USAGE_STATS: $appName - ${totalTime}min")
+            }
+        }
+    }
+
     private fun startTrackingViaShim() {
         startActivity(Intent(this, StarterActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION))
         LogWriter.append(this, "MAIN:STARTER_ACTIVITY_LAUNCHED")
@@ -115,6 +135,7 @@ class MainActivity : ComponentActivity() {
                             onStop = { stopTrackingService() },
                             onClear = { LogWriter.clear(this) },
                             readLog = { LogWriter.read(this) },
+                            fetchUsage = { fetchUsageStats() },
                             openSettings = { openAppNotificationSettings() },
                             openAccessibilitySettings = { openAccessibilitySettings() },
                             openUsageStatsSettings = { openUsageStatsSettings() },
@@ -147,6 +168,7 @@ private fun MainScreen(
     onStop: () -> Unit,
     onClear: () -> Unit,
     readLog: () -> String,
+    fetchUsage: () -> Unit,
     openSettings: () -> Unit,
     openAccessibilitySettings: () -> Unit,
     openUsageStatsSettings: () -> Unit,
@@ -207,6 +229,8 @@ private fun MainScreen(
                 Button(onClick = { logText = readLog(); refreshStates() }) { Text("View Log") }
                 OutlinedButton(onClick = { onClear(); logText = "" }) { Text("Clear Log") }
             }
+
+            Button(onClick = { fetchUsage(); logText = readLog() }) { Text("Fetch Usage Stats") }
 
             Divider()
             Text("Log:")
