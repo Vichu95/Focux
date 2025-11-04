@@ -116,16 +116,26 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun exportDatabase() {
+        val exportDir = File(cacheDir, "exported_data")
+        // Clean up previous exports before creating a new one
+        if (exportDir.exists()) {
+            exportDir.deleteRecursively()
+        }
+        exportDir.mkdirs()
+
         val dbFile = getDatabasePath("focux_database")
         if (!dbFile.exists()) {
             LogWriter.append(this, "EXPORT: Database file not found.")
             return
         }
 
+        val tempFile = File(exportDir, dbFile.name)
+        dbFile.copyTo(tempFile, overwrite = true)
+
         val uri = FileProvider.getUriForFile(
             this,
             "${packageName}.provider",
-            dbFile
+            tempFile
         )
 
         val intent = Intent(Intent.ACTION_SEND).apply {
