@@ -133,20 +133,51 @@ class EventListenerService : Service() {
                 latestTimestampInBatch = event.timeStamp
             }
 
-            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED || event.eventType == UsageEvents.Event.ACTIVITY_PAUSED) {
-                val logEvent = LogEvent(
-                    timestamp = event.timeStamp,
-                    eventType = "APP_TRANSITION",
-                    packageName = event.packageName,
-                    eventAction = if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) "RESUMED" else "PAUSED"
-                )
-                LogWriter.append(this, logEvent)
-            }
+            val eventAction = eventTypeToString(event.eventType)
+
+            val logEvent = LogEvent(
+                timestamp = event.timeStamp,
+                eventType = "USAGE_EVENT",
+                packageName = event.packageName,
+                eventAction = eventAction
+            )
+            LogWriter.append(this, logEvent)
         }
         // Update the timestamp to the time of the last event processed to avoid re-logging
         if (latestTimestampInBatch > lastLoggedTimestamp) {
             lastLoggedTimestamp = latestTimestampInBatch
         }
+    }
+
+    private fun eventTypeToString(eventType: Int): String = when (eventType) {
+        UsageEvents.Event.NONE -> "NONE"
+
+        // NOTE: These share values with the deprecated MOVE_TO_* constants.
+        UsageEvents.Event.ACTIVITY_RESUMED -> "ACTIVITY_RESUMED"   // (= MOVE_TO_FOREGROUND)
+        UsageEvents.Event.ACTIVITY_PAUSED -> "ACTIVITY_PAUSED"     // (= MOVE_TO_BACKGROUND)
+
+        UsageEvents.Event.ACTIVITY_STOPPED -> "ACTIVITY_STOPPED"
+        UsageEvents.Event.CONFIGURATION_CHANGE -> "CONFIGURATION_CHANGE"
+        UsageEvents.Event.USER_INTERACTION -> "USER_INTERACTION"
+        UsageEvents.Event.SHORTCUT_INVOCATION -> "SHORTCUT_INVOCATION"
+        UsageEvents.Event.STANDBY_BUCKET_CHANGED -> "STANDBY_BUCKET_CHANGED"
+
+        UsageEvents.Event.SCREEN_INTERACTIVE -> "SCREEN_INTERACTIVE"
+        UsageEvents.Event.SCREEN_NON_INTERACTIVE -> "SCREEN_NON_INTERACTIVE"
+
+        UsageEvents.Event.KEYGUARD_SHOWN -> "KEYGUARD_SHOWN"
+        UsageEvents.Event.KEYGUARD_HIDDEN -> "KEYGUARD_HIDDEN"
+
+        UsageEvents.Event.FOREGROUND_SERVICE_START -> "FOREGROUND_SERVICE_START"
+        UsageEvents.Event.FOREGROUND_SERVICE_STOP -> "FOREGROUND_SERVICE_STOP"
+
+        UsageEvents.Event.DEVICE_SHUTDOWN -> "DEVICE_SHUTDOWN"
+        UsageEvents.Event.DEVICE_STARTUP -> "DEVICE_STARTUP"
+
+        10 -> "NOTIFICATION_INTERRUPTION"
+        12 -> "NOTIFICATION_SEEN"
+
+        else -> "UNKNOWN ($eventType)"
     }
 
     private fun logLifecycleEvent(type: String, action: String, value: String? = null) {
