@@ -11,6 +11,7 @@ import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationManagerCompat
 import com.focux.focux.db.LogEvent
+import com.focux.focux.LogWriter
 import java.util.concurrent.TimeUnit
 
 class EventListenerService : Service() {
@@ -116,12 +117,19 @@ class EventListenerService : Service() {
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val endTime = System.currentTimeMillis()
         val beginTime = endTime - TimeUnit.HOURS.toMillis(2)
+
         val usageStatsList = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_BEST, beginTime, endTime)
 
         for (usageStats in usageStatsList) {
             if (usageStats.totalTimeInForeground > 0) {
-                val usageInSeconds = TimeUnit.MILLISECONDS.toSeconds(usageStats.totalTimeInForeground)
-                logAppUsageEvent("APP_USAGE", usageStats.packageName, usageInSeconds.toString())
+                val usageInMinutes = TimeUnit.MILLISECONDS.toMinutes(usageStats.totalTimeInForeground)
+                val logEvent = LogEvent(
+                    eventType = "APP_USAGE",
+                    packageName = usageStats.packageName,
+                    eventAction = "USAGE",
+                    eventValue = usageInMinutes.toString()
+                )
+                LogWriter.append(this, logEvent)
             }
         }
     }
@@ -130,16 +138,6 @@ class EventListenerService : Service() {
         val logEvent = LogEvent(
             eventType = type,
             eventAction = action,
-            eventValue = value
-        )
-        LogWriter.append(this, logEvent)
-    }
-
-    private fun logAppUsageEvent(type: String, packageName: String, value: String?) {
-        val logEvent = LogEvent(
-            eventType = type,
-            eventAction = "USAGE",
-            packageName = packageName,
             eventValue = value
         )
         LogWriter.append(this, logEvent)

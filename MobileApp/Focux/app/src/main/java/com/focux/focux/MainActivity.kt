@@ -32,6 +32,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import android.app.usage.UsageStatsManager
 import android.content.ComponentName
+import java.util.Calendar
 
 class MainActivity : ComponentActivity() {
 
@@ -198,16 +199,24 @@ class MainActivity : ComponentActivity() {
         if (!hasUsageStatsPermission()) return
 
         val usm = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val cal = Calendar.getInstance()
         val endTime = System.currentTimeMillis()
-        val startTime = endTime - TimeUnit.DAYS.toMillis(1) // Fetch last 24 hours for manual refresh
-        val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
+
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val startTime = cal.timeInMillis
+        
+        val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_BEST, startTime, endTime)
 
         stats.forEach { stat ->
             val totalTime = TimeUnit.MILLISECONDS.toMinutes(stat.totalTimeInForeground)
             if (totalTime > 0) {
                 val logEvent = LogEvent(
                     eventType = "APP_USAGE",
-                    eventAction = stat.packageName,
+                    packageName = stat.packageName,
+                    eventAction = "USAGE",
                     eventValue = totalTime.toString()
                 )
                 db.logEventDao().insert(logEvent)
