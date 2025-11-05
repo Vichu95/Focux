@@ -2,6 +2,7 @@ package com.focux.focux
 
 import android.app.Notification
 import android.app.Service
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
@@ -26,17 +27,22 @@ class EventListenerService : Service() {
     private var foregroundStarted = false
     private val handler = Handler(Looper.getMainLooper())
     private var isStopping = false
+    private var lastLoggedTimestamp = 0L
 
     private val usageStatsRunnable = object : Runnable {
         override fun run() {
             fetchUsageStats()
-            handler.postDelayed(this, TimeUnit.HOURS.toMillis(2))
+            //// Schedule the next run for 1 minute later
+            //handler.postDelayed(this, TimeUnit.MINUTES.toMillis(1))
+            // Poll more frequently for near real-time updates
+            handler.postDelayed(this, TimeUnit.SECONDS.toMillis(5))
         }
     }
 
     override fun onCreate() {
         super.onCreate()
         isRunning = true
+        lastLoggedTimestamp = System.currentTimeMillis()
         logLifecycleEvent("SERVICE_LIFECYCLE", "SERVICE_CREATED")
     }
 
@@ -114,23 +120,32 @@ class EventListenerService : Service() {
     }
 
     private fun fetchUsageStats() {
-        val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val endTime = System.currentTimeMillis()
-        val beginTime = endTime - TimeUnit.HOURS.toMillis(2)
+        val usm = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val now = System.currentTimeMillis()
+        val events = usm.queryEvents(lastLoggedTimestamp, now)
+        var latestTimestampInBatch = 0L
 
-        val usageStatsList = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_BEST, beginTime, endTime)
+        while (events.hasNextEvent()) {
+            val event = UsageEvents.Event()
+            events.getNextEvent(event)
 
-        for (usageStats in usageStatsList) {
-            if (usageStats.totalTimeInForeground > 0) {
-                val usageInMinutes = TimeUnit.MILLISECONDS.toMinutes(usageStats.totalTimeInForeground)
+            if (event.timeStamp > latestTimestampInBatch) {
+                latestTimestampInBatch = event.timeStamp
+            }
+
+            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED || event.eventType == UsageEvents.Event.ACTIVITY_PAUSED) {
                 val logEvent = LogEvent(
-                    eventType = "APP_USAGE",
-                    packageName = usageStats.packageName,
-                    eventAction = "USAGE",
-                    eventValue = usageInMinutes.toString()
+                    timestamp = event.timeStamp,
+                    eventType = "APP_TRANSITION",
+                    packageName = event.packageName,
+                    eventAction = if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) "RESUMED" else "PAUSED"
                 )
                 LogWriter.append(this, logEvent)
             }
+        }
+        // Update the timestamp to the time of the last event processed to avoid re-logging
+        if (latestTimestampInBatch > lastLoggedTimestamp) {
+            lastLoggedTimestamp = latestTimestampInBatch
         }
     }
 

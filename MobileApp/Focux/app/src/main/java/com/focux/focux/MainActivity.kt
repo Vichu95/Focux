@@ -62,9 +62,6 @@ class MainActivity : ComponentActivity() {
             scope.launch {
                 permissionsState = checkPermissions()
                 isServiceRunning = EventListenerService.isRunning
-                if (isServiceRunning && permissionsState.hasUsageStats) {
-                    manualFetchUsageStats(db)
-                }
                 dashboardStats = calculateDashboardStats(db)
             }
         }
@@ -89,7 +86,7 @@ class MainActivity : ComponentActivity() {
                     Button(onClick = { stopTracking(); refreshState() }, enabled = isServiceRunning, modifier = Modifier.weight(1f)) { Text("Stop", fontSize = 12.sp) }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { scope.launch { db.logEventDao().clear(); refreshState() } }, modifier = Modifier.weight(1f)) { Text("Clear DB", fontSize = 12.sp) }
+                    OutlinedButton(onClick = { scope.launch { db.logEventDao().clearAndReset(); refreshState() } }, modifier = Modifier.weight(1f)) { Text("Clear DB", fontSize = 12.sp) }
                     OutlinedButton(onClick = { exportDatabase() }, modifier = Modifier.weight(1f)) { Text("Export DB", fontSize = 12.sp) }
                 }
 
@@ -112,12 +109,6 @@ class MainActivity : ComponentActivity() {
                     Text("Screen Events (Today)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     StatRow("Unlocked:", dashboardStats.screenUnlocks.toString())
                     StatRow("Locked:", dashboardStats.screenLocks.toString())
-
-                    Divider(modifier = Modifier.padding(vertical = 4.dp))
-
-                    Text("App Usage (Today / Avg Daily)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    StatRow("YouTube:", "${dashboardStats.youtubeToday}min / ${dashboardStats.youtubeAvg.toInt()}min")
-                    StatRow("WhatsApp:", "${dashboardStats.whatsappToday}min / ${dashboardStats.whatsappAvg.toInt()}min")
 
                     Divider(modifier = Modifier.padding(vertical = 4.dp))
 
@@ -187,41 +178,15 @@ class MainActivity : ComponentActivity() {
         return DashboardStats(
             screenLocks = dao.countScreenEventsToday("SCREEN_OFF"),
             screenUnlocks = dao.countScreenEventsToday("UNLOCKED"),
-            youtubeToday = dao.getUsageToday("com.google.android.youtube") ?: 0L,
-            whatsappToday = dao.getUsageToday("com.whatsapp") ?: 0L,
-            youtubeAvg = dao.getAverageUsage("com.google.android.youtube") ?: 0.0,
-            whatsappAvg = dao.getAverageUsage("com.whatsapp") ?: 0.0,
             recentEvents = dao.getRecentTen()
         )
     }
 
     private suspend fun manualFetchUsageStats(db: AppDatabase) {
-        if (!hasUsageStatsPermission()) return
-
-        val usm = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val cal = Calendar.getInstance()
-        val endTime = System.currentTimeMillis()
-
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        cal.set(Calendar.MILLISECOND, 0)
-        val startTime = cal.timeInMillis
-        
-        val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_BEST, startTime, endTime)
-
-        stats.forEach { stat ->
-            val totalTime = TimeUnit.MILLISECONDS.toMinutes(stat.totalTimeInForeground)
-            if (totalTime > 0) {
-                val logEvent = LogEvent(
-                    eventType = "APP_USAGE",
-                    packageName = stat.packageName,
-                    eventAction = "USAGE",
-                    eventValue = totalTime.toString()
-                )
-                db.logEventDao().insert(logEvent)
-            }
-        }
+        // This function is now obsolete.
+        // Raw event logging will be handled by background services.
+        // A daily summary will be calculated by a separate WorkManager job.
+        return
     }
 
     private fun checkPermissions(): PermissionsState {
@@ -256,10 +221,6 @@ data class PermissionsState(
 data class DashboardStats(
     val screenLocks: Int = 0,
     val screenUnlocks: Int = 0,
-    val youtubeToday: Long = 0,
-    val whatsappToday: Long = 0,
-    val youtubeAvg: Double = 0.0,
-    val whatsappAvg: Double = 0.0,
     val recentEvents: List<LogEvent> = emptyList()
 )
 

@@ -3,6 +3,7 @@ package com.focux.focux.db
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 
 @Dao
 interface LogEventDao {
@@ -28,4 +29,13 @@ interface LogEventDao {
 
     @Query("DELETE FROM log_events")
     suspend fun clear()
+
+    @Query("DELETE FROM sqlite_sequence WHERE name='log_events'")
+    suspend fun resetPrimaryKey()
+
+    @Transaction
+    suspend fun clearAndReset() {
+        clear()
+        resetPrimaryKey()
+    }
 }
