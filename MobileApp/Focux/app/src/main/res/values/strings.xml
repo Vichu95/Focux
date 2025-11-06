@@ -1,4 +1,3 @@
 <resources>
     <string name="app_name">Focux</string>
-    <string name="content_capture_service_description">This service captures on-screen content for Focux.</string>
 </resources>
