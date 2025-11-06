@@ -44,7 +44,7 @@ class GlobalTouchService : AccessibilityService() {
         // Only log the event if it's one we care about
         eventAction?.let {
             val logEvent = LogEvent(
-                timestamp = event.eventTime,
+                timestamp = System.currentTimeMillis(), // Use wall-clock time for consistency
                 eventType = "UI_INTERACTION",
                 packageName = event.packageName?.toString(),
                 eventAction = it
