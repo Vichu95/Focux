@@ -8,7 +8,24 @@ import androidx.room.Transaction
 @Dao
 interface LogEventDao {
     @Insert
-    suspend fun insert(logEvent: LogEvent)
+    suspend fun insertInternal(logEvent: LogEvent)
+
+    @Query("SELECT * FROM log_events WHERE timestamp = :timestamp")
+    suspend fun getEventsByTimestamp(timestamp: Long): List<LogEvent>
+
+    @Transaction
+    suspend fun insert(logEvent: LogEvent) {
+        val events = getEventsByTimestamp(logEvent.timestamp)
+        val exists = events.any {
+            it.eventType == logEvent.eventType &&
+            it.eventAction == logEvent.eventAction &&
+            it.packageName == logEvent.packageName &&
+            it.eventValue == logEvent.eventValue
+        }
+        if (!exists) {
+            insertInternal(logEvent)
+        }
+    }
 
     @Query("SELECT * FROM log_events ORDER BY timestamp DESC")
     suspend fun getAll(): List<LogEvent>
