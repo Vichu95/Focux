@@ -1,5 +1,7 @@
 # Focux
 
+Upcoming : Mobile Productivity Tracker
+
 ***version 2.1***
 ## Features :trident:
 - Minimalistic dashboard for focussed work
