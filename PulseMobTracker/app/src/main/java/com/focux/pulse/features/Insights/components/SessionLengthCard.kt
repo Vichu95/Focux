@@ -10,23 +10,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.R
 import com.focux.pulse.data.SessionLengthData
-import com.focux.pulse.ui.theme.CyberpunkPrimary
-import com.focux.pulse.ui.theme.CyberpunkSecondaryText
+import com.focux.pulse.ui.theme.PulseAppColorPrimary
+import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
-import com.focux.pulse.ui.theme.cyberpunkCard
+import com.focux.pulse.ui.theme.pulseAppCard
 
 @Composable
 fun SessionLengthCard(data: SessionLengthData) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .cyberpunkCard()
+            .pulseAppCard()
             .padding(16.dp)
     ) {
         Text(
             text = "Average Session Length",
             style = Typography.titleLarge,
-            color = CyberpunkPrimary
+            color = PulseAppColorPrimary
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -39,9 +39,9 @@ fun SessionLengthCard(data: SessionLengthData) {
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(text = "Overall : ${data.overall}", style = Typography.labelSmall, color = CyberpunkSecondaryText)
-                Text(text = "Productive : ${data.productive}", style = Typography.labelSmall, color = CyberpunkSecondaryText)
-                Text(text = "Distracting : ${data.distracting}", style = Typography.labelSmall, color = CyberpunkSecondaryText)
+                Text(text = "Overall : ${data.overall}", style = Typography.labelSmall, color = PulseAppColorSecondary)
+                Text(text = "Productive : ${data.productive}", style = Typography.labelSmall, color = PulseAppColorSecondary)
+                Text(text = "Distracting : ${data.distracting}", style = Typography.labelSmall, color = PulseAppColorSecondary)
             }
         }
     }

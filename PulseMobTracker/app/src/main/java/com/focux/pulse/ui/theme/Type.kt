@@ -5,31 +5,47 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+// Colors are in the same package, no import needed usually, but good to be safe if package differs.
+// Package is same.
+
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 // Using Default fonts for now, but configured for the look
+// PulseApp Typography
+val PulseAppFontHeader = TextStyle(
+    fontFamily = FontFamily.Monospace,
+    fontWeight = FontWeight.Bold,
+    fontSize = 24.sp,
+    color = PulseAppColorPrimary
+)
+
+val PulseAppFontSubHeader = TextStyle(
+    fontFamily = FontFamily.Monospace,
+    fontWeight = FontWeight.Normal,
+    fontSize = 16.sp,
+    color = PulseAppColorSecondary
+)
+
+val PulseAppFontBody = TextStyle(
+    fontFamily = FontFamily.Monospace,
+    fontWeight = FontWeight.Normal,
+    fontSize = 14.sp,
+    color = PulseAppColorSecondary
+)
+
+val PulseAppFontBigNumber = TextStyle(
+    fontFamily = FontFamily.Monospace,
+    fontWeight = FontWeight.Normal,
+    fontSize = 36.sp,
+    color = PulseAppColorSecondary
+)
+
 val Typography = Typography(
-    bodyLarge = TextStyle(
-        fontFamily = FontFamily.Monospace, // Using Monospace for that hacker/cyberpunk vibe for numbers
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp,
-        color = CyberpunkPrimary
-    ),
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.Bold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp,
-        color = CyberpunkPrimary
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Default, // Clean sans for small labels
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp,
-        color = CyberpunkSecondaryText
-    )
+    bodyLarge = PulseAppFontBody,
+    titleLarge = PulseAppFontHeader,
+    labelSmall = PulseAppFontBody
 )

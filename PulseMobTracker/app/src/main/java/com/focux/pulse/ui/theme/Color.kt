@@ -3,13 +3,16 @@ package com.focux.pulse.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // User Specified Colors
-val CyberpunkBackground = Color(0xFF191C1C)
-val CyberpunkPrimary = Color(0xFF64B5F6) // Text, Outline, Symbols, Progress
-val CyberpunkSecondaryText = Color(0xFFFFFFFF)
-val CyberpunkRing = Color(0xFF2B4555)
-val CyberpunkDistracting = Color(0xFFE53935) // Inferred for "Distracting" (Red-ish)
-val CyberpunkProductive = Color(0xFF43A047)   // Inferred for "Productive" (Green-ish)
-val CyberpunkNeutral = Color(0xFFFB8C00)      // Inferred for "Neutral" (Amber-ish)
+// User Specified Colors
+val PulseAppColorBackground = Color(0xFF191C1C)
+val PulseAppColorPrimary = Color(0xFF64B5F6) // Text, Outline, Symbols, Progress
+val PulseAppColorSecondary = Color(0xFFFFFFFF)
+val PulseAppColorSurface = Color(0xFF2B4555) // Ring/Background
+
+// Status Colors
+val PulseAppColorProductive = Color(0xFF34A853)
+val PulseAppColorNeutral = Color(0xFFFBBC04)
+val PulseAppColorDistracting = Color(0xFFEA4335)
 
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)

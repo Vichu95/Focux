@@ -10,23 +10,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focux.pulse.data.WeeklyTrendItem
-import com.focux.pulse.ui.theme.CyberpunkPrimary
-import com.focux.pulse.ui.theme.CyberpunkSecondaryText
+import com.focux.pulse.ui.theme.PulseAppColorPrimary
+import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
-import com.focux.pulse.ui.theme.cyberpunkCard
+import com.focux.pulse.ui.theme.pulseAppCard
 
 @Composable
 fun WeeklyTrendCard(data: List<WeeklyTrendItem>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .cyberpunkCard()
+            .pulseAppCard()
             .padding(16.dp)
     ) {
         Text(
             text = "Weekly Activity Trend",
             style = Typography.titleLarge,
-            color = CyberpunkPrimary
+            color = PulseAppColorPrimary
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -61,7 +61,7 @@ fun TrendBar(item: WeeklyTrendItem) {
                 .width(24.dp)
                 .fillMaxHeight(heightFraction)
                 .background(
-                    if (item.isSelected) CyberpunkPrimary else CyberpunkPrimary.copy(alpha = 0.5f),
+                    if (item.isSelected) PulseAppColorPrimary else PulseAppColorPrimary.copy(alpha = 0.5f),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
                 )
         ) {
@@ -78,7 +78,7 @@ fun TrendBar(item: WeeklyTrendItem) {
         Text(
             text = item.day,
             style = Typography.labelSmall.copy(fontSize = 12.sp),
-            color = CyberpunkSecondaryText
+            color = PulseAppColorSecondary
         )
     }
 }

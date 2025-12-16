@@ -16,16 +16,16 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = CyberpunkPrimary,
-    secondary = CyberpunkPrimary,
+    primary = PulseAppColorPrimary,
+    secondary = PulseAppColorPrimary,
     tertiary = Pink80,
-    background = CyberpunkBackground,
-    surface = CyberpunkBackground,
-    onPrimary = CyberpunkBackground,
-    onSecondary = CyberpunkBackground,
-    onTertiary = CyberpunkBackground,
-    onBackground = CyberpunkPrimary,
-    onSurface = CyberpunkSecondaryText,
+    background = PulseAppColorBackground,
+    surface = PulseAppColorBackground,
+    onPrimary = PulseAppColorBackground,
+    onSecondary = PulseAppColorBackground,
+    onTertiary = PulseAppColorBackground,
+    onBackground = PulseAppColorPrimary,
+    onSurface = PulseAppColorSecondary,
 )
 
 // We are forcing Dark Mode for this design as requested

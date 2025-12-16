@@ -21,9 +21,9 @@ import com.focux.pulse.features.Summary.components.DeviceAccessCard
 import com.focux.pulse.features.Summary.components.FirstLastAppsCard
 import com.focux.pulse.features.Summary.components.OfflineStreakCard
 import com.focux.pulse.features.Summary.components.PhoneActivityCard
-import com.focux.pulse.ui.theme.CyberpunkPrimary
-import com.focux.pulse.ui.theme.CyberpunkRing
-import com.focux.pulse.ui.theme.CyberpunkSecondaryText
+import com.focux.pulse.ui.theme.PulseAppColorPrimary
+import com.focux.pulse.ui.theme.PulseAppColorSecondary
+import com.focux.pulse.ui.theme.PulseAppColorSurface
 import com.focux.pulse.ui.theme.Typography
 
 @Composable
@@ -69,32 +69,32 @@ fun DateFocusHeader() {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
                 contentDescription = "Prev",
-                tint = CyberpunkSecondaryText
+                tint = PulseAppColorSecondary
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "14 Dec",
                 style = Typography.titleLarge,
-                color = CyberpunkSecondaryText
+                color = PulseAppColorSecondary
             )
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = "Next",
-                tint = CyberpunkSecondaryText
+                tint = PulseAppColorSecondary
             )
         }
         
         // Right: Focus Score
         Box(
             modifier = Modifier
-                .background(CyberpunkRing, RoundedCornerShape(16.dp))
+                .background(PulseAppColorSurface, RoundedCornerShape(16.dp))
                 .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
             Text(
                 text = "Focus: 72",
                 style = Typography.labelSmall,
-                color = CyberpunkPrimary 
+                color = PulseAppColorPrimary 
             )
         }
     }

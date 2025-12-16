@@ -9,8 +9,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 // Helper for the common card style
-fun Modifier.cyberpunkCard(): Modifier = composed {
+fun Modifier.pulseAppCard(): Modifier = composed {
     this
-        .background(Color.Transparent, RoundedCornerShape(12.dp))
-        .border(1.dp, CyberpunkPrimary, RoundedCornerShape(12.dp))
+        .background(Color.Transparent, RoundedCornerShape(PulseAppCornerRadiusMedium))
+        .border(1.dp, PulseAppColorPrimary, RoundedCornerShape(PulseAppCornerRadiusMedium))
 }

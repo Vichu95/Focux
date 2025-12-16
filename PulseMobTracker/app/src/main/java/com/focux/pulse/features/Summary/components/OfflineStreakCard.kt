@@ -11,23 +11,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focux.pulse.R
 import com.focux.pulse.data.OfflineStreakData
-import com.focux.pulse.ui.theme.CyberpunkPrimary
-import com.focux.pulse.ui.theme.CyberpunkSecondaryText
+import com.focux.pulse.ui.theme.PulseAppColorPrimary
+import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
-import com.focux.pulse.ui.theme.cyberpunkCard
+import com.focux.pulse.ui.theme.pulseAppCard
 
 @Composable
 fun OfflineStreakCard(data: OfflineStreakData) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .cyberpunkCard()
+            .pulseAppCard()
             .padding(16.dp)
     ) {
         Text(
             text = "Offline Streak",
             style = Typography.titleLarge,
-            color = CyberpunkPrimary
+            color = PulseAppColorPrimary
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -46,14 +46,14 @@ fun OfflineStreakCard(data: OfflineStreakData) {
                 Text(
                     text = data.duration,
                     style = Typography.titleLarge.copy(fontSize = 32.sp),
-                    color = CyberpunkSecondaryText
+                    color = PulseAppColorSecondary
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "${data.startTime} - ${data.endTime}",
                 style = Typography.labelSmall,
-                color = CyberpunkSecondaryText
+                color = PulseAppColorSecondary
             )
         }
     }

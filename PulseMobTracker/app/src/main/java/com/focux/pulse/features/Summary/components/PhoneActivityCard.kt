@@ -13,24 +13,24 @@ import androidx.compose.ui.unit.sp
 import com.focux.pulse.R
 import com.focux.pulse.data.AppUsage
 import com.focux.pulse.data.PhoneActivityData
-import com.focux.pulse.ui.theme.CyberpunkPrimary
-import com.focux.pulse.ui.theme.CyberpunkSecondaryText
+import com.focux.pulse.ui.theme.PulseAppColorPrimary
+import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
-import com.focux.pulse.ui.theme.cyberpunkCard
+import com.focux.pulse.ui.theme.pulseAppCard
 
 @Composable
 fun PhoneActivityCard(data: PhoneActivityData) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .cyberpunkCard()
+            .pulseAppCard()
             .padding(16.dp)
     ) {
         // Title
         Text(
             text = "Phone Activity",
             style = Typography.titleLarge,
-            color = CyberpunkPrimary
+            color = PulseAppColorPrimary
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -42,7 +42,7 @@ fun PhoneActivityCard(data: PhoneActivityData) {
             Text(
                 text = data.totalTime,
                 style = Typography.titleLarge.copy(fontSize = 36.sp),
-                color = CyberpunkSecondaryText,
+                color = PulseAppColorSecondary,
                 modifier = Modifier.weight(1f)
             )
 
@@ -72,7 +72,7 @@ fun LegendItem(label: String, time: String) {
     Text(
         text = "• $label : $time",
         style = Typography.labelSmall,
-        color = CyberpunkSecondaryText
+        color = PulseAppColorSecondary
     )
 }
 
@@ -97,7 +97,7 @@ fun AppUsageItem(app: AppUsage) {
         Text(
             text = app.duration,
             style = Typography.labelSmall,
-            color = CyberpunkSecondaryText
+            color = PulseAppColorSecondary
         )
     }
 }

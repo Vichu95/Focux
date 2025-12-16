@@ -14,10 +14,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focux.pulse.R
 import com.focux.pulse.data.TimelineEvent
-import com.focux.pulse.ui.theme.CyberpunkPrimary
-import com.focux.pulse.ui.theme.CyberpunkSecondaryText
+import com.focux.pulse.ui.theme.PulseAppColorPrimary
+import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
-import com.focux.pulse.ui.theme.cyberpunkCard
+import com.focux.pulse.ui.theme.pulseAppCard
 
 @Composable
 fun TimelineItem(event: TimelineEvent, isFirst: Boolean, isLast: Boolean) {
@@ -85,32 +85,59 @@ fun TimelineItem(event: TimelineEvent, isFirst: Boolean, isLast: Boolean) {
 fun AppTimelineCard(event: TimelineEvent) {
     // The "Card" style from screenshot
     Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .cyberpunkCard()
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .pulseAppCard()
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = event.app.name,
-            style = Typography.titleLarge,
-            color = CyberpunkSecondaryText
+         Text(
+            text = event.time,
+            style = Typography.labelSmall.copy(fontSize = 12.sp),
+            color = PulseAppColorSecondary,
+            modifier = Modifier.width(60.dp)
         )
+        
+        // ... (Visual Line Logic) ... 
         Text(
-            text = event.range, // e.g., "14:02 - 14:16"
-            style = Typography.labelSmall,
-            color = CyberpunkSecondaryText
+             text = "|", 
+             color = PulseAppColorSecondary 
         )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Content
+        Column {
+             Box(
+                modifier = Modifier
+                .border(1.dp, PulseAppColorPrimary, androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = event.appName,
+                    style = Typography.titleLarge,
+                    color = PulseAppColorSecondary
+                )
+                Text(
+                    text = event.range, // e.g., "14:02 - 14:16"
+                    style = Typography.labelSmall,
+                    color = PulseAppColorSecondary
+                )
+             }
+        }
         Spacer(modifier = Modifier.height(8.dp))
         // Tags/Dropdowns (Visual only for now)
         Box(
             modifier = Modifier
-                .border(1.dp, CyberpunkPrimary, androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                .border(1.dp, PulseAppColorPrimary, androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
                 .padding(horizontal = 12.dp, vertical = 4.dp)
         ) {
             Text(
                 text = if (event.app.type.toString() == "Distracting") "Distracting ▼" else "Productive ▼",
                 style = Typography.labelSmall,
-                color = CyberpunkPrimary
+                color = PulseAppColorPrimary
             )
         }
     }
@@ -130,12 +157,12 @@ fun DeepWorkItem(event: TimelineEvent) {
             Text(
                 text = event.deepWorkDuration ?: "45m",
                 style = Typography.titleLarge,
-                color = CyberpunkPrimary
+                color = PulseAppColorPrimary
             )
         }
         Text(
             text = "Deep Work",
-            style = Typography.labelSmall.copy(color = CyberpunkPrimary),
+            style = Typography.labelSmall.copy(color = PulseAppColorPrimary),
         )
     }
 }
@@ -151,7 +178,7 @@ fun MorningItem(event: TimelineEvent) {
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = event.time,
-            style = Typography.titleLarge.copy(color = CyberpunkPrimary)
+            style = Typography.titleLarge.copy(color = PulseAppColorPrimary)
         )
     }
 }
@@ -167,7 +194,7 @@ fun NightItem(event: TimelineEvent) {
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = event.time,
-            style = Typography.titleLarge.copy(color = CyberpunkPrimary)
+            style = Typography.titleLarge.copy(color = PulseAppColorPrimary)
         )
     }
 }

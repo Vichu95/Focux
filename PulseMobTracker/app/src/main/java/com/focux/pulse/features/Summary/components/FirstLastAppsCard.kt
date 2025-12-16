@@ -10,23 +10,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.R
 import com.focux.pulse.data.FirstLastAppsData
-import com.focux.pulse.ui.theme.CyberpunkPrimary
-import com.focux.pulse.ui.theme.CyberpunkSecondaryText
+import com.focux.pulse.ui.theme.PulseAppColorPrimary
+import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
-import com.focux.pulse.ui.theme.cyberpunkCard
+import com.focux.pulse.ui.theme.pulseAppCard
 
 @Composable
 fun FirstLastAppsCard(data: FirstLastAppsData) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .cyberpunkCard()
+            .pulseAppCard()
             .padding(16.dp)
     ) {
         Text(
             text = "First & Last Apps",
             style = Typography.titleLarge,
-            color = CyberpunkPrimary
+            color = PulseAppColorPrimary
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -47,7 +47,7 @@ fun FirstLastAppsCard(data: FirstLastAppsData) {
                     Text(
                         text = data.morningTime,
                         style = Typography.labelSmall,
-                        color = CyberpunkSecondaryText
+                        color = PulseAppColorSecondary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Image(
@@ -70,7 +70,7 @@ fun FirstLastAppsCard(data: FirstLastAppsData) {
                     Text(
                         text = data.nightTime,
                         style = Typography.labelSmall,
-                        color = CyberpunkSecondaryText
+                        color = PulseAppColorSecondary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Image(

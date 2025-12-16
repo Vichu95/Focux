@@ -6,10 +6,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.data.TopAppItem
-import com.focux.pulse.ui.theme.CyberpunkPrimary
-import com.focux.pulse.ui.theme.CyberpunkSecondaryText
+import com.focux.pulse.ui.theme.PulseAppColorPrimary
+import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
-import com.focux.pulse.ui.theme.cyberpunkCard
+import com.focux.pulse.ui.theme.pulseAppCard
 import androidx.compose.ui.unit.sp
 
 @Composable
@@ -17,13 +17,13 @@ fun TopAppsCard(data: List<TopAppItem>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .cyberpunkCard()
+            .pulseAppCard()
             .padding(16.dp)
     ) {
         Text(
             text = "Top Apps",
             style = Typography.titleLarge,
-            color = CyberpunkPrimary
+            color = PulseAppColorPrimary
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -32,7 +32,7 @@ fun TopAppsCard(data: List<TopAppItem>) {
             Text(
                 text = "${item.rank}. ${item.app.name} (${item.type}) - ${item.duration}",
                 style = Typography.labelSmall.copy(fontSize = 14.sp),
-                color = CyberpunkSecondaryText,
+                color = PulseAppColorSecondary,
                 modifier = Modifier.padding(vertical = 4.dp)
             )
         }

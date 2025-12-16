@@ -10,8 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.R
-import com.focux.pulse.ui.theme.CyberpunkPrimary
-import com.focux.pulse.ui.theme.CyberpunkSecondaryText
+import com.focux.pulse.ui.theme.PulseAppColorPrimary
+import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
 
 @Composable
@@ -56,14 +56,14 @@ fun NavTab(iconRes: Int, label: String, selected: Boolean, onClick: () -> Unit) 
         Icon(
             painter = painterResource(id = iconRes),
             contentDescription = label,
-            tint = if (selected) CyberpunkPrimary else CyberpunkSecondaryText,
+            tint = if (selected) PulseAppColorPrimary else PulseAppColorSecondary,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
             style = Typography.labelSmall,
-            color = if (selected) CyberpunkPrimary else CyberpunkSecondaryText
+            color = if (selected) PulseAppColorPrimary else PulseAppColorSecondary
         )
     }
 }
