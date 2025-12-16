@@ -1,122 +1,339 @@
 package com.focux.pulse.features.Timeline.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import com.focux.pulse.R
 import com.focux.pulse.data.TimelineEvent
 import com.focux.pulse.ui.theme.*
 
 @Composable
 fun TimelineItem(event: TimelineEvent, isFirst: Boolean, isLast: Boolean) {
-    // Layout:
-    // Left: Vertical Line (Dashed?) + Node Dot
-    // Right: Content (Card or Icon+Text)
+    when {
+        event.isDeepWork -> DeepWorkTimelineItem(isFirst, isLast, event)
+        event.app.name == "Morning" -> WakeUpTimelineItem(isFirst, isLast, event)
+        event.app.name == "Night" -> SleepTimelineItem(isFirst, isLast, event)
+        else -> AppTimelineItem(isFirst, isLast, event)
+    }
+}
 
+@Composable
+fun AppTimelineItem(isFirst: Boolean, isLast: Boolean, event: TimelineEvent) {
+    // Frame Timeline Application: 412x158, padding: 0px 48px, gap: 32px
     Row(
-        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(158.dp)
+            .padding(start = 48.dp, end = 48.dp),
+        horizontalArrangement = Arrangement.spacedBy(32.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left Column: The Line and Node
+        // Frame 20: Line column (20px wide)
         Column(
+            modifier = Modifier.width(20.dp).fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(48.dp)
+            verticalArrangement = Arrangement.Center
         ) {
-            // Upper Line
+            // Upper solid line (Rectangle 2)
             if (!isFirst) {
                 Box(
                     modifier = Modifier
-                        .width(2.dp)
+                        .width(1.dp)
                         .weight(1f)
-                        .background(Color.Gray.copy(alpha = 0.5f)) // Dashed effect needs custom draw, simple line for alpha now
+                        .background(Color.White)
                 )
             } else {
                 Spacer(modifier = Modifier.weight(1f))
             }
 
-            // The Node
+            // Ellipse 1: Node (20x20)
             Box(
                 modifier = Modifier
-                    .size(12.dp)
-                    .background(Color.LightGray, androidx.compose.foundation.shape.CircleShape)
+                    .size(20.dp)
+                    .background(Color.White, androidx.compose.foundation.shape.CircleShape)
             )
 
-            // Lower Line
+            // Lower solid line (Rectangle 3)
             if (!isLast) {
                 Box(
                     modifier = Modifier
-                        .width(2.dp)
+                        .width(1.dp)
                         .weight(1f)
-                        .background(Color.Gray.copy(alpha = 0.5f))
+                        .background(Color.White)
                 )
             } else {
                 Spacer(modifier = Modifier.weight(1f))
             }
         }
 
-        // Right Column: Content
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 32.dp, start = 8.dp) // Spacing between items
+        // Frame 17: App Card (251x128)
+        AppTimelineCard(event)
+    }
+}
+
+@Composable
+fun WakeUpTimelineItem(isFirst: Boolean, isLast: Boolean, event: TimelineEvent) {
+    // Frame Timeline Wake Up: 412x124, padding: 0px 16px 0px 48px, gap: 93px
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(124.dp)
+            .padding(start = 48.dp, end = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Frame 15: Dashed line column (19px wide)
+        Column(
+            modifier = Modifier.width(19.dp).fillMaxHeight(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            when {
-                event.isDeepWork -> DeepWorkItem(event)
-                event.app.name == "Morning" -> MorningItem(event)
-                event.app.name == "Night" -> NightItem(event)
-                else -> AppTimelineCard(event)
+            // Line 1: Dashed line upper
+            DashedLineVertical(
+                color = Color.White,
+                modifier = Modifier.width(1.dp).weight(1f)
+            )
+
+            // Line 2: Dashed line lower
+            DashedLineVertical(
+                color = Color.White,
+                modifier = Modifier.width(1.dp).weight(1f)
+            )
+        }
+
+        // Frame Deep Work Text: 329x124
+        Row(
+            modifier = Modifier.width(329.dp).fillMaxHeight(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Frame 18: Sun icon + time
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(horizontal = 50.dp)
+            ) {
+                // Sun icon (48x49)
+                Image(
+                    painter = painterResource(id = R.drawable.sun_icon),
+                    contentDescription = "Morning",
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                // 06:00
+                Text(
+                    text = event.time,
+                    style = Typography.bodyLarge.copy(
+                        fontSize = 20.sp,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = PulseAppColorPrimary
+                    )
+                )
             }
         }
     }
 }
 
 @Composable
+fun SleepTimelineItem(isFirst: Boolean, isLast: Boolean, event: TimelineEvent) {
+    // Frame Timeline Sleep: Same structure as Wake Up
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(124.dp)
+            .padding(start = 48.dp, end = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Frame 15: Dashed line column (19px wide)
+        Column(
+            modifier = Modifier.width(19.dp).fillMaxHeight(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            DashedLineVertical(
+                color = Color.White,
+                modifier = Modifier.width(1.dp).weight(1f)
+            )
+            DashedLineVertical(
+                color = Color.White,
+                modifier = Modifier.width(1.dp).weight(1f)
+            )
+        }
+
+        // Content
+        Row(
+            modifier = Modifier.width(329.dp).fillMaxHeight(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(horizontal = 50.dp)
+            ) {
+                // Moon icon
+                Image(
+                    painter = painterResource(id = R.drawable.moon_icon),
+                    contentDescription = "Night",
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                // 22:00
+                Text(
+                    text = event.time,
+                    style = Typography.bodyLarge.copy(
+                        fontSize = 20.sp,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = PulseAppColorPrimary
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DeepWorkTimelineItem(isFirst: Boolean, isLast: Boolean, event: TimelineEvent) {
+    // Frame Timeline Deep Work: 412x124, padding: 0px 16px 0px 48px
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(124.dp)
+            .padding(start = 48.dp, end = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Frame 15: Dashed line column (19px wide)
+        Column(
+            modifier = Modifier.width(19.dp).fillMaxHeight(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            DashedLineVertical(
+                color = Color.White,
+                modifier = Modifier.width(1.dp).weight(1f)
+            )
+            DashedLineVertical(
+                color = Color.White,
+                modifier = Modifier.width(1.dp).weight(1f)
+            )
+        }
+
+        // Frame Deep Work Text: 329x124, padding: 0px 46px, gap: 3px
+        Column(
+            modifier = Modifier.width(329.dp).fillMaxHeight().padding(horizontal = 46.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Frame 18: Icon + Duration
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Leaf icon (26x21)
+                Image(
+                    painter = painterResource(id = R.drawable.deep_work_icon),
+                    contentDescription = "Deep Work",
+                    modifier = Modifier.size(width = 26.dp, height = 21.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                // 45m
+                Text(
+                    text = event.deepWorkDuration ?: "45m",
+                    style = Typography.bodyLarge.copy(
+                        fontSize = 20.sp,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = PulseAppColorPrimary
+                    )
+                )
+            }
+            Spacer(modifier = Modifier.height(3.dp))
+            // Deep Work label
+            Text(
+                text = "Deep Work",
+                style = Typography.bodyLarge.copy(
+                    fontSize = 16.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    color = PulseAppColorPrimary
+                )
+            )
+        }
+    }
+}
+
+@Composable
+fun DashedLineVertical(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+        drawLine(
+            color = color,
+            start = Offset(size.width / 2, 0f),
+            end = Offset(size.width / 2, size.height),
+            strokeWidth = 2f,
+            pathEffect = pathEffect
+        )
+    }
+}
+
+@Composable
 fun AppTimelineCard(event: TimelineEvent) {
-    // Frame 17 Spec: 251x128
+    // Frame 17: 251x128, border: 2px solid #64B5F6, border-radius: 12px
     Column(
         modifier = Modifier
-            .width(PulseAppTimelineCardWidth)
-            .height(PulseAppTimelineCardHeight)
+            .width(251.dp)
+            .height(128.dp)
             .background(Color.Transparent, androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
             .border(PulseAppBorderWidthThick, PulseAppColorPrimary, androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
             .padding(vertical = 16.dp, horizontal = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // App Name (Instagram)
+        // Instagram (24px, 700 weight)
         Text(
             text = event.app.name,
-            style = PulseAppFontHeader, // 24sp
-            color = PulseAppColorSecondary // White
+            style = Typography.bodyLarge.copy(
+                fontSize = 24.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                color = Color.White
+            )
         )
 
-        // Time Range (14:02 - 14:16)
+        // 14:02 - 14:16 (12px)
         Text(
-            text = event.range, // e.g. "14:02 - 14:16"
-            style = Typography.labelSmall.copy(fontSize = PulseAppFontSizeSmall), // 12sp
-            color = PulseAppColorSecondary
+            text = event.range,
+            style = Typography.labelSmall.copy(
+                fontSize = 12.sp,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                color = Color.White
+            )
         )
 
-        Spacer(modifier = Modifier.weight(1f)) // Push pill to bottom if space remains, or just standard gap
+        Spacer(modifier = Modifier.weight(1f))
 
-        // Categorization Pill (Frame 16)
+        // Frame 16: Categorization Pill (227x32)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(32.dp)
                 .border(PulseAppBorderWidth, PulseAppColorPrimary, androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
-                //.padding(horizontal = 12.dp, vertical = 6.dp) // Auto-layout padding logic handled by alignment usually, but box content alignment is key
-                .padding(horizontal = 12.dp), // Inner padding for text/icon
-             contentAlignment = Alignment.Center
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -124,74 +341,20 @@ fun AppTimelineCard(event: TimelineEvent) {
             ) {
                 Text(
                     text = if (event.app.type.toString() == "Distracting") "Distracting" else "Productive",
-                    style = Typography.labelSmall.copy(fontSize = PulseAppFontSizeSmall), // 12sp
-                    color = PulseAppColorPrimary
+                    style = Typography.labelSmall.copy(
+                        fontSize = 12.sp,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = PulseAppColorPrimary
+                    )
                 )
                 Spacer(modifier = Modifier.width(10.dp))
-                // Dropdown Icon
-                androidx.compose.material3.Icon(
-                     imageVector = androidx.compose.material.icons.Icons.Default.ArrowDropDown,
-                     contentDescription = "Edit",
-                     tint = PulseAppColorPrimary,
-                     modifier = Modifier.size(20.dp)
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = "Edit",
+                    tint = PulseAppColorPrimary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
-    }
-}
-
-@Composable
-fun DeepWorkItem(event: TimelineEvent) {
-    // Just Icon and Text centered/aligned
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(id = R.drawable.deep_work_icon), // Ensure mapped to leaf/plant
-                contentDescription = "Deep Work",
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = event.deepWorkDuration ?: "45m",
-                style = Typography.titleLarge,
-                color = PulseAppColorPrimary
-            )
-        }
-        Text(
-            text = "Deep Work",
-            style = Typography.labelSmall.copy(color = PulseAppColorPrimary),
-        )
-    }
-}
-
-@Composable
-fun MorningItem(event: TimelineEvent) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-        Image(
-            painter = painterResource(id = R.drawable.sun_icon),
-            contentDescription = "Morning",
-            modifier = Modifier.size(32.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = event.time,
-            style = Typography.titleLarge.copy(color = PulseAppColorPrimary)
-        )
-    }
-}
-
-@Composable
-fun NightItem(event: TimelineEvent) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-        Image(
-            painter = painterResource(id = R.drawable.moon_icon),
-            contentDescription = "Night",
-            modifier = Modifier.size(32.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = event.time,
-            style = Typography.titleLarge.copy(color = PulseAppColorPrimary)
-        )
     }
 }
