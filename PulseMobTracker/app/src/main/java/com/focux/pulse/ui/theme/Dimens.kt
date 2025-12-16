@@ -45,4 +45,7 @@ val PulseAppBottomBarBottomPadding = 24.dp
 val PulseAppOfflineStreakCardHeight = 143.dp
 //Device Access Card
 val PulseAppDeviceAccessCardHeight = 171.dp
+//First and Last App Card
+val PulseAppFirstAndLastAppCardHeight = 171.dp
+
 

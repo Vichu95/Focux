@@ -1,9 +1,4 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
-    android:viewportWidth="24.0"
-    android:viewportHeight="24.0">
-    <path
-        android:fillColor="#FF64B5F6"
-        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM12,20c-4.41,0 -8,-3.59 -8,-8s3.59,-8 8,-8 8,3.59 8,8 -3.59,8 -8,8z"/>
-</vector>
+<svg width="48" height="49" viewBox="0 0 48 49" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M24.5 31.9707C28.2656 31.9707 31.3182 28.8545 31.3182 25.0105C31.3182 21.1664 28.2656 18.0502 24.5 18.0502C20.7344 18.0502 17.6818 21.1664 17.6818 25.0105C17.6818 28.8545 20.7344 31.9707 24.5 31.9707Z" stroke="#64B5F6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M24.5 9.69794V12.482M24.5 37.5388V40.3229M13.8636 14.1525L15.7727 16.1013M33.2273 33.9195L35.1364 35.8684M9.5 25.0104H12.2273M36.7727 25.0104H39.5M13.8636 35.8684L15.7727 33.9195M33.2273 16.1013L35.1364 14.1525" stroke="#64B5F6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
