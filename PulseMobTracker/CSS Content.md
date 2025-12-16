@@ -1,28 +1,29 @@
-/* Frame First and Last App */
+/* Frame Phone Day Usage */
 
 box-sizing: border-box;
 
 /* Auto layout */
 display: flex;
 flex-direction: column;
+justify-content: center;
 align-items: center;
 padding: 16px;
 gap: 10px;
 
 width: 380px;
-height: 171px;
+height: 203px;
 
 border: 2px solid #64B5F6;
 border-radius: 12px;
 
 /* Inside auto layout */
 flex: none;
-order: 4;
+order: 1;
 align-self: stretch;
 flex-grow: 0;
 
 
-/* First & Last Apps */
+/* Phone Activity */
 
 width: 348px;
 height: 32px;
@@ -44,7 +45,7 @@ align-self: stretch;
 flex-grow: 0;
 
 
-/* Frame 36 */
+/* Frame 48 */
 
 /* Auto layout */
 display: flex;
@@ -52,10 +53,9 @@ flex-direction: row;
 justify-content: space-between;
 align-items: center;
 padding: 0px;
-gap: 33px;
 
 width: 348px;
-height: 97px;
+height: 83px;
 
 
 /* Inside auto layout */
@@ -65,18 +65,62 @@ align-self: stretch;
 flex-grow: 0;
 
 
-/* Frame 42 */
+/* 5h 12m */
+
+margin: 0 auto;
+width: 130px;
+height: 48px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 36px;
+line-height: 48px;
+/* identical to box height */
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Frame 47 */
 
 /* Auto layout */
 display: flex;
 flex-direction: column;
 justify-content: center;
 align-items: center;
-padding: 0px;
+padding: 10px 0px 10px 10px;
 
 margin: 0 auto;
-width: 173px;
-height: 97px;
+width: 218px;
+height: 83px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 1;
+
+
+/* Productive : 3h 24m */
+
+width: 208px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 14px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+color: #FFFFFF;
 
 
 /* Inside auto layout */
@@ -86,51 +130,70 @@ align-self: stretch;
 flex-grow: 1;
 
 
-/* meteor-icons:sun */
+/* Neutral : 3h 24m */
 
-width: 48px;
-height: 49px;
+width: 208px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 14px;
+line-height: 18px;
+
+color: #FFFFFF;
 
 
 /* Inside auto layout */
 flex: none;
-order: 0;
+order: 1;
+align-self: stretch;
+flex-grow: 1;
+
+
+/* Distracting : 3h 24m */
+
+width: 208px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 14px;
+line-height: 18px;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 1;
+
+
+/* Frame 28 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 0px;
+gap: 51px;
+
+width: 348px;
+height: 36px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
 flex-grow: 0;
 
 
-/* Group */
-
-position: absolute;
-width: 30px;
-height: 30.62px;
-left: calc(50% - 30px/2 + 0.5px);
-top: calc(50% - 30.62px/2 + 0.51px);
-
-
-
-/* Vector */
-
-position: absolute;
-left: 36.84%;
-right: 34.75%;
-top: 36.84%;
-bottom: 34.75%;
-
-border: 4px solid #64B5F6;
-
-
-/* Vector */
-
-position: absolute;
-left: 19.79%;
-right: 17.71%;
-top: 19.79%;
-bottom: 17.71%;
-
-border: 4px solid #64B5F6;
-
-
-/* Frame 41 */
+/* Frame 25 */
 
 /* Auto layout */
 display: flex;
@@ -138,32 +201,11 @@ flex-direction: row;
 justify-content: center;
 align-items: center;
 padding: 0px;
-gap: 16px;
+gap: 8px;
 
-width: 173px;
+margin: 0 auto;
+width: 102px;
 height: 36px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* 06:00 */
-
-width: 48px;
-height: 21px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 16px;
-line-height: 21px;
-text-align: center;
-
-color: #FFFFFF;
 
 
 /* Inside auto layout */
@@ -180,7 +222,7 @@ height: 36px;
 
 /* Inside auto layout */
 flex: none;
-order: 1;
+order: 0;
 flex-grow: 0;
 
 
@@ -227,89 +269,9 @@ bottom: 10.94%;
 background: #FFFFFF;
 
 
-/* Rectangle 4 */
+/* 5h 12m */
 
-margin: 0 auto;
-width: 2px;
-height: 97px;
-
-background: #2B4555;
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Frame 44 */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-padding: 0px;
-gap: 7px;
-
-margin: 0 auto;
-width: 173px;
-height: 97px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 2;
-align-self: stretch;
-flex-grow: 1;
-
-
-/* mdi:weather-night */
-
-width: 39px;
-height: 39px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 8.36%;
-right: 11.46%;
-top: 4.17%;
-bottom: 8.26%;
-
-background: #64B5F6;
-
-
-/* Frame 43 */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: center;
-align-items: center;
-padding: 0px;
-gap: 16px;
-
-width: 173px;
-height: 36px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* 23:15 */
-
-width: 48px;
+width: 58px;
 height: 21px;
 
 font-family: 'JetBrains Mono';
@@ -324,7 +286,137 @@ color: #FFFFFF;
 
 /* Inside auto layout */
 flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Frame 26 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 8px;
+
+margin: 0 auto;
+width: 91px;
+height: 36px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* logos:google-maps */
+
+width: 25px;
+height: 36px;
+
+
+/* Inside auto layout */
+flex: none;
 order: 0;
+flex-grow: 0;
+
+
+/* Vector */
+
+position: absolute;
+left: 27.58%;
+right: 0.01%;
+top: 18.76%;
+bottom: 0.03%;
+
+background: #34A853;
+
+
+/* Vector */
+
+position: absolute;
+left: 4.94%;
+right: 35.3%;
+top: 26.3%;
+bottom: 25.92%;
+
+background: #FBBC04;
+
+
+/* Vector */
+
+position: absolute;
+left: 35.3%;
+right: 5.64%;
+top: 1.58%;
+bottom: 56.6%;
+
+background: #4285F4;
+
+
+/* Vector */
+
+position: absolute;
+left: 11.73%;
+right: 34.92%;
+top: 0%;
+bottom: 73.7%;
+
+background: #1A73E8;
+
+
+/* Vector */
+
+position: absolute;
+left: 0.01%;
+right: 64.71%;
+top: 12.47%;
+bottom: 48.53%;
+
+background: #EA4335;
+
+
+/* 5h 12m */
+
+width: 58px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 16px;
+line-height: 21px;
+text-align: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Frame 27 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 8px;
+
+margin: 0 auto;
+width: 102px;
+height: 36px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
 flex-grow: 0;
 
 
@@ -336,7 +428,7 @@ height: 36px;
 
 /* Inside auto layout */
 flex: none;
-order: 1;
+order: 0;
 flex-grow: 0;
 
 
@@ -414,3 +506,24 @@ top: 20.7%;
 bottom: 50.87%;
 
 background: #C5221F;
+
+
+/* 5h 12m */
+
+width: 58px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 16px;
+line-height: 21px;
+text-align: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
