@@ -1,5 +1,6 @@
 package com.focux.pulse.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Icon
@@ -9,10 +10,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.focux.pulse.R
+import com.focux.pulse.ui.theme.PulseAppColorBackground
 import com.focux.pulse.ui.theme.PulseAppColorPrimary
 import com.focux.pulse.ui.theme.PulseAppColorSecondary
-import com.focux.pulse.ui.theme.Typography
+import com.focux.pulse.ui.theme.PulseAppBottomBarHeight
+import com.focux.pulse.ui.theme.PulseAppFontSubHeader
+import com.focux.pulse.ui.theme.PulseAppIconSizeLarge
+import com.focux.pulse.ui.theme.PulseAppPaddingMedium
+import com.focux.pulse.ui.theme.PulseAppPaddingTiny
 
 @Composable
 fun BottomNavBar(
@@ -22,8 +29,10 @@ fun BottomNavBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
+            .height(PulseAppBottomBarHeight)
+            .background(PulseAppColorBackground)
+            .padding(horizontal = PulseAppPaddingMedium),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         NavTab(
@@ -49,21 +58,25 @@ fun BottomNavBar(
 
 @Composable
 fun NavTab(iconRes: Int, label: String, selected: Boolean, onClick: () -> Unit) {
+    val contentColor = if (selected) PulseAppColorPrimary else PulseAppColorSecondary
+    
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
+        verticalArrangement = Arrangement.spacedBy(PulseAppPaddingTiny),
+        modifier = Modifier
+            .padding(vertical = PulseAppPaddingMedium)
+            .clickable { onClick() }
     ) {
         Icon(
             painter = painterResource(id = iconRes),
             contentDescription = label,
-            tint = if (selected) PulseAppColorPrimary else PulseAppColorSecondary,
-            modifier = Modifier.size(24.dp)
+            tint = contentColor,
+            modifier = Modifier.size(PulseAppIconSizeLarge)
         )
-        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
-            style = Typography.labelSmall,
-            color = if (selected) PulseAppColorPrimary else PulseAppColorSecondary
+            style = PulseAppFontSubHeader,
+            color = contentColor
         )
     }
 }

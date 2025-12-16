@@ -8,31 +8,33 @@ import androidx.compose.ui.unit.sp
 
 // Using Default fonts for now, but configured for the look
 // PulseApp Typography
+// Using Default fonts for now, but configured for the look
+// PulseApp Typography
 val PulseAppFontHeader = TextStyle(
     fontFamily = FontFamily.Monospace,
     fontWeight = FontWeight.Bold,
-    fontSize = 24.sp,
+    fontSize = PulseAppFontSizeHeader,
     color = PulseAppColorPrimary
 )
 
 val PulseAppFontSubHeader = TextStyle(
     fontFamily = FontFamily.Monospace,
     fontWeight = FontWeight.Normal,
-    fontSize = 16.sp,
+    fontSize = PulseAppFontSizeSubHeader,
     color = PulseAppColorSecondary
 )
 
 val PulseAppFontBody = TextStyle(
     fontFamily = FontFamily.Monospace,
     fontWeight = FontWeight.Normal,
-    fontSize = 14.sp,
+    fontSize = PulseAppFontSizeBody,
     color = PulseAppColorSecondary
 )
 
 val PulseAppFontBigNumber = TextStyle(
     fontFamily = FontFamily.Monospace,
     fontWeight = FontWeight.Normal,
-    fontSize = 36.sp,
+    fontSize = PulseAppFontSizeBigNumber,
     color = PulseAppColorSecondary
 )
 

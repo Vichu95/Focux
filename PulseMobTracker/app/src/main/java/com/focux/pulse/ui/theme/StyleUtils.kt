@@ -12,5 +12,5 @@ import androidx.compose.ui.unit.dp
 fun Modifier.pulseAppCard(): Modifier = composed {
     this
         .background(Color.Transparent, RoundedCornerShape(PulseAppCornerRadiusMedium))
-        .border(1.dp, PulseAppColorPrimary, RoundedCornerShape(PulseAppCornerRadiusMedium))
+        .border(PulseAppBorderWidth, PulseAppColorPrimary, RoundedCornerShape(PulseAppCornerRadiusMedium))
 }
