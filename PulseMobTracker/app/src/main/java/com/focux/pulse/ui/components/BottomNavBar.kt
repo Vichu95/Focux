@@ -21,8 +21,8 @@ import com.focux.pulse.ui.theme.PulseAppFontSubHeader
 import com.focux.pulse.ui.theme.PulseAppPaddingMedium
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.remember
-import com.focux.pulse.ui.theme.PulseAppPaddingLarge
-
+import com.focux.pulse.ui.theme.PulseAppBottomBarBottomPadding
+import com.focux.pulse.ui.theme.PulseAppIconSizeLarge
 @Composable
 fun BottomNavBar(
     selectedTab: Int,
@@ -33,38 +33,35 @@ fun BottomNavBar(
             .fillMaxWidth()
             .height(PulseAppBottomBarHeight)
             .background(PulseAppColorBackground)
-            .padding(start = PulseAppPaddingMedium, end = PulseAppPaddingMedium, bottom = PulseAppPaddingLarge),
+            .padding(start = PulseAppPaddingMedium, end = PulseAppPaddingMedium, bottom = PulseAppBottomBarBottomPadding),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Summary Tab: Icon 34dp, Gap 15dp
+        // Summary Tab: Icon 34dp
         NavTab(
              iconRes = R.drawable.summary_icon, 
              label = "Summary", 
              selected = selectedTab == 0,
              iconWidth = 34.dp,
              iconHeight = 34.dp,
-             gap = 15.dp,
              onClick = { onTabSelected(0) }
         )
-        // Timeline Tab: Icon 44x24dp, Gap 16dp
+        // Timeline Tab: Icon 44x24dp
         NavTab(
              iconRes = R.drawable.timeline_icon, 
              label = "Timeline", 
              selected = selectedTab == 1,
              iconWidth = 44.dp,
              iconHeight = 24.dp,
-             gap = 16.dp, 
              onClick = { onTabSelected(1) }
         )
-        // Insights Tab: Icon 45x48dp, Gap 6dp
+        // Insights Tab: Icon 45x48dp
         NavTab(
              iconRes = R.drawable.insights_icon, 
              label = "Insights", 
              selected = selectedTab == 2,
              iconWidth = 45.dp,
              iconHeight = 48.dp,
-             gap = 6.dp,
              onClick = { onTabSelected(2) }
         )
     }
@@ -77,27 +74,35 @@ fun NavTab(
     selected: Boolean, 
     iconWidth: Dp,
     iconHeight: Dp,
-    gap: Dp,
     onClick: () -> Unit
 ) {
     val contentColor = if (selected) PulseAppColorPrimary else PulseAppColorSecondary
     
+    // Standard gap from CSS (8px approx) or user pref (6dp). Using 6dp for consistency with Insights.
+    val gap = 6.dp 
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(gap),
         modifier = Modifier
-            .padding(vertical = PulseAppPaddingMedium)
+            .padding(vertical = PulseAppPaddingMedium) // Top padding only, bottom controlled by container
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { onClick() }
     ) {
-        Icon(
-            painter = painterResource(id = iconRes),
-            contentDescription = label,
-            tint = contentColor,
-            modifier = Modifier.size(width = iconWidth, height = iconHeight)
-        )
+        // Container box to ensure consistent height for alignment (48dp)
+        Box(
+            modifier = Modifier.size(PulseAppIconSizeLarge),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = label,
+                tint = contentColor,
+                modifier = Modifier.size(width = iconWidth, height = iconHeight)
+            )
+        }
         Text(
             text = label,
             style = PulseAppFontSubHeader,
