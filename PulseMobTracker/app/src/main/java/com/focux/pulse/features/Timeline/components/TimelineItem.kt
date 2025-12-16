@@ -84,7 +84,6 @@ fun TimelineItem(event: TimelineEvent, isFirst: Boolean, isLast: Boolean) {
 @Composable
 fun AppTimelineCard(event: TimelineEvent) {
     // The "Card" style from screenshot
-    Column(
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -115,8 +114,9 @@ fun AppTimelineCard(event: TimelineEvent) {
                 .border(1.dp, PulseAppColorPrimary, androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
                 .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
+                // Fixed: event.app.name instead of event.appName
                 Text(
-                    text = event.appName,
+                    text = event.app.name, 
                     style = Typography.titleLarge,
                     color = PulseAppColorSecondary
                 )
@@ -127,7 +127,7 @@ fun AppTimelineCard(event: TimelineEvent) {
                 )
              }
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         // Tags/Dropdowns (Visual only for now)
         Box(
             modifier = Modifier
