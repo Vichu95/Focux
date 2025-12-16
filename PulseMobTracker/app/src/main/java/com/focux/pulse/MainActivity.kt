@@ -16,7 +16,7 @@ import com.focux.pulse.features.Insights.InsightsScreen
 import com.focux.pulse.features.Summary.SummaryScreen
 import com.focux.pulse.features.Timeline.TimelineScreen
 import com.focux.pulse.ui.components.BottomNavBar
-import com.focux.pulse.ui.components.TopBar
+
 import com.focux.pulse.ui.theme.PulseTheme
 
 class MainActivity : ComponentActivity() {
@@ -36,7 +36,6 @@ fun MainAppStructure() {
     var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
-        topBar = { TopBar() },
         bottomBar = {
             BottomNavBar(
                 selectedTab = selectedTab,

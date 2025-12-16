@@ -1,10 +1,16 @@
 package com.focux.pulse.features.Summary
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.data.dummyDeviceAccess
@@ -15,6 +21,10 @@ import com.focux.pulse.features.Summary.components.DeviceAccessCard
 import com.focux.pulse.features.Summary.components.FirstLastAppsCard
 import com.focux.pulse.features.Summary.components.OfflineStreakCard
 import com.focux.pulse.features.Summary.components.PhoneActivityCard
+import com.focux.pulse.ui.theme.CyberpunkPrimary
+import com.focux.pulse.ui.theme.CyberpunkRing
+import com.focux.pulse.ui.theme.CyberpunkSecondaryText
+import com.focux.pulse.ui.theme.Typography
 
 @Composable
 fun SummaryScreen() {
@@ -26,6 +36,10 @@ fun SummaryScreen() {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Date & Focus Header (Moved from TopBar)
+        item {
+            DateFocusHeader()
+        }
         item {
             PhoneActivityCard(data = dummyPhoneActivity)
         }
@@ -37,6 +51,51 @@ fun SummaryScreen() {
         }
         item {
             FirstLastAppsCard(data = dummyFirstLastApps)
+        }
+    }
+}
+
+@Composable
+fun DateFocusHeader() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp), // Slight extra spacing below header
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Left: Date Nav
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                contentDescription = "Prev",
+                tint = CyberpunkSecondaryText
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "14 Dec",
+                style = Typography.titleLarge,
+                color = CyberpunkSecondaryText
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = "Next",
+                tint = CyberpunkSecondaryText
+            )
+        }
+        
+        // Right: Focus Score
+        Box(
+            modifier = Modifier
+                .background(CyberpunkRing, RoundedCornerShape(16.dp))
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+        ) {
+            Text(
+                text = "Focus: 72",
+                style = Typography.labelSmall,
+                color = CyberpunkPrimary 
+            )
         }
     }
 }
