@@ -35,6 +35,7 @@ val PulseAppFontSizeFocus = 15.sp
 val PulseAppFontSizeSubHeader = 16.sp
 val PulseAppFontSizeBody = 14.sp
 val PulseAppFontSizeBigNumber = 36.sp
+val PulseAppFontSizeSmall = 12.sp
 
 // Bottom Bar
 val PulseAppBottomBarHeight = 133.dp
@@ -52,5 +53,10 @@ val PulseAppFirstAndLastAppCardHeight = 171.dp
 val PulseAppPhoneActivityCardHeight = 203.dp
 // Focus Score Card
 val PulseAppFocusScoreCardHeight = 38.dp
+
+// Timeline Card
+val PulseAppTimelineCardWidth = 251.dp
+val PulseAppTimelineCardHeight = 128.dp
+
 
 

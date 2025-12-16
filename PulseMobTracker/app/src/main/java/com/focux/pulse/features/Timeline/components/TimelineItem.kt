@@ -12,12 +12,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import com.focux.pulse.R
 import com.focux.pulse.data.TimelineEvent
-import com.focux.pulse.ui.theme.PulseAppColorPrimary
-import com.focux.pulse.ui.theme.PulseAppColorSecondary
-import com.focux.pulse.ui.theme.Typography
-import com.focux.pulse.ui.theme.pulseAppCard
+import com.focux.pulse.ui.theme.*
 
 @Composable
 fun TimelineItem(event: TimelineEvent, isFirst: Boolean, isLast: Boolean) {
@@ -83,62 +82,60 @@ fun TimelineItem(event: TimelineEvent, isFirst: Boolean, isLast: Boolean) {
 
 @Composable
 fun AppTimelineCard(event: TimelineEvent) {
-    // The "Card" style from screenshot
-    Row(
+    // Frame 17 Spec: 251x128
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .pulseAppCard()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .width(PulseAppTimelineCardWidth)
+            .height(PulseAppTimelineCardHeight)
+            .background(Color.Transparent, androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
+            .border(PulseAppBorderWidthThick, PulseAppColorPrimary, androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
+            .padding(vertical = 16.dp, horizontal = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-         Text(
-            text = event.time,
-            style = Typography.labelSmall.copy(fontSize = 12.sp),
-            color = PulseAppColorSecondary,
-            modifier = Modifier.width(60.dp)
-        )
-        
-        // ... (Visual Line Logic) ... 
+        // App Name (Instagram)
         Text(
-             text = "|", 
-             color = PulseAppColorSecondary 
+            text = event.app.name,
+            style = PulseAppFontHeader, // 24sp
+            color = PulseAppColorSecondary // White
         )
 
-        Spacer(modifier = Modifier.width(16.dp))
+        // Time Range (14:02 - 14:16)
+        Text(
+            text = event.range, // e.g. "14:02 - 14:16"
+            style = Typography.labelSmall.copy(fontSize = PulseAppFontSizeSmall), // 12sp
+            color = PulseAppColorSecondary
+        )
 
-        // Content
-        Column {
-             Box(
-                modifier = Modifier
-                .border(1.dp, PulseAppColorPrimary, androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                // Fixed: event.app.name instead of event.appName
-                Text(
-                    text = event.app.name, 
-                    style = Typography.titleLarge,
-                    color = PulseAppColorSecondary
-                )
-                Text(
-                    text = event.range, // e.g., "14:02 - 14:16"
-                    style = Typography.labelSmall,
-                    color = PulseAppColorSecondary
-                )
-             }
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        // Tags/Dropdowns (Visual only for now)
+        Spacer(modifier = Modifier.weight(1f)) // Push pill to bottom if space remains, or just standard gap
+
+        // Categorization Pill (Frame 16)
         Box(
             modifier = Modifier
-                .border(1.dp, PulseAppColorPrimary, androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
-                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .fillMaxWidth()
+                .height(32.dp)
+                .border(PulseAppBorderWidth, PulseAppColorPrimary, androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
+                //.padding(horizontal = 12.dp, vertical = 6.dp) // Auto-layout padding logic handled by alignment usually, but box content alignment is key
+                .padding(horizontal = 12.dp), // Inner padding for text/icon
+             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = if (event.app.type.toString() == "Distracting") "Distracting ▼" else "Productive ▼",
-                style = Typography.labelSmall,
-                color = PulseAppColorPrimary
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = if (event.app.type.toString() == "Distracting") "Distracting" else "Productive",
+                    style = Typography.labelSmall.copy(fontSize = PulseAppFontSizeSmall), // 12sp
+                    color = PulseAppColorPrimary
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                // Dropdown Icon
+                androidx.compose.material3.Icon(
+                     imageVector = androidx.compose.material.icons.Icons.Default.ArrowDropDown,
+                     contentDescription = "Edit",
+                     tint = PulseAppColorPrimary,
+                     modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }

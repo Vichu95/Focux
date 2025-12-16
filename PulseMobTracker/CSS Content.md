@@ -1,129 +1,20 @@
-/* Frame Date Focus Score */
+/* Frame 17 */
+
+box-sizing: border-box;
 
 /* Auto layout */
 display: flex;
-flex-direction: row;
-justify-content: space-between;
-align-items: center;
-padding: 0px;
-gap: 87px;
-
-width: 380px;
-height: 38px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Frame Summary Date */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
+flex-direction: column;
 justify-content: center;
-align-items: center;
-padding: 0px;
-gap: 11px;
+align-items: flex-start;
+padding: 16px 12px;
+gap: 8px;
 
 margin: 0 auto;
-width: 145px;
-height: 38px;
+width: 251px;
+height: 128px;
 
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* weui:arrow-filled */
-
-width: 18px;
-height: 36px;
-
-transform: rotate(180deg);
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 12.92%;
-right: 25.72%;
-top: 23.47%;
-bottom: 23.5%;
-
-background: #FFFFFF;
-transform: rotate(180deg);
-
-
-/* 14 Dec */
-
-width: 87px;
-height: 32px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 24px;
-line-height: 32px;
-/* identical to box height */
-text-align: center;
-
-color: #FFFFFF;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* weui:arrow-filled */
-
-width: 18px;
-height: 36px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 2;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 25.72%;
-right: 12.92%;
-top: 23.5%;
-bottom: 23.47%;
-
-background: #FFFFFF;
-
-
-/* Frame 22 */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: center;
-align-items: center;
-padding: 4px 8px;
-gap: 10px;
-
-margin: 0 auto;
-width: 97px;
-height: 28px;
-
-background: #2B4555;
+border: 2px solid #64B5F6;
 border-radius: 12px;
 
 /* Inside auto layout */
@@ -132,18 +23,17 @@ order: 1;
 flex-grow: 0;
 
 
-/* Focus: 72 */
+/* Instagram */
 
-width: 81px;
-height: 20px;
+width: 130px;
+height: 32px;
 
 font-family: 'JetBrains Mono';
 font-style: normal;
-font-weight: 400;
-font-size: 15px;
-line-height: 20px;
+font-weight: 700;
+font-size: 24px;
+line-height: 32px;
 /* identical to box height */
-text-align: center;
 
 color: #FFFFFF;
 
@@ -152,3 +42,95 @@ color: #FFFFFF;
 flex: none;
 order: 0;
 flex-grow: 0;
+
+
+/* 14:02 - 14:16 */
+
+width: 227px;
+height: 16px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 12px;
+line-height: 16px;
+/* identical to box height */
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame 16 */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 6px 12px;
+gap: 10px;
+
+width: 227px;
+height: 32px;
+
+border: 1px solid #64B5F6;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Distracting */
+
+width: 80px;
+height: 16px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 12px;
+line-height: 16px;
+/* identical to box height */
+text-align: center;
+
+color: #64B5F6;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* material-symbols:arrow-drop-down */
+
+width: 20px;
+height: 20px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Vector */
+
+position: absolute;
+left: 29.17%;
+right: 29.17%;
+top: 41.67%;
+bottom: 37.5%;
+
+background: #64B5F6;
