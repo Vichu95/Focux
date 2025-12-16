@@ -5,12 +5,12 @@ display: flex;
 flex-direction: row;
 justify-content: space-between;
 align-items: center;
-padding: 0px 16px;
+padding: 0px 16px 16px;
 gap: 49px;
 
 position: absolute;
 width: 412px;
-height: 107px;
+height: 125px;
 left: 0px;
 bottom: 0px;
 
@@ -21,14 +21,14 @@ bottom: 0px;
 /* Auto layout */
 display: flex;
 flex-direction: column;
-justify-content: space-between;
+justify-content: center;
 align-items: center;
 padding: 16px 0px;
-gap: 15px;
+gap: 8px;
 
 margin: 0 auto;
 width: 126.67px;
-height: 107px;
+height: 109px;
 
 
 /* Inside auto layout */
@@ -40,7 +40,6 @@ flex-grow: 1;
 
 /* iconamoon:screen-full-fill */
 
-margin: 0 auto;
 width: 48px;
 height: 48px;
 
@@ -64,7 +63,6 @@ background: #64B5F6;
 
 /* Summary */
 
-margin: 0 auto;
 width: 89px;
 height: 21px;
 
@@ -91,14 +89,14 @@ flex-grow: 0;
 /* Auto layout */
 display: flex;
 flex-direction: column;
-justify-content: space-between;
+justify-content: center;
 align-items: center;
 padding: 16px 0px;
-gap: 16px;
+gap: 8px;
 
 margin: 0 auto;
 width: 126.67px;
-height: 107px;
+height: 109px;
 
 
 /* Inside auto layout */
@@ -110,7 +108,6 @@ flex-grow: 1;
 
 /* mdi:chart-timeline-variant */
 
-margin: 0 auto;
 width: 48px;
 height: 48px;
 
@@ -134,7 +131,6 @@ background: #FFFFFF;
 
 /* Timeline */
 
-margin: 0 auto;
 width: 101px;
 height: 21px;
 
@@ -161,14 +157,14 @@ flex-grow: 0;
 /* Auto layout */
 display: flex;
 flex-direction: column;
-justify-content: space-between;
+justify-content: center;
 align-items: center;
 padding: 16px 0px;
-gap: 6px;
+gap: 8px;
 
 margin: 0 auto;
 width: 126.67px;
-height: 107px;
+height: 109px;
 
 
 /* Inside auto layout */
@@ -180,7 +176,6 @@ flex-grow: 1;
 
 /* fluent-mdl2:insights */
 
-margin: 0 auto;
 width: 48px;
 height: 48px;
 
@@ -204,7 +199,6 @@ background: #FFFFFF;
 
 /* Insights */
 
-margin: 0 auto;
 width: 101px;
 height: 21px;
 
