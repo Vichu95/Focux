@@ -92,9 +92,9 @@ flex-grow: 1;
 display: flex;
 flex-direction: column;
 justify-content: center;
-align-items: center;
-padding: 0px;
-gap: 4px;
+align-items: flex-start;
+padding: 0px 46px;
+gap: 3px;
 
 margin: 0 auto;
 width: 329px;
@@ -115,10 +115,10 @@ display: flex;
 flex-direction: row;
 justify-content: center;
 align-items: center;
-padding: 0px 50px;
+padding: 0px;
 gap: 6px;
 
-width: 329px;
+width: 237px;
 height: 49px;
 
 
@@ -191,6 +191,28 @@ color: #64B5F6;
 /* Inside auto layout */
 flex: none;
 order: 1;
+flex-grow: 0;
+
+
+/* First Usage of Phone */
+
+width: 237px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 16px;
+line-height: 21px;
+text-align: center;
+
+color: #64B5F6;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
 flex-grow: 0;
 
 
@@ -875,9 +897,9 @@ flex-grow: 1;
 display: flex;
 flex-direction: column;
 justify-content: center;
-align-items: center;
-padding: 0px;
-gap: 4px;
+align-items: flex-start;
+padding: 0px 46px;
+gap: 3px;
 
 margin: 0 auto;
 width: 329px;
@@ -898,10 +920,10 @@ display: flex;
 flex-direction: row;
 justify-content: center;
 align-items: center;
-padding: 0px 50px;
+padding: 0px;
 gap: 6px;
 
-width: 329px;
+width: 237px;
 height: 30px;
 
 
@@ -935,7 +957,7 @@ bottom: 8.26%;
 background: #64B5F6;
 
 
-/* 22:00 */
+/* 23:50 */
 
 width: 60px;
 height: 26px;
@@ -953,4 +975,26 @@ color: #64B5F6;
 /* Inside auto layout */
 flex: none;
 order: 1;
+flex-grow: 0;
+
+
+/* Last Usage of Phone */
+
+width: 237px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 16px;
+line-height: 21px;
+text-align: center;
+
+color: #64B5F6;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
 flex-grow: 0;
