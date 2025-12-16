@@ -5,12 +5,12 @@ display: flex;
 flex-direction: row;
 justify-content: space-between;
 align-items: center;
-padding: 0px 16px 16px;
+padding: 0px 16px 32px;
 gap: 49px;
 
 position: absolute;
 width: 412px;
-height: 125px;
+height: 141px;
 left: 0px;
 bottom: 0px;
 

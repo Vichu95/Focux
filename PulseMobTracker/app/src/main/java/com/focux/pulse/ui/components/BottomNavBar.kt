@@ -19,6 +19,9 @@ import androidx.compose.ui.unit.Dp
 import com.focux.pulse.ui.theme.PulseAppBottomBarHeight
 import com.focux.pulse.ui.theme.PulseAppFontSubHeader
 import com.focux.pulse.ui.theme.PulseAppPaddingMedium
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.runtime.remember
+import com.focux.pulse.ui.theme.PulseAppPaddingLarge
 
 @Composable
 fun BottomNavBar(
@@ -30,7 +33,7 @@ fun BottomNavBar(
             .fillMaxWidth()
             .height(PulseAppBottomBarHeight)
             .background(PulseAppColorBackground)
-            .padding(horizontal = PulseAppPaddingMedium),
+            .padding(start = PulseAppPaddingMedium, end = PulseAppPaddingMedium, bottom = PulseAppPaddingLarge),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -84,7 +87,10 @@ fun NavTab(
         verticalArrangement = Arrangement.spacedBy(gap),
         modifier = Modifier
             .padding(vertical = PulseAppPaddingMedium)
-            .clickable { onClick() }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onClick() }
     ) {
         Icon(
             painter = painterResource(id = iconRes),
