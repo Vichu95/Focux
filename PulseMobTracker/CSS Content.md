@@ -1,0 +1,224 @@
+/* Frame Menu Bar */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 0px 16px;
+gap: 49px;
+
+position: absolute;
+width: 412px;
+height: 107px;
+left: 0px;
+bottom: 0px;
+
+
+
+/* Frame 52 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+align-items: center;
+padding: 16px 0px;
+gap: 15px;
+
+margin: 0 auto;
+width: 126.67px;
+height: 107px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 1;
+
+
+/* iconamoon:screen-full-fill */
+
+margin: 0 auto;
+width: 48px;
+height: 48px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Vector */
+
+position: absolute;
+left: 14.58%;
+right: 14.58%;
+top: 14.58%;
+bottom: 14.58%;
+
+background: #64B5F6;
+
+
+/* Summary */
+
+margin: 0 auto;
+width: 89px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 16px;
+line-height: 21px;
+display: flex;
+align-items: center;
+text-align: center;
+
+color: #64B5F6;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Frame 50 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+align-items: center;
+padding: 16px 0px;
+gap: 16px;
+
+margin: 0 auto;
+width: 126.67px;
+height: 107px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 1;
+
+
+/* mdi:chart-timeline-variant */
+
+margin: 0 auto;
+width: 48px;
+height: 48px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Vector */
+
+position: absolute;
+left: 4.17%;
+right: 4.17%;
+top: 25%;
+bottom: 25%;
+
+background: #FFFFFF;
+
+
+/* Timeline */
+
+margin: 0 auto;
+width: 101px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 16px;
+line-height: 21px;
+display: flex;
+align-items: center;
+text-align: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Frame 51 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+align-items: center;
+padding: 16px 0px;
+gap: 6px;
+
+margin: 0 auto;
+width: 126.67px;
+height: 107px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 1;
+
+
+/* fluent-mdl2:insights */
+
+margin: 0 auto;
+width: 48px;
+height: 48px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Vector */
+
+position: absolute;
+left: 0%;
+right: 6.25%;
+top: 0%;
+bottom: 0%;
+
+background: #FFFFFF;
+
+
+/* Insights */
+
+margin: 0 auto;
+width: 101px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 16px;
+line-height: 21px;
+text-align: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
