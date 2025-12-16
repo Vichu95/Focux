@@ -22,6 +22,11 @@ val PulseAppPaddingTiny = 6.dp
 
 // Borders
 val PulseAppBorderWidth = 1.dp
+val PulseAppBorderWidthThick = 2.dp
+
+// Card Dimensions
+val PulseAppCardWidth = 380.dp
+val PulseAppCardPadding = PulseAppPaddingMedium
 
 // Text Sizes
 val PulseAppFontSizeHeader = 24.sp
@@ -32,3 +37,9 @@ val PulseAppFontSizeBigNumber = 36.sp
 // Bottom Bar
 val PulseAppBottomBarHeight = 133.dp
 val PulseAppBottomBarBottomPadding = 24.dp
+
+
+//Summary Card
+//Offline Streak Card
+val PulseAppOfflineStreakCardHeight = 143.dp
+

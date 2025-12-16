@@ -1,112 +1,91 @@
-/* Frame Menu Bar */
+/* Frame Unused Time */
 
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: space-between;
-align-items: center;
-padding: 0px 16px 32px;
-gap: 49px;
-
-position: absolute;
-width: 412px;
-height: 141px;
-left: 0px;
-bottom: 0px;
-
-
-
-/* Frame 52 */
+box-sizing: border-box;
 
 /* Auto layout */
 display: flex;
 flex-direction: column;
-justify-content: center;
-align-items: center;
-padding: 16px 0px;
-gap: 8px;
+align-items: flex-start;
+padding: 16px;
+gap: 10px;
 
-margin: 0 auto;
-width: 126.67px;
-height: 109px;
+width: 380px;
+height: 143px;
 
+border: 2px solid #64B5F6;
+border-radius: 12px;
 
 /* Inside auto layout */
 flex: none;
-order: 0;
+order: 3;
 align-self: stretch;
-flex-grow: 1;
-
-
-/* iconamoon:screen-full-fill */
-
-width: 48px;
-height: 48px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
 flex-grow: 0;
 
 
-/* Vector */
+/* Offline Streak */
 
-position: absolute;
-left: 14.58%;
-right: 14.58%;
-top: 14.58%;
-bottom: 14.58%;
-
-background: #64B5F6;
-
-
-/* Summary */
-
-width: 89px;
-height: 21px;
+width: 348px;
+height: 32px;
 
 font-family: 'JetBrains Mono';
 font-style: normal;
-font-weight: 400;
-font-size: 16px;
-line-height: 21px;
-display: flex;
-align-items: center;
-text-align: center;
+font-weight: 700;
+font-size: 24px;
+line-height: 32px;
+/* identical to box height */
 
 color: #64B5F6;
 
 
 /* Inside auto layout */
 flex: none;
-order: 1;
+order: 0;
+align-self: stretch;
 flex-grow: 0;
 
 
-/* Frame 50 */
+/* Frame 39 */
 
 /* Auto layout */
 display: flex;
 flex-direction: column;
 justify-content: center;
 align-items: center;
-padding: 16px 0px;
-gap: 8px;
+padding: 0px;
 
-margin: 0 auto;
-width: 126.67px;
-height: 109px;
+width: 348px;
+height: 69px;
 
 
 /* Inside auto layout */
 flex: none;
 order: 1;
 align-self: stretch;
-flex-grow: 1;
+flex-grow: 0;
 
 
-/* mdi:chart-timeline-variant */
+/* Frame 38 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 8px;
+
+width: 348px;
+height: 48px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* solar:fire-bold */
 
 width: 48px;
 height: 48px;
@@ -121,27 +100,25 @@ flex-grow: 0;
 /* Vector */
 
 position: absolute;
-left: 4.17%;
-right: 4.17%;
-top: 25%;
-bottom: 25%;
+left: 12.5%;
+right: 16.67%;
+top: 10.64%;
+bottom: 8.33%;
 
-background: #FFFFFF;
+background: #64B5F6;
 
 
-/* Timeline */
+/* 5h 12m */
 
-width: 101px;
-height: 21px;
+width: 130px;
+height: 48px;
 
 font-family: 'JetBrains Mono';
 font-style: normal;
 font-weight: 400;
-font-size: 16px;
-line-height: 21px;
-display: flex;
-align-items: center;
-text-align: center;
+font-size: 36px;
+line-height: 48px;
+/* identical to box height */
 
 color: #FFFFFF;
 
@@ -152,54 +129,9 @@ order: 1;
 flex-grow: 0;
 
 
-/* Frame 51 */
+/* 14:00 - 16:40 */
 
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-padding: 16px 0px;
-gap: 8px;
-
-margin: 0 auto;
-width: 126.67px;
-height: 109px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 2;
-align-self: stretch;
-flex-grow: 1;
-
-
-/* fluent-mdl2:insights */
-
-width: 48px;
-height: 48px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 0%;
-right: 6.25%;
-top: 0%;
-bottom: 0%;
-
-background: #FFFFFF;
-
-
-/* Insights */
-
-width: 101px;
+width: 348px;
 height: 21px;
 
 font-family: 'JetBrains Mono';
@@ -215,4 +147,5 @@ color: #FFFFFF;
 /* Inside auto layout */
 flex: none;
 order: 1;
+align-self: stretch;
 flex-grow: 0;
