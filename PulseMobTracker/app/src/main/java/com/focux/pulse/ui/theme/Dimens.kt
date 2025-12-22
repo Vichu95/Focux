@@ -59,6 +59,7 @@ val PulseAppTimelineCardWidth = 251.dp
 val PulseAppTimelineCardHeight = 128.dp
 val PulseAppTimelineAppItemHeight = 158.dp
 val PulseAppTimelineFactItemHeight = 124.dp
+val PulseAppTimelineAppTypeWidth = 227.dp
 val PulseAppTimelineLineColumnWidth = 20.dp
 val PulseAppTimelineLineColumnWidthDashed = 19.dp
 val PulseAppTimelineNodeSize = 20.dp
