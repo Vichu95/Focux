@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.animation.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -251,113 +252,124 @@ fun AppTimelineCard(event: TimelineEvent) {
             )
             .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
     ) {
-        androidx.compose.animation.Crossfade(targetState = isSelecting, label = "selection_transition") { selecting ->
-            if (selecting) {
-                // SELECTION OVERLAY
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(PulseAppColorBackground),
-                    verticalArrangement = Arrangement.SpaceEvenly,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    ActivityType.values().forEach { type ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .clickable {
-                                    selectedType = type
-                                    isSelecting = false
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = type.name,
-                                style = Typography.labelSmall.copy(
-                                    fontSize = PulseAppFontSizeSmall,
-                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                    color = if (type == selectedType) PulseAppColorPrimary else Color.White
-                                )
-                            )
-                        }
-                        // Divider lines between items
-                        if (type != ActivityType.values().last()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(PulseAppColorPrimary.copy(alpha = 0.2f))
-                            )
-                        }
-                    }
-                }
-            } else {
-                // NORMAL CARD CONTENT
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(vertical = PulseAppPaddingMedium, horizontal = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(PulseAppPaddingSmall)
-                ) {
-                    // App Name
-                    Text(
-                        text = event.app.name,
-                        style = Typography.bodyLarge.copy(
-                            fontSize = PulseAppFontSizeHeader,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            color = Color.White
-                        )
-                    )
+        // LAYER 1: Standard Card Content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(vertical = PulseAppPaddingMedium, horizontal = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(PulseAppPaddingSmall)
+        ) {
+            // App Name
+            Text(
+                text = event.app.name,
+                style = Typography.bodyLarge.copy(
+                    fontSize = PulseAppFontSizeHeader,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    color = Color.White
+                )
+            )
 
-                    // Time Range
+            // Time Range
+            Text(
+                text = event.range,
+                style = Typography.labelSmall.copy(
+                    fontSize = PulseAppFontSizeSmall,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    color = Color.White
+                )
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Categorization Pill (Click to open drawer)
+            Box(
+                modifier = Modifier
+                    .width(227.dp)
+                    .height(32.dp)
+                    .border(
+                        PulseAppBorderWidth,
+                        PulseAppColorPrimary,
+                        androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium)
+                    )
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
+                    .clickable { isSelecting = true }
+                    .padding(horizontal = 12.dp, vertical = PulseAppPaddingTiny),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     Text(
-                        text = event.range,
+                        text = selectedType.name,
                         style = Typography.labelSmall.copy(
                             fontSize = PulseAppFontSizeSmall,
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            color = Color.White
+                            color = PulseAppColorPrimary
                         )
                     )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "Change Category",
+                        tint = PulseAppColorPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
 
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Categorization Pill (Click to open selection)
+        // LAYER 2: Slide-Up Drawer Overlay
+        androidx.compose.animation.AnimatedVisibility(
+            visible = isSelecting,
+            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(82.dp) // Adjusted height to barely touch the bottom of "Instagram"
+                    .background(PulseAppColorBackground)
+                    .border(
+                        width = 1.dp,
+                        color = PulseAppColorPrimary.copy(alpha = 0.5f),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                            topStart = PulseAppCornerRadiusMedium,
+                            topEnd = PulseAppCornerRadiusMedium,
+                            bottomStart = PulseAppCornerRadiusMedium,
+                            bottomEnd = PulseAppCornerRadiusMedium
+                        )
+                    )
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
+                    .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { /* Catch clicks */ },
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ActivityType.values().forEach { type ->
                     Box(
                         modifier = Modifier
-                            .width(227.dp)
-                            .height(32.dp)
-                            .border(
-                                PulseAppBorderWidth,
-                                PulseAppColorPrimary,
-                                androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium)
-                            )
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
-                            .clickable { isSelecting = true }
-                            .padding(horizontal = 12.dp, vertical = PulseAppPaddingTiny),
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .clickable {
+                                selectedType = type
+                                isSelecting = false
+                            },
                         contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = selectedType.name,
-                                style = Typography.labelSmall.copy(
-                                    fontSize = PulseAppFontSizeSmall,
-                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                    color = PulseAppColorPrimary
-                                )
+                        Text(
+                            text = type.name,
+                            style = Typography.labelSmall.copy(
+                                fontSize = (PulseAppFontSizeSmall.value + 2).sp, // Slightly larger text
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                color = if (type == selectedType) PulseAppColorPrimary else Color.Gray // Better contrast for unselected
                             )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Change Category",
-                                tint = PulseAppColorPrimary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+                        )
+                    }
+                    // Subtle separator
+                    if (type != ActivityType.values().last()) {
+                        Box(modifier = Modifier.fillMaxWidth(0.8f).height(1.dp).background(PulseAppColorPrimary.copy(alpha = 0.1f)))
                     }
                 }
             }
