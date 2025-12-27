@@ -31,7 +31,7 @@ fun SessionLengthCard(data: SessionLengthData) {
                 color = PulseAppColorPrimary,
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(com.focux.pulse.ui.theme.PulseAppCornerRadiusMedium)
             )
-            .padding(com.focux.pulse.ui.theme.PulseAppPaddingMedium)
+            .padding(com.focux.pulse.ui.theme.PulseAppPaddingSmall)
     ) {
         Text(
             text = "Average Session Length",

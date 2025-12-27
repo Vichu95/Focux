@@ -11,28 +11,36 @@ import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
 import com.focux.pulse.ui.theme.pulseAppCard
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 
 @Composable
 fun TopAppsCard(data: List<TopAppItem>) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .pulseAppCard()
-            .padding(16.dp)
+            .width(com.focux.pulse.ui.theme.PulseAppCardWidth)
+            .background(
+                androidx.compose.ui.graphics.Color.Transparent,
+                androidx.compose.foundation.shape.RoundedCornerShape(com.focux.pulse.ui.theme.PulseAppCornerRadiusMedium)
+            )
+            .border(
+                width = com.focux.pulse.ui.theme.PulseAppBorderWidthThick,
+                color = PulseAppColorPrimary,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(com.focux.pulse.ui.theme.PulseAppCornerRadiusMedium)
+            )
+            .padding(com.focux.pulse.ui.theme.PulseAppPaddingSmall)
     ) {
         Text(
             text = "Top Apps",
-            style = Typography.titleLarge,
-            color = PulseAppColorPrimary
+            style = com.focux.pulse.ui.theme.PulseAppFontLabel.copy(color = PulseAppColorPrimary)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(com.focux.pulse.ui.theme.PulseAppPaddingMedium))
 
         data.forEach { item ->
             Text(
                 text = "${item.rank}. ${item.app.name} (${item.type}) - ${item.duration}",
-                style = Typography.labelSmall.copy(fontSize = 14.sp),
-                color = PulseAppColorSecondary,
+                style = com.focux.pulse.ui.theme.PulseAppFontFocus,
                 modifier = Modifier.padding(vertical = 4.dp)
             )
         }
