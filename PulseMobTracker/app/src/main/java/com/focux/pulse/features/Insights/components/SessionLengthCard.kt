@@ -14,34 +14,44 @@ import com.focux.pulse.ui.theme.PulseAppColorPrimary
 import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
 import com.focux.pulse.ui.theme.pulseAppCard
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 
 @Composable
 fun SessionLengthCard(data: SessionLengthData) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .pulseAppCard()
-            .padding(16.dp)
+            .width(com.focux.pulse.ui.theme.PulseAppCardWidth)
+            .background(
+                androidx.compose.ui.graphics.Color.Transparent,
+                androidx.compose.foundation.shape.RoundedCornerShape(com.focux.pulse.ui.theme.PulseAppCornerRadiusMedium)
+            )
+            .border(
+                width = com.focux.pulse.ui.theme.PulseAppBorderWidthThick,
+                color = PulseAppColorPrimary,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(com.focux.pulse.ui.theme.PulseAppCornerRadiusMedium)
+            )
+            .padding(com.focux.pulse.ui.theme.PulseAppPaddingMedium)
     ) {
         Text(
             text = "Average Session Length",
-            style = Typography.titleLarge,
-            color = PulseAppColorPrimary
+            style = com.focux.pulse.ui.theme.PulseAppFontLabel.copy(color = PulseAppColorPrimary)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(com.focux.pulse.ui.theme.PulseAppPaddingMedium))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
+            androidx.compose.material3.Icon(
                 painter = painterResource(id = R.drawable.clock_icon),
                 contentDescription = "Time",
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(com.focux.pulse.ui.theme.PulseAppIconSizeLarge),
+                tint = PulseAppColorPrimary
             )
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(com.focux.pulse.ui.theme.PulseAppGapMedium))
             Column {
-                Text(text = "Overall : ${data.overall}", style = Typography.labelSmall, color = PulseAppColorSecondary)
-                Text(text = "Productive : ${data.productive}", style = Typography.labelSmall, color = PulseAppColorSecondary)
-                Text(text = "Distracting : ${data.distracting}", style = Typography.labelSmall, color = PulseAppColorSecondary)
+                Text(text = "Overall : ${data.overall}", style = com.focux.pulse.ui.theme.PulseAppFontFocus)
+                Text(text = "Productive : ${data.productive}", style = com.focux.pulse.ui.theme.PulseAppFontFocus)
+                Text(text = "Distracting : ${data.distracting}", style = com.focux.pulse.ui.theme.PulseAppFontFocus)
             }
         }
     }

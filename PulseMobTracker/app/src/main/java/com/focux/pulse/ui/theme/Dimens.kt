@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.sp
 val PulseAppPaddingSmall = 8.dp
 val PulseAppPaddingMedium = 16.dp
 val PulseAppPaddingLarge = 32.dp
+val PulseAppGapMedium = 20.dp
 
 // Corner Radius
 val PulseAppCornerRadiusMedium = 12.dp
