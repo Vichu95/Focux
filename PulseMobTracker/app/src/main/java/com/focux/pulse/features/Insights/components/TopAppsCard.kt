@@ -28,14 +28,17 @@ fun TopAppsCard(data: List<TopAppItem>) {
                 color = PulseAppColorPrimary,
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(com.focux.pulse.ui.theme.PulseAppCornerRadiusMedium)
             )
-            .padding(com.focux.pulse.ui.theme.PulseAppPaddingSmall)
+            .padding(
+                horizontal = com.focux.pulse.ui.theme.PulseAppPaddingMedium,
+                vertical = com.focux.pulse.ui.theme.PulseAppPaddingSmall
+            )
     ) {
         Text(
             text = "Top Apps",
             style = com.focux.pulse.ui.theme.PulseAppFontLabel.copy(color = PulseAppColorPrimary)
         )
 
-        Spacer(modifier = Modifier.height(com.focux.pulse.ui.theme.PulseAppPaddingMedium))
+        Spacer(modifier = Modifier.height(com.focux.pulse.ui.theme.PulseAppPaddingRegular))
 
         data.forEach { item ->
             Text(

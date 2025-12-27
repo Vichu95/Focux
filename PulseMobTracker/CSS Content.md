@@ -1,29 +1,49 @@
-/* Frame Insight Card 3 */
+/* Frame Insight Card 1 */
 
 box-sizing: border-box;
 
 /* Auto layout */
 display: flex;
-flex-direction: column;
+flex-direction: row;
 justify-content: center;
 align-items: center;
 padding: 8px 16px;
-gap: 8px;
+gap: 32px;
 
 width: 380px;
-height: 110px;
+height: 132px;
 
 border: 2px solid #64B5F6;
 border-radius: 12px;
 
 /* Inside auto layout */
 flex: none;
-order: 4;
+order: 3;
 align-self: stretch;
 flex-grow: 0;
 
 
-/* Average Session Length */
+/* Frame 55 */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 10px;
+
+width: 348px;
+height: 116px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 1;
+
+
+/* Top Apps */
 
 width: 348px;
 height: 26px;
@@ -44,17 +64,19 @@ align-self: stretch;
 flex-grow: 0;
 
 
-/* Frame 56 */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-align-items: center;
-padding: 0px;
-gap: 20px;
+/* Instagram (Distracting) - 5h 20m */
 
 width: 348px;
-height: 60px;
+height: 20px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 15px;
+line-height: 20px;
+/* identical to box height */
+
+color: #FFFFFF;
 
 
 /* Inside auto layout */
@@ -64,65 +86,45 @@ align-self: stretch;
 flex-grow: 0;
 
 
-/* tabler:clock */
+/* Gmail (Productive) - 2h 10m */
 
-width: 48px;
-height: 48px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Group */
-
-position: absolute;
-left: 12.5%;
-right: 12.5%;
-top: 12.5%;
-bottom: 12.5%;
-
-
-
-/* Vector */
-
-position: absolute;
-left: 12.5%;
-right: 12.5%;
-top: 12.5%;
-bottom: 12.5%;
-
-border: 4px solid #64B5F6;
-
-
-/* Vector */
-
-position: absolute;
-left: 50%;
-right: 37.5%;
-top: 29.17%;
-bottom: 37.5%;
-
-border: 4px solid #64B5F6;
-
-
-/* Overall : 25min Productive : 15min Distracting : 38min */
-
-width: 171px;
-height: 60px;
+width: 348px;
+height: 20px;
 
 font-family: 'JetBrains Mono';
 font-style: normal;
 font-weight: 400;
 font-size: 15px;
 line-height: 20px;
+/* identical to box height */
 
 color: #FFFFFF;
 
 
 /* Inside auto layout */
 flex: none;
-order: 1;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Maps (Productive) - 16m */
+
+width: 348px;
+height: 20px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 15px;
+line-height: 20px;
+/* identical to box height */
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+align-self: stretch;
 flex-grow: 0;
