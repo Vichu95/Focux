@@ -24,6 +24,14 @@ val PulseAppFontSubHeader = TextStyle(
     color = PulseAppColorSecondary
 )
 
+val PulseAppFontLabel = TextStyle(
+    fontFamily = FontFamily.Monospace,
+    fontWeight = FontWeight.Normal,
+    fontSize = PulseAppFontSizeLabel,
+    lineHeight = 24.sp,
+    color = PulseAppColorSecondary
+)
+
 val PulseAppFontBody = TextStyle(
     fontFamily = FontFamily.Monospace,
     fontWeight = FontWeight.Normal,
