@@ -320,56 +320,68 @@ fun AppTimelineCard(event: TimelineEvent) {
             }
         }
 
-        // LAYER 2: Slide-Up Drawer Overlay
-        androidx.compose.animation.AnimatedVisibility(
-            visible = isSelecting,
-            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut(),
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(82.dp) // Adjusted height to barely touch the bottom of "Instagram"
-                    .background(PulseAppColorBackground)
-                    .border(
-                        width = 1.dp,
-                        color = PulseAppColorPrimary.copy(alpha = 0.5f),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(
-                            topStart = PulseAppCornerRadiusMedium,
-                            topEnd = PulseAppCornerRadiusMedium,
-                            bottomStart = PulseAppCornerRadiusMedium,
-                            bottomEnd = PulseAppCornerRadiusMedium
-                        )
-                    )
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
-                    .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { /* Catch clicks */ },
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                ActivityType.values().forEach { type ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .clickable {
-                                selectedType = type
-                                isSelecting = false
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = type.name,
-                            style = Typography.labelSmall.copy(
-                                fontSize = (PulseAppFontSizeSmall.value + 2).sp, // Slightly larger text
-                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                color = if (type == selectedType) PulseAppColorPrimary else Color.Gray // Better contrast for unselected
-                            )
-                        )
+        // LAYER 2: Drawer in Popup for native dismiss behavior
+        if (isSelecting) {
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            val drawerHeightPx = with(density) { 82.dp.toPx().toInt() }
+            val cardHeightPx = with(density) { PulseAppTimelineCardHeight.toPx().toInt() }
+            val cardWidthPx = with(density) { PulseAppTimelineCardWidth.toPx().toInt() }
+            
+            androidx.compose.ui.window.Popup(
+                popupPositionProvider = object : androidx.compose.ui.window.PopupPositionProvider {
+                    override fun calculatePosition(
+                        anchorBounds: androidx.compose.ui.unit.IntRect,
+                        windowSize: androidx.compose.ui.unit.IntSize,
+                        layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+                        popupContentSize: androidx.compose.ui.unit.IntSize
+                    ): androidx.compose.ui.unit.IntOffset {
+                        // Position popup at bottom of anchor, centered horizontally
+                        val x = anchorBounds.left + (anchorBounds.width - popupContentSize.width) / 2
+                        val y = anchorBounds.bottom - popupContentSize.height
+                        return androidx.compose.ui.unit.IntOffset(x, y)
                     }
-                    // Subtle separator
-                    if (type != ActivityType.values().last()) {
-                        Box(modifier = Modifier.fillMaxWidth(0.8f).height(1.dp).background(PulseAppColorPrimary.copy(alpha = 0.1f)))
+                },
+                onDismissRequest = { isSelecting = false },
+                properties = androidx.compose.ui.window.PopupProperties(focusable = true)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .width(PulseAppTimelineAppTypeWidth) // 227dp - matches card content area
+                        .height(82.dp)
+                        .background(PulseAppColorBackground)
+                        .border(
+                            width = PulseAppBorderWidth,
+                            color = PulseAppColorPrimary,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium)
+                        )
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium)),
+                    verticalArrangement = Arrangement.SpaceEvenly,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    ActivityType.values().forEach { type ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .clickable {
+                                    selectedType = type
+                                    isSelecting = false
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = type.name,
+                                style = Typography.labelSmall.copy(
+                                    fontSize = (PulseAppFontSizeSmall.value + 2).sp,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    color = if (type == selectedType) PulseAppColorPrimary else Color.Gray
+                                )
+                            )
+                        }
+                        // Subtle separator
+                        if (type != ActivityType.values().last()) {
+                            Box(modifier = Modifier.fillMaxWidth(0.8f).height(1.dp).background(PulseAppColorPrimary.copy(alpha = 0.1f)))
+                        }
                     }
                 }
             }
