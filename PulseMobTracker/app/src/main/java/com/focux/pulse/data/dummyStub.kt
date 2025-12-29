@@ -164,7 +164,7 @@ val dummyWeeklyActivity = WeeklyActivityData(
 )
 
 val dummyRoutine = RoutineData(
-    morningHabit = Pair(AppUsage("Instagram", "instagram_logo", "", null), 5),
+    morningHabit = Pair(AppUsage("Instagram New App Testing Mode", "instagram_logo", "", null), 5),
     nightHabit = Pair(AppUsage("Gmail", "gmail_logo", "", null), 4)
 )
 
