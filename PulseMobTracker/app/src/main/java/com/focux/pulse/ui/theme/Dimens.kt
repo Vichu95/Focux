@@ -36,6 +36,7 @@ val PulseAppCardPadding = PulseAppPaddingMedium
 
 // Text Sizes
 val PulseAppFontSizeHeader = 24.sp
+val PulseAppFontSizeDisplay = 36.sp
 val PulseAppFontSizeLabel = 20.sp
 val PulseAppFontSizeFocus = 15.sp
 val PulseAppFontSizeSubHeader = 16.sp

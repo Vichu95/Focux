@@ -1,54 +1,69 @@
 package com.focux.pulse.features.Insights.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.focux.pulse.data.WeeklyActivityData
-import com.focux.pulse.ui.theme.PulseAppColorPrimary
-import com.focux.pulse.ui.theme.PulseAppColorSecondary
-import com.focux.pulse.ui.theme.Typography
-import com.focux.pulse.ui.theme.pulseAppCard
+import com.focux.pulse.ui.theme.*
 
 @Composable
 fun WeeklyActivityCard(data: WeeklyActivityData) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .pulseAppCard()
-            .padding(16.dp)
+            .width(PulseAppCardWidth)
+            .background(Color.Transparent, RoundedCornerShape(PulseAppCornerRadiusMedium))
+            .border(PulseAppBorderWidthThick, PulseAppColorPrimary, RoundedCornerShape(PulseAppCornerRadiusMedium))
+            .padding(
+                horizontal = PulseAppPaddingMedium,
+                vertical = PulseAppPaddingSmall
+            )
     ) {
         Text(
             text = "Weekly Activity",
-            style = Typography.titleLarge,
-            color = PulseAppColorPrimary
+            style = PulseAppFontLabel.copy(color = PulseAppColorPrimary)
         )
         
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(PulseAppPaddingRegular)) // 10dp
 
-        Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
+        // Total Time
+        Row(verticalAlignment = Alignment.CenterVertically) {
              Text(
-                text = "Total:",
-                style = Typography.titleLarge,
-                color = PulseAppColorSecondary,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = data.totalTime,
-                style = Typography.titleLarge.copy(fontSize = 32.sp),
-                color = PulseAppColorSecondary
+                text = "Total: ${data.totalTime}",
+                style = TextStyle(
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = PulseAppFontSizeDisplay, // 36sp
+                    color = PulseAppColorSecondary,
+                    fontWeight = FontWeight.Normal
+                )
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Column {
-            Text(text = "• Productive : ${data.productive}", style = Typography.labelSmall, color = PulseAppColorSecondary)
-            Text(text = "• Neutral : ${data.neutral}", style = Typography.labelSmall, color = PulseAppColorSecondary)
-            Text(text = "• Distracting : ${data.distracting}", style = Typography.labelSmall, color = PulseAppColorSecondary)
+        // CSS implies 0px gap between Total and List container if we follow Frame heights strictly.
+        // Frame 48 (111px) = Total (48px) + List (63px). 48+63=111. So 0 gap.
+        
+        Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+            WeeklyActivityItem("Productive", data.productive)
+            WeeklyActivityItem("Neutral", data.neutral)
+            WeeklyActivityItem("Distracting", data.distracting)
         }
     }
+}
+
+@Composable
+private fun WeeklyActivityItem(label: String, value: String) {
+    Text(
+        text = "• $label : $value",
+        style = PulseAppFontBody, // 14sp
+        color = PulseAppColorSecondary
+    )
 }
