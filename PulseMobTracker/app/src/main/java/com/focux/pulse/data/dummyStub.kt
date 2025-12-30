@@ -147,13 +147,13 @@ val dummyTimelineEvents = listOf(
 )
 
 val dummyWeeklyTrend = listOf(
-    WeeklyTrendItem("Mon", 2.5f, false, "2h 48m"),
-    WeeklyTrendItem("Tue", 6.0f, true, "12h 48m"), // Selected
-    WeeklyTrendItem("Wed", 3.0f, false, "2h 20m"),
-    WeeklyTrendItem("Thu", 4.5f, false, "4h 48m"),
-    WeeklyTrendItem("Fri", 4.0f, false, "4h 48m"),
-    WeeklyTrendItem("Sat", 2.0f, false, "2h 45m"),
-    WeeklyTrendItem("Sun", 3.5f, false, "3h 48m")
+    WeeklyTrendItem("Mon", 2.8f, false, "2h 48m"),
+    WeeklyTrendItem("Tue", 21.8f, true, "21h 48m"), // Selected (Max)
+    WeeklyTrendItem("Wed", 2.36f, false, "2h 22m"), // Low
+    WeeklyTrendItem("Thu", 6.8f, false, "6h 48m"),
+    WeeklyTrendItem("Fri", 4.8f, false, "4h 48m"),
+    WeeklyTrendItem("Sat", 0.5f, false, "30m"), // Smallest
+    WeeklyTrendItem("Sun", 3.8f, false, "3h 48m")
 )
 
 val dummyWeeklyActivity = WeeklyActivityData(
