@@ -78,8 +78,8 @@ fun NavTab(
 ) {
     val contentColor = if (selected) PulseAppColorPrimary else PulseAppColorSecondary
     
-    // Standard gap from CSS (8px approx) or user pref (6dp). Using 6dp for consistency with Insights.
-    val gap = 6.dp 
+    // Standard gap from CSS (8px)
+    val gap = 8.dp 
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -91,9 +91,9 @@ fun NavTab(
                 indication = null
             ) { onClick() }
     ) {
-        // Container box to ensure consistent height for alignment (48dp)
+        // Container box to ensure consistent height for alignment (24dp per CSS)
         Box(
-            modifier = Modifier.size(PulseAppIconSizeLarge),
+            modifier = Modifier.size(24.dp),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -105,7 +105,7 @@ fun NavTab(
         }
         Text(
             text = label,
-            style = PulseAppFontSubHeader,
+            style = PulseAppFontSubHeader.copy(fontSize = 12.sp),
             color = contentColor
         )
     }

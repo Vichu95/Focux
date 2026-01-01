@@ -45,8 +45,8 @@ val PulseAppFontSizeBigNumber = 36.sp
 val PulseAppFontSizeSmall = 12.sp
 
 // Bottom Bar
-val PulseAppBottomBarHeight = 133.dp
-val PulseAppBottomBarBottomPadding = 24.dp
+val PulseAppBottomBarHeight = 88.dp
+val PulseAppBottomBarBottomPadding = 0.dp
 
 
 //Summary Card
