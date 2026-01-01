@@ -85,7 +85,7 @@ fun NavTab(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(gap),
         modifier = Modifier
-            .padding(vertical = PulseAppPaddingMedium) // Top padding only, bottom controlled by container
+            .padding(vertical = 6.dp) // Top/bottom padding per CSS
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null

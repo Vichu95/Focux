@@ -139,6 +139,25 @@ val dummyTimelineEvents = listOf(
         isDeepWork = false
     ),
     TimelineEvent(
+        time = "16:02",
+        app = AppUsage("Instagram", "instagram_logo", "16:02 - 16:16", ActivityType.Distracting),
+        range = "16:02 - 16:16",
+        isDeepWork = false
+    ),
+    TimelineEvent(
+        time = "",
+        app = AppUsage("Deep Work", "deep_work_icon", "45m", null),
+        range = "",
+        isDeepWork = true,
+        deepWorkDuration = "45m"
+    ),
+    TimelineEvent(
+        time = "18:02",
+        app = AppUsage("Instagram", "instagram_logo", "18:02 - 18:16", ActivityType.Distracting),
+        range = "18:02 - 18:16",
+        isDeepWork = false
+    ),
+    TimelineEvent(
         time = "22:00",
         app = AppUsage("Night", "moon_icon", "", null),
         range = "",
