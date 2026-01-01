@@ -72,14 +72,17 @@ fun TrendBar(item: WeeklyTrendItem, height: Dp) {
     ) {
         // If Text Outside, place it here
         if (!isTextInside) {
-             Text(
-                text = item.durationText,
-                style = PulseAppFontFocus.copy(fontSize = 10.sp),
-                color = PulseAppColorPrimary,
-                modifier = Modifier
-                    .padding(start = 6.dp) // Bottom padding after rotation
-                    .vertical()
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = item.durationText,
+                    style = PulseAppFontFocus.copy(fontSize = 10.sp),
+                    color = PulseAppColorPrimary,
+                    modifier = Modifier.vertical()
+                )
+                Spacer(modifier = Modifier.height(4.dp)) // Gap between text and bar
+            }
         }
     
         // Bar Box
@@ -93,16 +96,19 @@ fun TrendBar(item: WeeklyTrendItem, height: Dp) {
                 ),
             contentAlignment = Alignment.BottomCenter
         ) {
-            // If Text Inside, place it here
+            // If Text Inside, place it here with bottom spacer
             if (isTextInside) {
-                Text(
-                    text = item.durationText,
-                    style = PulseAppFontFocus.copy(fontSize = 10.sp),
-                    color = PulseAppColorSurface, 
-                    modifier = Modifier
-                        .padding(start = 12.dp) // Bottom padding after rotation
-                        .vertical()
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = item.durationText,
+                        style = PulseAppFontFocus.copy(fontSize = 10.sp),
+                        color = PulseAppColorSurface, 
+                        modifier = Modifier.vertical()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp)) // Bottom padding
+                }
             }
         }
         
