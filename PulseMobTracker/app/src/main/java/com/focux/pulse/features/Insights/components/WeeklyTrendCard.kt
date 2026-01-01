@@ -81,7 +81,7 @@ fun TrendBar(item: WeeklyTrendItem, height: Dp) {
                     color = PulseAppColorPrimary,
                     modifier = Modifier.vertical()
                 )
-                Spacer(modifier = Modifier.height(4.dp)) // Gap between text and bar
+                Spacer(modifier = Modifier.height(6.dp)) // Gap between text and bar
             }
         }
     
@@ -107,7 +107,7 @@ fun TrendBar(item: WeeklyTrendItem, height: Dp) {
                         color = PulseAppColorSurface, 
                         modifier = Modifier.vertical()
                     )
-                    Spacer(modifier = Modifier.height(8.dp)) // Bottom padding
+                    Spacer(modifier = Modifier.height(6.dp)) // Bottom padding
                 }
             }
         }
