@@ -70,7 +70,6 @@ flex-direction: column;
 justify-content: flex-end;
 align-items: center;
 padding: 0px;
-gap: 8px;
 
 width: 24.57px;
 height: 114px;
@@ -96,7 +95,6 @@ gap: 10px;
 width: 22px;
 height: 48px;
 
-background: #64B5F6;
 border-radius: 2px;
 
 /* Inside auto layout */
@@ -120,13 +118,35 @@ display: flex;
 align-items: center;
 text-align: center;
 
-color: #2B4555;
+color: #64B5F6;
 
 transform: rotate(-90deg);
 
 /* Inside auto layout */
 flex: none;
 order: 0;
+flex-grow: 0;
+
+
+/* Frame Rectangle Weekly Trend */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: flex-end;
+align-items: center;
+padding: 5px 0px;
+gap: 10px;
+
+width: 22px;
+height: 6px;
+
+background: #64B5F6;
+border-radius: 2px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
 flex-grow: 0;
 
 
@@ -148,7 +168,7 @@ color: #FFFFFF;
 
 /* Inside auto layout */
 flex: none;
-order: 1;
+order: 2;
 align-self: stretch;
 flex-grow: 0;
 
@@ -161,7 +181,6 @@ flex-direction: column;
 justify-content: flex-end;
 align-items: center;
 padding: 0px;
-gap: 8px;
 
 width: 24.57px;
 height: 114px;
@@ -185,9 +204,8 @@ padding: 5px 0px;
 gap: 10px;
 
 width: 22px;
-height: 80px;
+height: 48px;
 
-background: #64B5F6;
 border-radius: 2px;
 
 /* Inside auto layout */
@@ -196,9 +214,9 @@ order: 0;
 flex-grow: 0;
 
 
-/* 21h 40m */
+/* 2h 40m */
 
-width: 34px;
+width: 29px;
 height: 11px;
 
 font-family: 'JetBrains Mono';
@@ -211,13 +229,35 @@ display: flex;
 align-items: center;
 text-align: center;
 
-color: #2B4555;
+color: #64B5F6;
 
 transform: rotate(-90deg);
 
 /* Inside auto layout */
 flex: none;
 order: 0;
+flex-grow: 0;
+
+
+/* Frame Rectangle Weekly Trend */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: flex-end;
+align-items: center;
+padding: 5px 0px;
+gap: 10px;
+
+width: 22px;
+height: 19px;
+
+background: #64B5F6;
+border-radius: 2px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
 flex-grow: 0;
 
 
@@ -239,7 +279,7 @@ color: #FFFFFF;
 
 /* Inside auto layout */
 flex: none;
-order: 1;
+order: 2;
 align-self: stretch;
 flex-grow: 0;
 
@@ -252,7 +292,6 @@ flex-direction: column;
 justify-content: flex-end;
 align-items: center;
 padding: 0px;
-gap: 8px;
 
 width: 24.57px;
 height: 114px;
@@ -276,7 +315,7 @@ padding: 5px 0px;
 gap: 10px;
 
 width: 22px;
-height: 43px;
+height: 70px;
 
 background: #64B5F6;
 border-radius: 2px;
@@ -287,7 +326,7 @@ order: 0;
 flex-grow: 0;
 
 
-/* 2h 20m */
+/* 2h 40m */
 
 width: 29px;
 height: 11px;
@@ -343,7 +382,6 @@ flex-direction: column;
 justify-content: flex-end;
 align-items: center;
 padding: 0px;
-gap: 8px;
 
 width: 24.57px;
 height: 114px;
@@ -367,9 +405,8 @@ padding: 5px 0px;
 gap: 10px;
 
 width: 22px;
-height: 59px;
+height: 48px;
 
-background: #64B5F6;
 border-radius: 2px;
 
 /* Inside auto layout */
@@ -378,7 +415,7 @@ order: 0;
 flex-grow: 0;
 
 
-/* 6h 40m */
+/* 2h 40m */
 
 width: 29px;
 height: 11px;
@@ -393,13 +430,35 @@ display: flex;
 align-items: center;
 text-align: center;
 
-color: #2B4555;
+color: #64B5F6;
 
 transform: rotate(-90deg);
 
 /* Inside auto layout */
 flex: none;
 order: 0;
+flex-grow: 0;
+
+
+/* Frame Rectangle Weekly Trend */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: flex-end;
+align-items: center;
+padding: 5px 0px;
+gap: 10px;
+
+width: 22px;
+height: 21px;
+
+background: #64B5F6;
+border-radius: 2px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
 flex-grow: 0;
 
 
@@ -421,7 +480,7 @@ color: #FFFFFF;
 
 /* Inside auto layout */
 flex: none;
-order: 1;
+order: 2;
 align-self: stretch;
 flex-grow: 0;
 
@@ -434,7 +493,6 @@ flex-direction: column;
 justify-content: flex-end;
 align-items: center;
 padding: 0px;
-gap: 8px;
 
 width: 24.57px;
 height: 114px;
@@ -460,7 +518,6 @@ gap: 10px;
 width: 22px;
 height: 48px;
 
-background: #64B5F6;
 border-radius: 2px;
 
 /* Inside auto layout */
@@ -469,7 +526,7 @@ order: 0;
 flex-grow: 0;
 
 
-/* 4h 40m */
+/* 2h 40m */
 
 width: 29px;
 height: 11px;
@@ -484,13 +541,35 @@ display: flex;
 align-items: center;
 text-align: center;
 
-color: #2B4555;
+color: #64B5F6;
 
 transform: rotate(-90deg);
 
 /* Inside auto layout */
 flex: none;
 order: 0;
+flex-grow: 0;
+
+
+/* Frame Rectangle Weekly Trend */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: flex-end;
+align-items: center;
+padding: 5px 0px;
+gap: 10px;
+
+width: 22px;
+height: 6px;
+
+background: #64B5F6;
+border-radius: 2px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
 flex-grow: 0;
 
 
@@ -512,7 +591,7 @@ color: #FFFFFF;
 
 /* Inside auto layout */
 flex: none;
-order: 1;
+order: 2;
 align-self: stretch;
 flex-grow: 0;
 
@@ -525,7 +604,6 @@ flex-direction: column;
 justify-content: flex-end;
 align-items: center;
 padding: 0px;
-gap: 8px;
 
 width: 24.57px;
 height: 114px;
@@ -549,9 +627,8 @@ padding: 5px 0px;
 gap: 10px;
 
 width: 22px;
-height: 40px;
+height: 48px;
 
-background: #2B4555;
 border-radius: 2px;
 
 /* Inside auto layout */
@@ -560,9 +637,9 @@ order: 0;
 flex-grow: 0;
 
 
-/* 2h 4m */
+/* 2h 40m */
 
-width: 24px;
+width: 29px;
 height: 11px;
 
 font-family: 'JetBrains Mono';
@@ -572,7 +649,7 @@ font-size: 8px;
 line-height: 11px;
 /* identical to box height */
 display: flex;
-align-items: flex-end;
+align-items: center;
 text-align: center;
 
 color: #64B5F6;
@@ -582,6 +659,28 @@ transform: rotate(-90deg);
 /* Inside auto layout */
 flex: none;
 order: 0;
+flex-grow: 0;
+
+
+/* Frame Rectangle Weekly Trend */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: flex-end;
+align-items: center;
+padding: 5px 0px;
+gap: 10px;
+
+width: 22px;
+height: 6px;
+
+background: #64B5F6;
+border-radius: 2px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
 flex-grow: 0;
 
 
@@ -603,7 +702,7 @@ color: #FFFFFF;
 
 /* Inside auto layout */
 flex: none;
-order: 1;
+order: 2;
 align-self: stretch;
 flex-grow: 0;
 
@@ -616,7 +715,6 @@ flex-direction: column;
 justify-content: flex-end;
 align-items: center;
 padding: 0px;
-gap: 8px;
 
 width: 24.57px;
 height: 114px;
@@ -640,9 +738,8 @@ padding: 5px 0px;
 gap: 10px;
 
 width: 22px;
-height: 52px;
+height: 48px;
 
-background: #64B5F6;
 border-radius: 2px;
 
 /* Inside auto layout */
@@ -651,7 +748,7 @@ order: 0;
 flex-grow: 0;
 
 
-/* 3h 40m */
+/* 2h 40m */
 
 width: 29px;
 height: 11px;
@@ -666,13 +763,35 @@ display: flex;
 align-items: center;
 text-align: center;
 
-color: #2B4555;
+color: #64B5F6;
 
 transform: rotate(-90deg);
 
 /* Inside auto layout */
 flex: none;
 order: 0;
+flex-grow: 0;
+
+
+/* Frame Rectangle Weekly Trend */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: flex-end;
+align-items: center;
+padding: 5px 0px;
+gap: 10px;
+
+width: 22px;
+height: 6px;
+
+background: #64B5F6;
+border-radius: 2px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
 flex-grow: 0;
 
 
@@ -694,6 +813,6 @@ color: #FFFFFF;
 
 /* Inside auto layout */
 flex: none;
-order: 1;
+order: 2;
 align-self: stretch;
 flex-grow: 0;

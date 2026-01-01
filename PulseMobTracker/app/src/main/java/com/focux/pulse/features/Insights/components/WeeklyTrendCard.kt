@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,7 +37,13 @@ fun WeeklyTrendCard(data: List<WeeklyTrendItem>) {
         Spacer(modifier = Modifier.height(24.dp))
 
         // Bar Chart Area
-        val maxHours = data.maxOfOrNull { it.hours }?.coerceAtLeast(0.1f) ?: 1f
+        val maxHours = data.maxOfOrNull { it.hours } ?: 1f
+        val minHours = data.minOfOrNull { it.hours } ?: 0f
+        val valueRange = (maxHours - minHours).coerceAtLeast(0.1f)
+        
+        // Visual Constants
+        val minBarHeight = 6.dp
+        val maxBarHeight = 110.dp
         
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -44,47 +51,59 @@ fun WeeklyTrendCard(data: List<WeeklyTrendItem>) {
             verticalAlignment = Alignment.Bottom
         ) {
             data.forEach { item ->
-                TrendBar(item, maxHours)
+                // Linear projection
+                val fraction = ((item.hours - minHours) / valueRange).coerceIn(0f, 1f)
+                val barHeight = minBarHeight + (maxBarHeight - minBarHeight) * fraction
+                
+                TrendBar(item, barHeight)
             }
         }
     }
 }
 
 @Composable
-fun TrendBar(item: WeeklyTrendItem, maxHours: Float) {
+fun TrendBar(item: WeeklyTrendItem, height: Dp) {
+    // Threshold for text inside/outside
+    val isTextInside = height >= 50.dp
+    
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom
     ) {
-        // Calculate Height
-        val barMaxHeight = 150.dp
-        // Largest is 95% of height.
-        val fraction = (item.hours / maxHours) * 0.95f
-        // Min height ensuring text readability (approx 15-20%)
-        val minFraction = 0.2f 
-        val actualFraction = max(fraction, minFraction)
-        
+        // If Text Outside, place it here
+        if (!isTextInside) {
+             Text(
+                text = item.durationText,
+                style = PulseAppFontFocus.copy(fontSize = 10.sp),
+                color = PulseAppColorPrimary,
+                modifier = Modifier
+                    .padding(start = 6.dp) // Bottom padding after rotation
+                    .vertical()
+            )
+        }
+    
         // Bar Box
         Box(
             modifier = Modifier
-                .width(28.dp)
-                .height(barMaxHeight * actualFraction)
+                .width(22.dp)
+                .height(height)
                 .background(
-                    color = if (item.isSelected) PulseAppColorPrimary else PulseAppColorPrimary.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
+                    color = PulseAppColorPrimary,
+                    shape = RoundedCornerShape(2.dp)
                 ),
             contentAlignment = Alignment.BottomCenter
         ) {
-            // Rotated Text
-            Text(
-                text = item.durationText,
-                style = PulseAppFontFocus.copy(fontSize = 10.sp),
-                color = if (item.isSelected) Color.Black else PulseAppColorSecondary, 
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .rotate(-90f),
-                maxLines = 1
-            )
+            // If Text Inside, place it here
+            if (isTextInside) {
+                Text(
+                    text = item.durationText,
+                    style = PulseAppFontFocus.copy(fontSize = 10.sp),
+                    color = PulseAppColorSurface, 
+                    modifier = Modifier
+                        .padding(start = 12.dp) // Bottom padding after rotation
+                        .vertical()
+                )
+            }
         }
         
         Spacer(modifier = Modifier.height(8.dp))
@@ -95,5 +114,29 @@ fun TrendBar(item: WeeklyTrendItem, maxHours: Float) {
             style = PulseAppFontFocus.copy(fontSize = 12.sp),
             color = PulseAppColorSecondary
         )
+    }
+}
+
+private fun Modifier.vertical() = layout { measurable, constraints ->
+    // Measure text with swapped constraints to allow full length
+    val placeable = measurable.measure(constraints.copy(
+        maxWidth = constraints.maxHeight,
+        maxHeight = constraints.maxWidth,
+        minWidth = 0,
+        minHeight = 0
+    ))
+    
+    // After -90 rotation: text width becomes height, text height becomes width
+    val layoutWidth = placeable.height  // Rotated text height is new width
+    val layoutHeight = placeable.width  // Rotated text width is new height
+    
+    layout(layoutWidth, layoutHeight) {
+        // Center the placeable in the layout bounds, then rotate
+        placeable.placeWithLayer(
+            x = (layoutWidth - placeable.width) / 2,
+            y = (layoutHeight - placeable.height) / 2
+        ) {
+            rotationZ = -90f
+        }
     }
 }
