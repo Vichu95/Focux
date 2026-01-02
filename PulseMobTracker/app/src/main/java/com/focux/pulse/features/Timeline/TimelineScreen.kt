@@ -9,12 +9,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.data.dummyTimelineEvents
 import com.focux.pulse.features.Timeline.components.TimelineItem
+import com.focux.pulse.ui.theme.PulseAppPaddingMedium
 
 @Composable
 fun TimelineScreen() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp)
+        contentPadding = PaddingValues(PulseAppPaddingMedium)
     ) {
         itemsIndexed(dummyTimelineEvents) { index, event ->
             TimelineItem(

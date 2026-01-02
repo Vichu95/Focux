@@ -42,8 +42,8 @@ fun WeeklyTrendCard(data: List<WeeklyTrendItem>) {
         val valueRange = (maxHours - minHours).coerceAtLeast(0.1f)
         
         // Visual Constants
-        val minBarHeight = 6.dp
-        val maxBarHeight = 110.dp
+        val minBarHeight = PulseAppWeeklyTrendMinHeight
+        val maxBarHeight = PulseAppWeeklyTrendMaxHeight
         
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -64,7 +64,7 @@ fun WeeklyTrendCard(data: List<WeeklyTrendItem>) {
 @Composable
 fun TrendBar(item: WeeklyTrendItem, height: Dp) {
     // Threshold for text inside/outside
-    val isTextInside = height >= 50.dp
+    val isTextInside = height >= PulseAppWeeklyTrendTextThreshold
     
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -88,7 +88,7 @@ fun TrendBar(item: WeeklyTrendItem, height: Dp) {
         // Bar Box
         Box(
             modifier = Modifier
-                .width(22.dp)
+                .width(PulseAppWeeklyTrendBarWidth)
                 .height(height)
                 .background(
                     color = PulseAppColorPrimary,

@@ -23,6 +23,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.remember
 import com.focux.pulse.ui.theme.PulseAppBottomBarBottomPadding
 import com.focux.pulse.ui.theme.PulseAppIconSizeLarge
+import com.focux.pulse.ui.theme.PulseAppPaddingSmall
+import com.focux.pulse.ui.theme.PulseAppIconSizeSmall
+import com.focux.pulse.ui.theme.PulseAppFontSizeSmall
 @Composable
 fun BottomNavBar(
     selectedTab: Int,
@@ -79,11 +82,11 @@ fun NavTab(
     val contentColor = if (selected) PulseAppColorPrimary else PulseAppColorSecondary
     
     // Standard gap from CSS (8px)
-    val gap = 8.dp 
+    val navItemSpacing = 8.dp 
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(gap),
+        verticalArrangement = Arrangement.spacedBy(navItemSpacing),
         modifier = Modifier
             .padding(vertical = 6.dp) // Top/bottom padding per CSS
             .clickable(

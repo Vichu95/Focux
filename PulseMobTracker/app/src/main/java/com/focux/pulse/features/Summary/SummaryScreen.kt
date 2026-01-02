@@ -20,6 +20,7 @@ import com.focux.pulse.data.dummyDeviceAccess
 import com.focux.pulse.data.dummyFirstLastApps
 import com.focux.pulse.data.dummyOfflineStreak
 import com.focux.pulse.data.dummyPhoneActivity
+import com.focux.pulse.features.Summary.components.DateFocusHeader
 import com.focux.pulse.features.Summary.components.DeviceAccessCard
 import com.focux.pulse.features.Summary.components.FirstLastAppsCard
 import com.focux.pulse.features.Summary.components.OfflineStreakCard
@@ -58,72 +59,6 @@ fun SummaryScreen() {
         }
         item {
             FirstLastAppsCard(data = dummyFirstLastApps)
-        }
-    }
-}
-
-@Composable
-fun DateFocusHeader(
-    date: LocalDate,
-    onPrevClick: () -> Unit,
-    onNextClick: () -> Unit
-) {
-    // Formatter: "14 Dec"
-    val formatter = DateTimeFormatter.ofPattern("dd MMM")
-    val dateText = date.format(formatter)
-
-    // Frame Date Focus Score (Width 380px)
-    Row(
-        modifier = Modifier
-            .width(PulseAppCardWidth)
-            .height(PulseAppFocusScoreCardHeight),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Left: Date Nav (Frame Summary Date)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft, 
-                contentDescription = "Prev",
-                tint = PulseAppColorSecondary,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .clickable { onPrevClick() }
-            )
-            Spacer(modifier = Modifier.width(11.dp))
-            Text(
-                text = dateText,
-                style = PulseAppFontHeader,
-                color = PulseAppColorSecondary
-            )
-            Spacer(modifier = Modifier.width(11.dp))
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Next",
-                tint = PulseAppColorSecondary,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .clickable { onNextClick() }
-            )
-        }
-        
-        // Right: Focus Score (Frame 22)
-        Box(
-            modifier = Modifier
-                .background(PulseAppColorSurface, RoundedCornerShape(PulseAppCornerRadiusMedium))
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Focus: 72",
-                style = PulseAppFontSubHeader,
-                color = PulseAppColorSecondary
-            )
         }
     }
 }

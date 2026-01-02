@@ -209,7 +209,7 @@ fun SolidLineColumn(isFirst: Boolean, isLast: Boolean) {
                 modifier = Modifier
                     .width(1.dp)
                     .weight(1f)
-                    .background(Color.White)
+                    .background(PulseAppColorSecondary)
             )
         } else {
             Spacer(modifier = Modifier.weight(1f))
@@ -220,7 +220,7 @@ fun SolidLineColumn(isFirst: Boolean, isLast: Boolean) {
 @Composable
 fun DashedLineVertical(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
-        val pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+        val pathEffect = PathEffect.dashPathEffect(floatArrayOf(PulseAppTimelineDashIntervalOn, PulseAppTimelineDashIntervalOff), 0f)
         drawLine(
             color = color,
             start = Offset(size.width / 2, 0f),

@@ -9,12 +9,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.data.*
 import com.focux.pulse.features.Insights.components.*
+import com.focux.pulse.ui.theme.PulseAppPaddingMedium
 
 @Composable
 fun InsightsScreen() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(PulseAppPaddingMedium),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {

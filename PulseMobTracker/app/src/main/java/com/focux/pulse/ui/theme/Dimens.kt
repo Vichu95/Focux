@@ -75,5 +75,19 @@ val PulseAppTimelineFactIconSize = 48.dp
 val PulseAppTimelineDeepWorkIconWidth = 26.dp
 val PulseAppTimelineDeepWorkIconHeight = 21.dp
 
+// Header & Navigation
+val PulseAppGapHeader = 11.dp
+val PulseAppIconSizeNavigation = 36.dp
+
+// Timeline Specifics
+val PulseAppTimelineDashIntervalOn = 10f
+val PulseAppTimelineDashIntervalOff = 10f
+
+// Weekly Trend Specifics
+val PulseAppWeeklyTrendBarWidth = 22.dp
+val PulseAppWeeklyTrendMinHeight = 6.dp
+val PulseAppWeeklyTrendMaxHeight = 110.dp
+val PulseAppWeeklyTrendTextThreshold = 50.dp
+
 
 
