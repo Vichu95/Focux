@@ -34,7 +34,7 @@ fun BottomNavBar(
             .height(PulseAppBottomBarHeight)
             .background(PulseAppColorBackground)
             .padding(start = PulseAppPaddingMedium, end = PulseAppPaddingMedium, bottom = PulseAppBottomBarBottomPadding),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Summary Tab: Icon 34dp
