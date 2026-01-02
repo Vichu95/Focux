@@ -7,7 +7,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.focux.pulse.data.dummyTimelineEvents
+import com.focux.pulse.data_manager.dummyTimelineEvents
 import com.focux.pulse.features.Timeline.components.TimelineItem
 import com.focux.pulse.ui.theme.PulseAppPaddingMedium
 

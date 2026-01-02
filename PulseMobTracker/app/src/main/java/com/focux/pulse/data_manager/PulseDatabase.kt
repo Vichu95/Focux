@@ -1,4 +1,4 @@
-package com.focux.pulse.data
+package com.focux.pulse.data_manager
 
 import android.content.Context
 import androidx.room.Database
@@ -27,3 +27,4 @@ abstract class PulseDatabase : RoomDatabase() {
         }
     }
 }
+

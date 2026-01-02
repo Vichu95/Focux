@@ -13,7 +13,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.focux.pulse.data.WeeklyActivityData
+import com.focux.pulse.data_manager.WeeklyActivityData
 import com.focux.pulse.ui.theme.*
 
 @Composable
@@ -67,3 +67,4 @@ private fun WeeklyActivityItem(label: String, value: String) {
         color = PulseAppColorSecondary
     )
 }
+

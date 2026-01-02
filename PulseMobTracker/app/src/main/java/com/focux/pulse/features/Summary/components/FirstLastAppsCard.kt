@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.R
-import com.focux.pulse.data.FirstLastAppsData
+import com.focux.pulse.data_manager.FirstLastAppsData
 import com.focux.pulse.ui.theme.*
 
 @Composable
@@ -110,3 +110,4 @@ fun FirstLastAppsCard(data: FirstLastAppsData) {
         }
     }
 }
+

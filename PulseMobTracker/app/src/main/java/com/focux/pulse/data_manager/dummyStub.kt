@@ -1,4 +1,4 @@
-package com.focux.pulse.data
+package com.focux.pulse.data_manager
 
 // Base Types
 enum class ActivityType { Productive, Neutral, Distracting }
@@ -198,3 +198,4 @@ val dummySessionLength = SessionLengthData(
     productive = "15min",
     distracting = "38min"
 )
+

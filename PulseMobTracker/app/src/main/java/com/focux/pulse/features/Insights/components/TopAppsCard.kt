@@ -5,7 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.focux.pulse.data.TopAppItem
+import com.focux.pulse.data_manager.TopAppItem
 import com.focux.pulse.ui.theme.PulseAppColorPrimary
 import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
@@ -49,3 +49,4 @@ fun TopAppsCard(data: List<TopAppItem>) {
         }
     }
 }
+

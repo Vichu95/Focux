@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import com.focux.pulse.R
-import com.focux.pulse.data.OfflineStreakData
+import com.focux.pulse.data_manager.OfflineStreakData
 import com.focux.pulse.ui.theme.*
 
 @Composable
@@ -71,3 +71,4 @@ fun OfflineStreakCard(data: OfflineStreakData) {
         }
     }
 }
+

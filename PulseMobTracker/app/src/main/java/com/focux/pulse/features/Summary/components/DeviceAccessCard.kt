@@ -10,7 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.focux.pulse.data.DeviceAccessData
+import com.focux.pulse.data_manager.DeviceAccessData
 import com.focux.pulse.ui.theme.*
 
 @Composable
@@ -80,3 +80,4 @@ fun DeviceAccessCard(data: DeviceAccessData) {
         }
     }
 }
+

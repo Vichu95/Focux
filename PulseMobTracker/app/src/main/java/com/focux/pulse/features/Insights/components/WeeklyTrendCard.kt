@@ -16,7 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.focux.pulse.data.WeeklyTrendItem
+import com.focux.pulse.data_manager.WeeklyTrendItem
 import com.focux.pulse.ui.theme.*
 import kotlin.math.max
 
@@ -146,3 +146,4 @@ private fun Modifier.vertical() = layout { measurable, constraints ->
         }
     }
 }
+

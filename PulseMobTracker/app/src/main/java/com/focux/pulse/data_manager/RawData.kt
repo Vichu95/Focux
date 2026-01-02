@@ -1,4 +1,4 @@
-package com.focux.pulse.data
+package com.focux.pulse.data_manager
 
 import android.app.usage.UsageEvents
 import androidx.room.Entity
@@ -36,3 +36,4 @@ object PulseEvents {
         }
     }
 }
+

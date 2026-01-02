@@ -25,8 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.focux.pulse.R
-import com.focux.pulse.data.ActivityType
-import com.focux.pulse.data.TimelineEvent
+import com.focux.pulse.data_manager.ActivityType
+import com.focux.pulse.data_manager.TimelineEvent
 import com.focux.pulse.ui.theme.*
 
 @Composable

@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.R
-import com.focux.pulse.data.SessionLengthData
+import com.focux.pulse.data_manager.SessionLengthData
 import com.focux.pulse.ui.theme.PulseAppColorPrimary
 import com.focux.pulse.ui.theme.PulseAppColorSecondary
 import com.focux.pulse.ui.theme.Typography
@@ -59,3 +59,4 @@ fun SessionLengthCard(data: SessionLengthData) {
         }
     }
 }
+

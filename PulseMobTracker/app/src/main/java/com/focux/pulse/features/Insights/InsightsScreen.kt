@@ -7,7 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.focux.pulse.data.*
+import com.focux.pulse.data_manager.*
 import com.focux.pulse.features.Insights.components.*
 import com.focux.pulse.ui.theme.PulseAppPaddingMedium
 
@@ -38,3 +38,4 @@ fun InsightsScreen() {
         }
     }
 }
+

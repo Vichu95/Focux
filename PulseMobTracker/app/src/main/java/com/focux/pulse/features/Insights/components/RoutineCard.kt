@@ -16,7 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.R
-import com.focux.pulse.data.RoutineData
+import com.focux.pulse.data_manager.RoutineData
 import com.focux.pulse.ui.theme.*
 import androidx.compose.ui.text.style.TextOverflow
 
@@ -83,7 +83,7 @@ private fun RoutineSection(
     title: String,
     iconRes: Int,
     iconSize: Dp,
-    appUsage: com.focux.pulse.data.AppUsage,
+    appUsage: com.focux.pulse.data_manager.AppUsage,
     count: Int,
     modifier: Modifier = Modifier
 ) {
@@ -138,3 +138,4 @@ private fun RoutineSection(
         }
     }
 }
+

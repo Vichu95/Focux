@@ -1,4 +1,4 @@
-package com.focux.pulse.data
+package com.focux.pulse.data_manager
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -18,4 +18,8 @@ interface RawDataDao {
 
     @Query("SELECT * FROM raw_data WHERE timestamp BETWEEN :startTime AND :endTime ORDER BY timestamp DESC")
     suspend fun getEventsBetween(startTime: Long, endTime: Long): List<RawData>
+
+    @Query("SELECT * FROM raw_data ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLastEvent(): RawData?
 }
+

@@ -16,10 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.focux.pulse.data.dummyDeviceAccess
-import com.focux.pulse.data.dummyFirstLastApps
-import com.focux.pulse.data.dummyOfflineStreak
-import com.focux.pulse.data.dummyPhoneActivity
+import com.focux.pulse.data_manager.dummyDeviceAccess
+import com.focux.pulse.data_manager.dummyFirstLastApps
+import com.focux.pulse.data_manager.dummyOfflineStreak
+import com.focux.pulse.data_manager.dummyPhoneActivity
 import com.focux.pulse.features.Summary.components.DateFocusHeader
 import com.focux.pulse.features.Summary.components.DeviceAccessCard
 import com.focux.pulse.features.Summary.components.FirstLastAppsCard
