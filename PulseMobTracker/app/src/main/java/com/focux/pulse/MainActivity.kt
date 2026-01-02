@@ -25,9 +25,55 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PulseTheme {
-                MainAppStructure()
+                var hasPermission by remember { mutableStateOf(checkUsageStatsPermission()) }
+                
+                // Re-check permission when app resumes (simple way to catch return from settings)
+                // In a real app, use LifecycleEventObserver or request launcher
+                val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+                androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+                    val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                        if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                            hasPermission = checkUsageStatsPermission()
+                            if (hasPermission) {
+                                scheduleDataCollection()
+                            }
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose {
+                        lifecycleOwner.lifecycle.removeObserver(observer)
+                    }
+                }
+
+                if (hasPermission) {
+                    MainAppStructure()
+                } else {
+                    com.focux.pulse.ui.onboarding.PermissionScreen()
+                }
             }
         }
+    }
+
+    private fun checkUsageStatsPermission(): Boolean {
+        val appOps = getSystemService(android.content.Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+        val mode = appOps.checkOpNoThrow(
+            android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+            android.os.Process.myUid(),
+            packageName
+        )
+        return mode == android.app.AppOpsManager.MODE_ALLOWED
+    }
+
+    private fun scheduleDataCollection() {
+        val workRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.workers.DataCollectionWorker>(
+            15, java.util.concurrent.TimeUnit.MINUTES
+        ).build()
+
+        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "DataCollectionWork",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
     }
 }
 
