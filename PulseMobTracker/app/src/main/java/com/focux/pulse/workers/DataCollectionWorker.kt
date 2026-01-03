@@ -6,6 +6,11 @@ import androidx.work.WorkerParameters
 import com.focux.pulse.data_manager.PulseDatabase
 import com.focux.pulse.data_logger.PulseDataLogger
 
+/**
+ * Background worker scheduled by WorkManager.
+ * Acts as the entry point for periodic data collection.
+ * It initializes the Database and delegates the actual logging logic to PulseDataLogger.
+ */
 class DataCollectionWorker(
     appContext: Context,
     workerParams: WorkerParameters

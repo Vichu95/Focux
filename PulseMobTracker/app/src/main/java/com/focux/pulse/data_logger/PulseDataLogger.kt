@@ -12,6 +12,10 @@ import com.focux.pulse.data_manager.RawDataDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * Responsible for the business logic of collecting usage data.
+ * It queries the Android UsageStatsManager and persists relevant events to the local database.
+ */
 class PulseDataLogger(
     private val context: Context,
     private val rawDataDao: RawDataDao
@@ -19,12 +23,23 @@ class PulseDataLogger(
     private val usageStatsManager =
         context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
 
+    /**
+     * Performs the data collection sync.
+     * 1. Checks for permission.
+     * 2. Determines the time range to query (starting from the last recorded event).
+     * 3. Queries UsageStatsManager for system events.
+     * 4. Filters and maps them to RawData entities.
+     * 5. Inserts them into the database.
+     *
+     * This method is suspended and designed to run on the IO dispatcher.
+     */
     suspend fun logUsageStats() = withContext(Dispatchers.IO) {
         if (!hasPermission()) {
             Log.e("PulseDataLogger", "Missing usage stats permission")
             return@withContext
         }
 
+        // Incremental sync: Start from the last event we have, or default to 15 mins ago
         val lastTimestamp = rawDataDao.getLastEvent()?.timestamp ?: (System.currentTimeMillis() - 15 * 60 * 1000)
         val endTime = System.currentTimeMillis()
         
@@ -42,6 +57,7 @@ class PulseDataLogger(
             usageEvents.add(event)
         }
 
+        // Map system events to our domain entities, filtering out irrelevant types (UNKNOWN)
         val rawDataList = usageEvents.mapNotNull { event ->
             val label = PulseEvents.getLabel(event.eventType)
             if (label != PulseEvents.UNKNOWN) {
