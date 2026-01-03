@@ -91,3 +91,5 @@ val PulseAppWeeklyTrendTextThreshold = 50.dp
 
 
 
+// Data Logging
+val PulseAppDataLoggingFrequency = 15

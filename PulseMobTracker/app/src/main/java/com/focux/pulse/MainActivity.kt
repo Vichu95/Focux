@@ -16,6 +16,7 @@ import com.focux.pulse.features.Insights.InsightsScreen
 import com.focux.pulse.features.Summary.SummaryScreen
 import com.focux.pulse.features.Timeline.TimelineScreen
 import com.focux.pulse.ui.components.BottomNavBar
+import com.focux.pulse.ui.theme.Dimens
 
 import com.focux.pulse.ui.theme.PulseTheme
 
@@ -35,7 +36,7 @@ class MainActivity : ComponentActivity() {
                         if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                             hasPermission = checkUsageStatsPermission()
                             if (hasPermission) {
-                                scheduleDataCollection()
+                                initDataCollection()
                             }
                         }
                     }
@@ -64,15 +65,28 @@ class MainActivity : ComponentActivity() {
         return mode == android.app.AppOpsManager.MODE_ALLOWED
     }
 
-    private fun scheduleDataCollection() {
-        val workRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.workers.DataCollectionWorker>(
-            15, java.util.concurrent.TimeUnit.MINUTES
+    private fun initDataCollection() {
+        val workManager = androidx.work.WorkManager.getInstance(this)
+
+        // 1. Periodic Work (Every 15 mins) - The heartbeat
+        val periodicRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.workers.DataCollectionWorker>(
+            PulseAppDataLoggingFrequency, java.util.concurrent.TimeUnit.MINUTES
         ).build()
 
-        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+        workManager.enqueueUniquePeriodicWork(
             "DataCollectionWork",
             androidx.work.ExistingPeriodicWorkPolicy.KEEP,
-            workRequest
+            periodicRequest
+        )
+
+        // 2. Immediate Work (App Open / Triggered) - Capture data right now
+        val oneTimeRequest = androidx.work.OneTimeWorkRequestBuilder<com.focux.pulse.workers.DataCollectionWorker>()
+            .build()
+            
+        workManager.enqueueUniqueWork(
+            "ImmediateDataSync",
+            androidx.work.ExistingWorkPolicy.KEEP, // If one is already running/enqueued, don't spam
+            oneTimeRequest
         )
     }
 }
