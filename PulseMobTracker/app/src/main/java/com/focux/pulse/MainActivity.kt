@@ -16,7 +16,7 @@ import com.focux.pulse.features.Insights.InsightsScreen
 import com.focux.pulse.features.Summary.SummaryScreen
 import com.focux.pulse.features.Timeline.TimelineScreen
 import com.focux.pulse.ui.components.BottomNavBar
-import com.focux.pulse.ui.theme.Dimens
+import com.focux.pulse.ui.theme.*
 
 import com.focux.pulse.ui.theme.PulseTheme
 
@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
 
         // 1. Periodic Work (Every 15 mins) - The heartbeat
         val periodicRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.workers.DataCollectionWorker>(
-            PulseAppDataLoggingFrequency, java.util.concurrent.TimeUnit.MINUTES
+            PulseAppDataLoggingFrequency.toLong(), java.util.concurrent.TimeUnit.MINUTES
         ).build()
 
         workManager.enqueueUniquePeriodicWork(
