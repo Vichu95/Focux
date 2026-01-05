@@ -19,7 +19,8 @@ import java.util.*
  */
 class PulseDataProcessor(
     private val rawDataDao: RawDataDao,
-    private val analyticsDao: AnalyticsDao
+    private val analyticsDao: AnalyticsDao,
+    private val appInfoDao: AppInfoDao
 ) {
     companion object {
         private const val TAG = "PulseProcessor"
@@ -367,6 +368,8 @@ class PulseDataProcessor(
 
     /**
      * Updates DailyStats based on new sessions.
+     * Calculates: screen time, unlocks, glances, top apps, first/last app.
+     * Note: Offline streak and sleep detection require full-day recalculation.
      */
     private suspend fun updateDailyStats(newSessions: List<AppSession>) {
         val sessionsByDay = newSessions.groupBy { it.date }
@@ -374,26 +377,90 @@ class PulseDataProcessor(
         for ((date, daySessions) in sessionsByDay) {
             val existingStats = analyticsDao.getDailyStats(date) ?: DailyStats(date)
 
-            val addedScreenTime = daySessions
-                .filter { it.type == PulseEvents.SESSION_APP }
-                .sumOf { it.duration }
+            // Get ALL APP sessions for this day (for top apps calculation)
+            val allDaySessions = analyticsDao.getSessionsForDay(date)
+            val appSessions = allDaySessions.filter { it.type == PulseEvents.SESSION_APP }
 
-            val addedUnlocks = daySessions.count {
-                it.type == PulseEvents.SESSION_UNLOCK_NOAPP || it.type == PulseEvents.SESSION_UNLOCK_APP
-            }
+            // Calculate screen time from APP sessions
+            val totalScreenTime = appSessions.sumOf { it.duration }
 
-            val addedGlances = daySessions.count {
-                it.type == PulseEvents.SESSION_GLANCE
-            }
+            // Count unlocks
+            val unlockNoAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_NOAPP }
+            val unlockAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_APP }
+            val glanceCount = allDaySessions.count { it.type == PulseEvents.SESSION_GLANCE }
+            
+            // screenCheckCount = glances + unlockNoApp (quick phone checks)
+            val screenCheckCount = glanceCount + unlockNoAppCount
 
-            val updatedStats = existingStats.copy(
-                totalScreenTime = existingStats.totalScreenTime + addedScreenTime,
-                unlockCount = existingStats.unlockCount + addedUnlocks,
-                screenCheckCount = existingStats.screenCheckCount + addedGlances,
-                focusScore = (100 - (existingStats.unlockCount + addedUnlocks)).coerceAtLeast(0)
+            // Top 3 apps by duration (excluding ignored apps)
+            val appDurations = appSessions
+                .filter { it.packageName !in PULSE_IGNORED_APPS }
+                .groupBy { it.packageName }
+                .mapValues { (_, sessions) -> sessions.sumOf { it.duration } }
+                .toList()
+                .sortedByDescending { it.second }
+                .take(3)
+
+            val topApp1 = appDurations.getOrNull(0)
+            val topApp2 = appDurations.getOrNull(1)
+            val topApp3 = appDurations.getOrNull(2)
+
+            // First and last app of the day (by start time)
+            val sortedAppSessions = appSessions
+                .filter { it.packageName !in PULSE_IGNORED_APPS }
+                .sortedBy { it.startTime }
+            
+            val firstApp = sortedAppSessions.firstOrNull()
+            val lastApp = sortedAppSessions.lastOrNull()
+
+            // Focus score: simple formula (can be enhanced later)
+            val totalUnlocks = unlockNoAppCount + unlockAppCount
+            val focusScore = (100 - totalUnlocks * 2).coerceIn(0, 100)
+
+            val updatedStats = DailyStats(
+                date = date,
+                totalScreenTime = totalScreenTime,
+                unlockNoAppCount = unlockNoAppCount,
+                unlockAppCount = unlockAppCount,
+                screenCheckCount = screenCheckCount,
+                focusScore = focusScore,
+                // First app
+                firstAppPackage = firstApp?.packageName,
+                firstAppStartTime = firstApp?.startTime ?: 0,
+                firstAppEndTime = firstApp?.endTime ?: 0,
+                // Last app
+                lastAppPackage = lastApp?.packageName,
+                lastAppStartTime = lastApp?.startTime ?: 0,
+                lastAppEndTime = lastApp?.endTime ?: 0,
+                // Top 3 apps
+                topApp1Package = topApp1?.first,
+                topApp1Duration = topApp1?.second ?: 0,
+                topApp2Package = topApp2?.first,
+                topApp2Duration = topApp2?.second ?: 0,
+                topApp3Package = topApp3?.first,
+                topApp3Duration = topApp3?.second ?: 0
+                // TODO: productiveTime, neutralTime, distractingTime require AppInfo lookup
+                // TODO: offlineStreak requires gap analysis
             )
             analyticsDao.updateDailyStats(updatedStats)
+
+            // Auto-discover new apps and add to AppInfo table
+            registerNewApps(appSessions)
         }
+    }
+
+    /**
+     * Registers new apps discovered in sessions to the AppInfo table.
+     */
+    private suspend fun registerNewApps(appSessions: List<AppSession>) {
+        val packages = appSessions
+            .map { it.packageName }
+            .filter { it !in PULSE_IGNORED_APPS }
+            .distinct()
+        
+        // Insert if not exists (IGNORE conflict strategy)
+        val newApps = packages.map { AppInfo(packageName = it) }
+        appInfoDao.insertAllIfNotExists(newApps)
     }
 
     private fun createSession(pkg: String, start: Long, end: Long, type: String, date: String): AppSession {

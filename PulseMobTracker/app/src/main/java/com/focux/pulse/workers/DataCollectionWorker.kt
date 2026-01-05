@@ -20,14 +20,16 @@ class DataCollectionWorker(
         return try {
             val database = PulseDatabase.getDatabase(applicationContext)
             
-            // 1. Collect Raw Data
+            // 1. Collect Raw Data (includes historical on first run)
             val logger = PulseDataLogger(applicationContext, database.rawDataDao())
+            logger.collectHistoricalData()  // Only runs if DB is empty
             logger.logUsageStats()
             
             // 2. Process Data into Stats
             val processor = com.focux.pulse.data_logger.PulseDataProcessor(
                 database.rawDataDao(),
-                database.analyticsDao()
+                database.analyticsDao(),
+                database.appInfoDao()
             )
             processor.processPendingData()
             

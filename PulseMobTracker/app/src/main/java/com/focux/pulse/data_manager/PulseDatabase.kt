@@ -10,14 +10,15 @@ import androidx.room.RoomDatabase
  * Defines the database configuration and serves as the main access point to the persisted data.
  */
 @Database(
-    entities = [RawData::class, SystemState::class, AppSession::class, DailyStats::class],
-    version = 2,
+    entities = [RawData::class, SystemState::class, AppSession::class, DailyStats::class, AppInfo::class],
+    version = 3,
     exportSchema = false
 )
 abstract class PulseDatabase : RoomDatabase() {
 
     abstract fun rawDataDao(): RawDataDao
     abstract fun analyticsDao(): AnalyticsDao
+    abstract fun appInfoDao(): AppInfoDao
 
     companion object {
         @Volatile

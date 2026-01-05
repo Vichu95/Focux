@@ -89,6 +89,59 @@ class PulseDataLogger(
         }
     }
 
+    /**
+     * Collects historical usage data from the last 7 days.
+     * Only runs if the database is empty (first app run or after clear).
+     */
+    suspend fun collectHistoricalData() = withContext(Dispatchers.IO) {
+        if (!hasPermission()) {
+            Log.e("PulseDataLogger", "Missing usage stats permission for historical data")
+            return@withContext
+        }
+
+        // Only run if database is empty
+        val existingData = rawDataDao.getLastEvent()
+        if (existingData != null) {
+            Log.d("PulseDataLogger", "Historical data collection skipped - database not empty")
+            return@withContext
+        }
+
+        Log.d("PulseDataLogger", "Starting 7-day historical data collection...")
+
+        val endTime = System.currentTimeMillis()
+        val startTime = endTime - (7 * 24 * 60 * 60 * 1000L)  // 7 days ago
+
+        val events = usageStatsManager.queryEvents(startTime, endTime)
+        val usageEvents = mutableListOf<UsageEvents.Event>()
+
+        while (events.hasNextEvent()) {
+            val event = UsageEvents.Event()
+            events.getNextEvent(event)
+            usageEvents.add(event)
+        }
+
+        val rawDataList = usageEvents.mapNotNull { event ->
+            val label = PulseEvents.getLabel(event.eventType)
+            if (label != PulseEvents.UNKNOWN) {
+                RawData(
+                    timestamp = event.timeStamp,
+                    eventType = event.eventType,
+                    packageName = event.packageName,
+                    eventLabel = label
+                )
+            } else {
+                null
+            }
+        }
+
+        if (rawDataList.isNotEmpty()) {
+            Log.d("PulseDataLogger", "Inserting ${rawDataList.size} historical events")
+            rawDataDao.insertAll(rawDataList)
+        } else {
+            Log.d("PulseDataLogger", "No historical events found")
+        }
+    }
+
     private fun hasPermission(): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
         val mode = appOps.checkOpNoThrow(
