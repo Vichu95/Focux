@@ -93,3 +93,10 @@ val PulseAppWeeklyTrendTextThreshold = 50.dp
 
 // Data Logging
 val PulseAppDataLoggingFrequency = 15
+
+/**
+ * Jitter threshold in milliseconds.
+ * Events within this threshold are considered "jitter" and merged.
+ * Based on observed timestamp differences of ~2ms for jitter events.
+ */
+const val PULSE_JITTER_THRESHOLD_MS = 10L

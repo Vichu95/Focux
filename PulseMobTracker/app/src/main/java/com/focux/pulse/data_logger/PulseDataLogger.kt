@@ -72,11 +72,20 @@ class PulseDataLogger(
             }
         }
 
-        if (rawDataList.isNotEmpty()) {
-            Log.d("PulseDataLogger", "Inserting ${rawDataList.size} events")
-            rawDataDao.insertAll(rawDataList)
+        // Deduplicate: Filter out events that already exist in the database
+        // A duplicate has the same timestamp, eventType, and packageName
+        val existingEvents = rawDataDao.getEventsBetween(startTime, endTime)
+        val existingSet = existingEvents.map { "${it.timestamp}_${it.eventType}_${it.packageName}" }.toSet()
+        
+        val uniqueNewEvents = rawDataList.filter { event ->
+            "${event.timestamp}_${event.eventType}_${event.packageName}" !in existingSet
+        }
+
+        if (uniqueNewEvents.isNotEmpty()) {
+            Log.d("PulseDataLogger", "Inserting ${uniqueNewEvents.size} unique events (${rawDataList.size - uniqueNewEvents.size} duplicates filtered)")
+            rawDataDao.insertAll(uniqueNewEvents)
         } else {
-            Log.d("PulseDataLogger", "No relevant events found")
+            Log.d("PulseDataLogger", "No new unique events found")
         }
     }
 

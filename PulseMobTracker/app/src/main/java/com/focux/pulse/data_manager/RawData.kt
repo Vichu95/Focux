@@ -29,7 +29,7 @@ data class RawData(
  * This abstraction helps separate Android-specific constants from our domain logic.
  */
 object PulseEvents {
-    // Human readable tags
+    // Human readable tags for raw events
     const val APP_OPEN = "APP_OPEN"
     const val APP_CLOSE = "APP_CLOSE"
     const val UNLOCK = "UNLOCK"
@@ -37,6 +37,12 @@ object PulseEvents {
     const val SCREEN_ON = "SCREEN_ON"
     const val SCREEN_OFF = "SCREEN_OFF"
     const val UNKNOWN = "UNKNOWN"
+    
+    // Session types for processed data
+    const val SESSION_APP = "SESSION_APP"                     // Normal app usage session
+    const val SESSION_GLANCE = "SESSION_GLANCE"               // Screen on, no unlock
+    const val SESSION_UNLOCK_NOAPP = "SESSION_UNLOCK_NOAPP"   // Unlocked but no app used
+    const val SESSION_UNLOCK_APP = "SESSION_UNLOCK_APP"       // Unlocked and used apps
 
     /**
      * Maps a UsageEvents.Event type to a PulseEvents constant string.
