@@ -36,6 +36,16 @@ fun SummaryScreen(viewModel: SummaryViewModel = viewModel()) {
     val deviceAccess by viewModel.deviceAccess.collectAsState()
     val offlineStreak by viewModel.offlineStreak.collectAsState()
     val firstLastApps by viewModel.firstLastApps.collectAsState()
+    val earliestDateStr by viewModel.earliestDate.collectAsState()
+    
+    // Parse earliest date for navigation limits
+    val earliestDate = earliestDateStr?.let { 
+        try { LocalDate.parse(it, dateFormatter) } catch (e: Exception) { null }
+    }
+    
+    // Navigation limits
+    val canGoNext = selectedDate.isBefore(today)
+    val canGoPrev = earliestDate == null || selectedDate.isAfter(earliestDate)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -47,14 +57,14 @@ fun SummaryScreen(viewModel: SummaryViewModel = viewModel()) {
         item {
             DateFocusHeader(
                 date = selectedDate,
-                onPrevClick = { selectedDate = selectedDate.minusDays(1) },
-                onNextClick = { 
-                    // Prevent navigation to future dates
-                    if (selectedDate.isBefore(today)) {
-                        selectedDate = selectedDate.plusDays(1) 
-                    }
+                onPrevClick = { 
+                    if (canGoPrev) selectedDate = selectedDate.minusDays(1) 
                 },
-                canGoNext = selectedDate.isBefore(today)
+                onNextClick = { 
+                    if (canGoNext) selectedDate = selectedDate.plusDays(1) 
+                },
+                canGoNext = canGoNext,
+                canGoPrev = canGoPrev
             )
         }
         item {

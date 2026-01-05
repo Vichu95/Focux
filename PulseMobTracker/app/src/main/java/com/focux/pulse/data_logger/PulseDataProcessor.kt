@@ -420,6 +420,12 @@ class PulseDataProcessor(
             // Calculate offline streak (longest gap excluding sleep)
             val offlineStreak = calculateOfflineStreak(allDaySessions)
 
+            // Calculate time by category (for now, all apps are NEUTRAL)
+            // TODO: Fetch categories from AppInfo table for proper categorization
+            val productiveTime = 0L
+            val neutralTime = totalScreenTime  // All time is neutral until apps are categorized
+            val distractingTime = 0L
+
             val updatedStats = DailyStats(
                 date = date,
                 totalScreenTime = totalScreenTime,
@@ -427,6 +433,9 @@ class PulseDataProcessor(
                 unlockAppCount = unlockAppCount,
                 screenCheckCount = screenCheckCount,
                 focusScore = focusScore,
+                productiveTime = productiveTime,
+                neutralTime = neutralTime,
+                distractingTime = distractingTime,
                 // First app
                 firstAppPackage = firstApp?.packageName,
                 firstAppStartTime = firstApp?.startTime ?: 0,
@@ -446,7 +455,6 @@ class PulseDataProcessor(
                 topApp2Duration = topApp2?.second ?: 0,
                 topApp3Package = topApp3?.first,
                 topApp3Duration = topApp3?.second ?: 0
-                // TODO: productiveTime, neutralTime, distractingTime require AppInfo lookup
             )
             analyticsDao.updateDailyStats(updatedStats)
 

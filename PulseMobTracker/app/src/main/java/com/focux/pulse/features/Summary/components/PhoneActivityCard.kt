@@ -1,6 +1,5 @@
 package com.focux.pulse.features.Summary.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -10,11 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.focux.pulse.R
 import com.focux.pulse.data_manager.AppUsage
 import com.focux.pulse.data_manager.PhoneActivityData
+import com.focux.pulse.ui.components.AppIcon
 import com.focux.pulse.ui.theme.*
 
 @Composable
@@ -37,12 +35,9 @@ fun PhoneActivityCard(data: PhoneActivityData) {
             modifier = Modifier.fillMaxWidth().align(Alignment.Start)
         )
         
-        // This spacer pushes the main content to clear the header area slightly or we can just let spaceAround handle it.
-        // CSS has gap: 10px in the main column.
         Spacer(modifier = Modifier.height(10.dp))
 
         // Large Time + Breakdown Stats Row
-        // Frame 48 (Height 83px)
         Row(
             modifier = Modifier.fillMaxWidth().height(83.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -51,14 +46,13 @@ fun PhoneActivityCard(data: PhoneActivityData) {
             // Main Timer "5h 12m"
             Text(
                 text = data.totalTime,
-                style = PulseAppFontBigNumber, // 36sp
+                style = PulseAppFontBigNumber,
                 color = PulseAppColorSecondary,
             )
 
             // Breakdown Column
-            // Frame 47
             Column(
-                horizontalAlignment = Alignment.Start, // Align text to right or start depending on pref, CSS aligns text items left within the block but block is right
+                horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.Center
             ) {
                 LegendItem("Productive", data.productiveTime)
@@ -67,16 +61,14 @@ fun PhoneActivityCard(data: PhoneActivityData) {
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f)) // Push apps to bottom or respect gap
+        Spacer(modifier = Modifier.weight(1f))
 
         // App Icons Row
-        // Frame 28
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween, // Gap 51px in CSS implies spacing out
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // We expect exactly 3 apps for this design usually, or take top 3
             data.topApps.take(3).forEach { app ->
                 AppUsageItem(app)
             }
@@ -88,7 +80,7 @@ fun PhoneActivityCard(data: PhoneActivityData) {
 fun LegendItem(label: String, time: String) {
     Text(
         text = "• $label : $time",
-        style = PulseAppFontBody, // 14sp
+        style = PulseAppFontBody,
         color = PulseAppColorSecondary
     )
 }
@@ -96,23 +88,18 @@ fun LegendItem(label: String, time: String) {
 @Composable
 fun AppUsageItem(app: AppUsage) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        val iconRes = when {
-            app.iconName.contains("instagram") -> R.drawable.instagram_logo
-            app.iconName.contains("gmail") -> R.drawable.gmail_logo
-            app.iconName.contains("maps") -> R.drawable.maps_logo
-            else -> R.drawable.temp_icon 
-        }
-        
-        Image(
-            painter = painterResource(id = iconRes),
-            contentDescription = app.name,
-            modifier = Modifier.size(PulseAppIconSizeMedium) // 36dp
+        // Use real app icon from PackageManager
+        AppIcon(
+            packageName = app.iconName,
+            size = PulseAppIconSizeMedium,
+            contentDescription = app.name
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = app.duration,
-            style = PulseAppFontSubHeader, // 16sp
+            style = PulseAppFontSubHeader,
             color = PulseAppColorSecondary
         )
     }
 }
+

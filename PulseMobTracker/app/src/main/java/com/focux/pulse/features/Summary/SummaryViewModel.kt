@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.focux.pulse.data_manager.*
+import com.focux.pulse.utils.AppInfoHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -15,6 +16,7 @@ import java.util.*
  * Fetches DailyStats from database and converts to UI models.
  */
 class SummaryViewModel(application: Application) : AndroidViewModel(application) {
+    private val context = application.applicationContext
     private val database = PulseDatabase.getDatabase(application)
     private val analyticsDao = database.analyticsDao()
 
@@ -32,6 +34,18 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
 
     private val _firstLastApps = MutableStateFlow<FirstLastAppsData?>(null)
     val firstLastApps: StateFlow<FirstLastAppsData?> = _firstLastApps
+
+    // Earliest date with data available
+    private val _earliestDate = MutableStateFlow<String?>(null)
+    val earliestDate: StateFlow<String?> = _earliestDate
+
+    init {
+        // Load earliest date on init
+        viewModelScope.launch {
+            val earliest = analyticsDao.getEarliestDate()
+            _earliestDate.value = earliest
+        }
+    }
 
     fun loadDataForDate(dateStr: String) {
         viewModelScope.launch {
@@ -66,15 +80,15 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
                 _firstLastApps.value = FirstLastAppsData(
                     morningTime = if (stats.firstAppStartTime > 0) formatTime(stats.firstAppStartTime) else "--:--",
                     morningApp = AppUsage(
-                        name = extractAppName(stats.firstAppPackage),
-                        iconName = "app_icon",
+                        name = getAppName(stats.firstAppPackage),
+                        iconName = stats.firstAppPackage ?: "app_icon",
                         duration = "",
                         type = ActivityType.Neutral
                     ),
                     nightTime = if (stats.lastAppStartTime > 0) formatTime(stats.lastAppStartTime) else "--:--",
                     nightApp = AppUsage(
-                        name = extractAppName(stats.lastAppPackage),
-                        iconName = "app_icon",
+                        name = getAppName(stats.lastAppPackage),
+                        iconName = stats.lastAppPackage ?: "app_icon",
                         duration = "",
                         type = ActivityType.Neutral
                     )
@@ -98,24 +112,24 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
         val apps = mutableListOf<AppUsage>()
         if (stats.topApp1Package != null) {
             apps.add(AppUsage(
-                name = extractAppName(stats.topApp1Package),
-                iconName = "app_icon",
+                name = getAppName(stats.topApp1Package),
+                iconName = stats.topApp1Package,
                 duration = formatDuration(stats.topApp1Duration),
                 type = ActivityType.Neutral
             ))
         }
         if (stats.topApp2Package != null) {
             apps.add(AppUsage(
-                name = extractAppName(stats.topApp2Package),
-                iconName = "app_icon",
+                name = getAppName(stats.topApp2Package),
+                iconName = stats.topApp2Package,
                 duration = formatDuration(stats.topApp2Duration),
                 type = ActivityType.Neutral
             ))
         }
         if (stats.topApp3Package != null) {
             apps.add(AppUsage(
-                name = extractAppName(stats.topApp3Package),
-                iconName = "app_icon",
+                name = getAppName(stats.topApp3Package),
+                iconName = stats.topApp3Package,
                 duration = formatDuration(stats.topApp3Duration),
                 type = ActivityType.Neutral
             ))
@@ -123,11 +137,9 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
         return apps
     }
 
-    private fun extractAppName(packageName: String?): String {
+    private fun getAppName(packageName: String?): String {
         if (packageName == null) return "Unknown"
-        // Extract last part of package name as app name
-        val parts = packageName.split(".")
-        return parts.lastOrNull()?.replaceFirstChar { it.uppercase() } ?: "Unknown"
+        return AppInfoHelper.getAppName(context, packageName)
     }
 
     private fun formatDuration(ms: Long): String {
@@ -142,3 +154,4 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
         return sdf.format(Date(timestamp))
     }
 }
+

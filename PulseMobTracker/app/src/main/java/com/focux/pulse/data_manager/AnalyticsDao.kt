@@ -41,11 +41,23 @@ interface AnalyticsDao {
     // --- Daily Stats ---
 
     /**
+     * Gets the earliest date with stats data.
+     */
+    @Query("SELECT MIN(date) FROM daily_stats")
+    suspend fun getEarliestDate(): String?
+
+    /**
      * Retrieves the aggregated stats for a specific day.
      * @param date Format: "YYYY-MM-DD"
      */
     @Query("SELECT * FROM daily_stats WHERE date = :date")
     suspend fun getDailyStats(date: String): DailyStats?
+
+    /**
+     * Retrieves stats for the last N days, ordered by date descending.
+     */
+    @Query("SELECT * FROM daily_stats ORDER BY date DESC LIMIT :days")
+    suspend fun getLastNDaysStats(days: Int): List<DailyStats>
 
     /**
      * Updates the daily stats row.

@@ -24,7 +24,8 @@ fun DateFocusHeader(
     date: LocalDate,
     onPrevClick: () -> Unit,
     onNextClick: () -> Unit,
-    canGoNext: Boolean = true
+    canGoNext: Boolean = true,
+    canGoPrev: Boolean = true
 ) {
     // Formatter: "14 Dec"
     val formatter = DateTimeFormatter.ofPattern("dd MMM")
@@ -46,11 +47,11 @@ fun DateFocusHeader(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft, 
                 contentDescription = "Prev",
-                tint = PulseAppColorSecondary,
+                tint = if (canGoPrev) PulseAppColorSecondary else PulseAppColorSecondary.copy(alpha = 0.3f),
                 modifier = Modifier
                     .size(PulseAppIconSizeNavigation)
                     .clip(CircleShape)
-                    .clickable { onPrevClick() }
+                    .clickable(enabled = canGoPrev) { onPrevClick() }
             )
             Spacer(modifier = Modifier.width(PulseAppGapHeader))
             Text(
