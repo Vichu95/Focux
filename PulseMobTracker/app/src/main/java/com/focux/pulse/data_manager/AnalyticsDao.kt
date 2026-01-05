@@ -53,4 +53,16 @@ interface AnalyticsDao {
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun updateDailyStats(stats: DailyStats)
+
+    /**
+     * Deletes all sessions. Used for database reset.
+     */
+    @Query("DELETE FROM app_sessions")
+    suspend fun deleteAllSessions()
+
+    /**
+     * Deletes all daily stats. Used for database reset.
+     */
+    @Query("DELETE FROM daily_stats")
+    suspend fun deleteAllDailyStats()
 }

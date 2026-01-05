@@ -40,5 +40,11 @@ interface RawDataDao {
      */
     @Query("SELECT * FROM raw_data WHERE id > :lastId")
     suspend fun getEventsSince(lastId: Long): List<RawData>
+
+    /**
+     * Deletes all raw data. Used for database reset.
+     */
+    @Query("DELETE FROM raw_data")
+    suspend fun deleteAll()
 }
 

@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.focux.pulse.features.Configuration.ConfigurationScreen
 import com.focux.pulse.features.Insights.InsightsScreen
 import com.focux.pulse.features.Summary.SummaryScreen
 import com.focux.pulse.features.Timeline.TimelineScreen
@@ -112,6 +113,7 @@ fun MainAppStructure() {
                 0 -> SummaryScreen()
                 1 -> TimelineScreen()
                 2 -> InsightsScreen()
+                3 -> ConfigurationScreen()
             }
         }
 

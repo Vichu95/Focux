@@ -2,6 +2,7 @@ package com.focux.pulse.data_logger
 
 import android.util.Log
 import com.focux.pulse.data_manager.*
+import com.focux.pulse.ui.theme.PULSE_IGNORED_APPS
 import com.focux.pulse.ui.theme.PULSE_JITTER_THRESHOLD_MS
 import java.text.SimpleDateFormat
 import java.util.*
@@ -218,6 +219,11 @@ class PulseDataProcessor(
                     indicesToMark.add(j)
                 }
                 PulseEvents.APP_OPEN -> {
+                    // Skip ignored apps (launcher, etc.) - they don't count as "using an app"
+                    val packageName = event.packageName ?: ""
+                    if (packageName in PULSE_IGNORED_APPS) {
+                        continue
+                    }
                     // APP_OPEN = UNLOCK_APP, end immediately
                     endTime = event.timestamp
                     // Don't mark APP_OPEN - APP sessions are processed separately
