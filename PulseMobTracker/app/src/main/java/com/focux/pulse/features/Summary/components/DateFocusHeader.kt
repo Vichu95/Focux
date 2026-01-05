@@ -23,7 +23,8 @@ import java.time.format.DateTimeFormatter
 fun DateFocusHeader(
     date: LocalDate,
     onPrevClick: () -> Unit,
-    onNextClick: () -> Unit
+    onNextClick: () -> Unit,
+    canGoNext: Boolean = true
 ) {
     // Formatter: "14 Dec"
     val formatter = DateTimeFormatter.ofPattern("dd MMM")
@@ -61,11 +62,11 @@ fun DateFocusHeader(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = "Next",
-                tint = PulseAppColorSecondary,
+                tint = if (canGoNext) PulseAppColorSecondary else PulseAppColorSecondary.copy(alpha = 0.3f),
                 modifier = Modifier
                     .size(PulseAppIconSizeNavigation)
                     .clip(CircleShape)
-                    .clickable { onNextClick() }
+                    .clickable(enabled = canGoNext) { onNextClick() }
             )
         }
         
