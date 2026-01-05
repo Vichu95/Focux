@@ -33,5 +33,12 @@ interface RawDataDao {
      */
     @Query("SELECT * FROM raw_data ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastEvent(): RawData?
+
+    /**
+     * Fetches raw events that have an ID greater than the provided lastId.
+     * This is crucial for the Data Processor to only fetch and process *new* events.
+     */
+    @Query("SELECT * FROM raw_data WHERE id > :lastId")
+    suspend fun getEventsSince(lastId: Long): List<RawData>
 }
 

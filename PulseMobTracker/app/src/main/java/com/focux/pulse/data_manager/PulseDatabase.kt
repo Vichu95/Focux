@@ -9,10 +9,15 @@ import androidx.room.RoomDatabase
  * The main Room Database class for the application.
  * Defines the database configuration and serves as the main access point to the persisted data.
  */
-@Database(entities = [RawData::class], version = 1, exportSchema = false)
+@Database(
+    entities = [RawData::class, SystemState::class, AppSession::class, DailyStats::class],
+    version = 2,
+    exportSchema = false
+)
 abstract class PulseDatabase : RoomDatabase() {
 
     abstract fun rawDataDao(): RawDataDao
+    abstract fun analyticsDao(): AnalyticsDao
 
     companion object {
         @Volatile
@@ -28,7 +33,9 @@ abstract class PulseDatabase : RoomDatabase() {
                     context.applicationContext,
                     PulseDatabase::class.java,
                     "pulse_user.db"
-                ).build()
+                )
+                .fallbackToDestructiveMigration() // Useful for dev/onboarding phase to avoid crash on schema change
+                .build()
                 INSTANCE = instance
                 instance
             }

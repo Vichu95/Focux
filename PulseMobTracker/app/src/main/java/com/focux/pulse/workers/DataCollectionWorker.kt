@@ -19,8 +19,18 @@ class DataCollectionWorker(
     override suspend fun doWork(): Result {
         return try {
             val database = PulseDatabase.getDatabase(applicationContext)
+            
+            // 1. Collect Raw Data
             val logger = PulseDataLogger(applicationContext, database.rawDataDao())
             logger.logUsageStats()
+            
+            // 2. Process Data into Stats
+            val processor = com.focux.pulse.data_logger.PulseDataProcessor(
+                database.rawDataDao(),
+                database.analyticsDao()
+            )
+            processor.processPendingData()
+            
             Result.success()
         } catch (e: Exception) {
             e.printStackTrace()
