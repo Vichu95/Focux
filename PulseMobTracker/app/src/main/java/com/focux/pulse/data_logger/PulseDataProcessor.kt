@@ -4,6 +4,9 @@ import android.util.Log
 import com.focux.pulse.data_manager.*
 import com.focux.pulse.ui.theme.PULSE_IGNORED_APPS
 import com.focux.pulse.ui.theme.PULSE_JITTER_THRESHOLD_MS
+import com.focux.pulse.ui.theme.PULSE_SLEEP_THRESHOLD_MS
+import com.focux.pulse.ui.theme.PULSE_SLEEP_WINDOW_START_HOUR
+import com.focux.pulse.ui.theme.PULSE_SLEEP_WINDOW_END_HOUR
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -387,10 +390,7 @@ class PulseDataProcessor(
             // Count unlocks
             val unlockNoAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_NOAPP }
             val unlockAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_APP }
-            val glanceCount = allDaySessions.count { it.type == PulseEvents.SESSION_GLANCE }
-            
-            // screenCheckCount = glances + unlockNoApp (quick phone checks)
-            val screenCheckCount = glanceCount + unlockNoAppCount
+            val screenCheckCount = allDaySessions.count { it.type == PulseEvents.SESSION_GLANCE }
 
             // Top 3 apps by duration (excluding ignored apps)
             val appDurations = appSessions
@@ -417,6 +417,9 @@ class PulseDataProcessor(
             val totalUnlocks = unlockNoAppCount + unlockAppCount
             val focusScore = (100 - totalUnlocks * 2).coerceIn(0, 100)
 
+            // Calculate offline streak (longest gap excluding sleep)
+            val offlineStreak = calculateOfflineStreak(allDaySessions)
+
             val updatedStats = DailyStats(
                 date = date,
                 totalScreenTime = totalScreenTime,
@@ -432,6 +435,10 @@ class PulseDataProcessor(
                 lastAppPackage = lastApp?.packageName,
                 lastAppStartTime = lastApp?.startTime ?: 0,
                 lastAppEndTime = lastApp?.endTime ?: 0,
+                // Offline streak
+                offlineStreakDuration = offlineStreak?.first ?: 0,
+                offlineStreakStart = offlineStreak?.second ?: 0,
+                offlineStreakEnd = offlineStreak?.third ?: 0,
                 // Top 3 apps
                 topApp1Package = topApp1?.first,
                 topApp1Duration = topApp1?.second ?: 0,
@@ -440,13 +447,63 @@ class PulseDataProcessor(
                 topApp3Package = topApp3?.first,
                 topApp3Duration = topApp3?.second ?: 0
                 // TODO: productiveTime, neutralTime, distractingTime require AppInfo lookup
-                // TODO: offlineStreak requires gap analysis
             )
             analyticsDao.updateDailyStats(updatedStats)
 
             // Auto-discover new apps and add to AppInfo table
             registerNewApps(appSessions)
         }
+    }
+
+    /**
+     * Calculates the longest offline streak (gap between sessions) excluding sleep.
+     * Sleep is defined as: gap >= 3 hours AND within 12AM-6AM window.
+     * 
+     * @return Triple(duration, startTime, endTime) or null if no gaps found
+     */
+    private fun calculateOfflineStreak(sessions: List<AppSession>): Triple<Long, Long, Long>? {
+        if (sessions.size < 2) return null
+
+        // Sort sessions by start time
+        val sortedSessions = sessions.sortedBy { it.startTime }
+        
+        // Calculate gaps between sessions
+        val gaps = mutableListOf<Triple<Long, Long, Long>>()  // (duration, start, end)
+        
+        for (i in 0 until sortedSessions.size - 1) {
+            val currentEnd = sortedSessions[i].endTime
+            val nextStart = sortedSessions[i + 1].startTime
+            
+            if (nextStart > currentEnd) {
+                val gapDuration = nextStart - currentEnd
+                gaps.add(Triple(gapDuration, currentEnd, nextStart))
+            }
+        }
+        
+        if (gaps.isEmpty()) return null
+        
+        // Filter out sleep gaps: >= threshold AND within sleep window (12AM-6AM)
+        val calendar = Calendar.getInstance()
+        val nonSleepGaps = gaps.filter { (duration, start, end) ->
+            // Check if this is a sleep gap
+            val isSleepDuration = duration >= PULSE_SLEEP_THRESHOLD_MS
+            
+            // Check if gap overlaps with sleep window
+            calendar.timeInMillis = start
+            val startHour = calendar.get(Calendar.HOUR_OF_DAY)
+            calendar.timeInMillis = end
+            val endHour = calendar.get(Calendar.HOUR_OF_DAY)
+            
+            val isInSleepWindow = (startHour >= PULSE_SLEEP_WINDOW_START_HOUR && startHour < PULSE_SLEEP_WINDOW_END_HOUR) ||
+                                  (endHour >= PULSE_SLEEP_WINDOW_START_HOUR && endHour < PULSE_SLEEP_WINDOW_END_HOUR) ||
+                                  (startHour < PULSE_SLEEP_WINDOW_START_HOUR && endHour >= PULSE_SLEEP_WINDOW_END_HOUR)
+            
+            // Exclude if both conditions are met (it's a sleep gap)
+            !(isSleepDuration && isInSleepWindow)
+        }
+        
+        // Return the longest non-sleep gap
+        return nonSleepGaps.maxByOrNull { it.first }
     }
 
     /**
