@@ -26,7 +26,7 @@ class PulseDataProcessor(
 
     /**
      * Main processing entry point.
-     * Processes both APP sessions and SCREEN sessions.
+     * Processes APP sessions and SCREEN sessions in separate passes.
      */
     suspend fun processPendingData() {
         val lastProcessedId = analyticsDao.getState("last_processed_raw_id")?.toLong() ?: 0L
@@ -36,117 +36,152 @@ class PulseDataProcessor(
         Log.d(TAG, "Processing ${newEvents.size} new raw events...")
 
         val sortedEvents = newEvents.sortedBy { it.timestamp }
+        val allSessions = mutableListOf<AppSession>()
+        
+        // PASS 1: Process APP sessions (APP_OPEN -> APP_CLOSE pairs)
+        val (appSessions, appLastProcessedId) = processAppSessions(sortedEvents, lastProcessedId)
+        allSessions.addAll(appSessions)
+        
+        // PASS 2: Process SCREEN sessions (SCREEN_ON -> SCREEN_OFF cycles)
+        val (screenSessions, screenLastProcessedId) = processScreenSessions(sortedEvents, lastProcessedId)
+        allSessions.addAll(screenSessions)
+
+        // Save all sessions
+        if (allSessions.isNotEmpty()) {
+            Log.d(TAG, "Created ${allSessions.size} sessions (${appSessions.size} APP, ${screenSessions.size} SCREEN)")
+            analyticsDao.insertSessions(allSessions)
+            updateDailyStats(allSessions)
+        }
+
+        // Update bookmark to the minimum of both passes (to avoid skipping incomplete data)
+        val newLastProcessedId = minOf(appLastProcessedId, screenLastProcessedId)
+        if (newLastProcessedId > lastProcessedId) {
+            analyticsDao.updateState(SystemState("last_processed_raw_id", newLastProcessedId.toString()))
+        }
+    }
+
+    /**
+     * PASS 1: Process APP_OPEN -> APP_CLOSE pairs into SESSION_APP entries.
+     */
+    private fun processAppSessions(
+        events: List<RawData>,
+        initialLastProcessedId: Long
+    ): Pair<List<AppSession>, Long> {
         val sessions = mutableListOf<AppSession>()
         val processedIndices = mutableSetOf<Int>()
-        var lastSuccessfullyProcessedId: Long = lastProcessedId
+        var lastSuccessfullyProcessedId = initialLastProcessedId
 
-        var i = 0
-        while (i < sortedEvents.size) {
-            if (i in processedIndices) {
-                i++
-                continue
-            }
+        for (i in events.indices) {
+            if (i in processedIndices) continue
 
-            val event = sortedEvents[i]
-            val dateStr = getDateString(event.timestamp)
+            val event = events[i]
 
             when (event.eventLabel) {
-                // ==================== APP SESSIONS ====================
                 PulseEvents.APP_OPEN -> {
-                    val closeResult = findRealCloseEvent(sortedEvents, i, event.packageName ?: "")
+                    val closeResult = findRealCloseEvent(events, i, event.packageName ?: "")
 
                     if (closeResult == null) {
-                        // Unmatched OPEN - stop processing here
-                        Log.d(TAG, "Unmatched APP_OPEN at ID ${event.id}, stopping.")
+                        // Unmatched OPEN - stop processing APP sessions here
+                        Log.d(TAG, "Unmatched APP_OPEN at ID ${event.id}, stopping APP pass.")
                         break
                     }
 
                     val (closeTime, indicesToMark) = closeResult
-                    sessions.add(createSession(
-                        pkg = event.packageName ?: "unknown",
-                        start = event.timestamp,
-                        end = closeTime,
-                        type = PulseEvents.SESSION_APP,
-                        date = dateStr
-                    ))
+                    val duration = closeTime - event.timestamp
+                    
+                    // Only create session if duration is meaningful (not jitter)
+                    if (duration >= PULSE_JITTER_THRESHOLD_MS) {
+                        sessions.add(createSession(
+                            pkg = event.packageName ?: "unknown",
+                            start = event.timestamp,
+                            end = closeTime,
+                            type = PulseEvents.SESSION_APP,
+                            date = getDateString(event.timestamp)
+                        ))
+                    }
 
                     processedIndices.addAll(indicesToMark)
                     lastSuccessfullyProcessedId = if (indicesToMark.isNotEmpty()) {
-                        sortedEvents[indicesToMark.last()].id
+                        events[indicesToMark.last()].id
                     } else {
                         event.id
                     }
                 }
 
                 PulseEvents.APP_CLOSE -> {
-                    // Orphan CLOSE - skip it
-                    lastSuccessfullyProcessedId = event.id
-                }
-
-                // ==================== SCREEN SESSIONS ====================
-                PulseEvents.SCREEN_ON -> {
-                    val screenResult = processScreenSession(sortedEvents, i)
-
-                    if (screenResult == null) {
-                        // Incomplete screen cycle - stop here
-                        Log.d(TAG, "Incomplete SCREEN_ON at ID ${event.id}, stopping.")
-                        break
-                    }
-
-                    val (session, indicesToMark) = screenResult
-                    sessions.add(session)
-                    processedIndices.addAll(indicesToMark)
-                    lastSuccessfullyProcessedId = if (indicesToMark.isNotEmpty()) {
-                        sortedEvents[indicesToMark.last()].id
-                    } else {
-                        event.id
-                    }
-                }
-
-                // Skip other events but mark as processed
-                PulseEvents.SCREEN_OFF, PulseEvents.UNLOCK, PulseEvents.LOCK -> {
+                    // Orphan CLOSE - skip
                     lastSuccessfullyProcessedId = event.id
                 }
 
                 else -> {
+                    // Skip non-APP events in this pass
                     lastSuccessfullyProcessedId = event.id
                 }
             }
-            i++
         }
 
-        // Save sessions
-        if (sessions.isNotEmpty()) {
-            Log.d(TAG, "Created ${sessions.size} sessions")
-            analyticsDao.insertSessions(sessions)
-            updateDailyStats(sessions)
-        }
-
-        // Update bookmark
-        if (lastSuccessfullyProcessedId > lastProcessedId) {
-            analyticsDao.updateState(SystemState("last_processed_raw_id", lastSuccessfullyProcessedId.toString()))
-        }
+        return Pair(sessions, lastSuccessfullyProcessedId)
     }
 
     /**
-     * Processes a SCREEN_ON event to determine the session type.
-     * Returns the session and indices to mark as processed, or null if incomplete.
+     * PASS 2: Process SCREEN_ON -> SCREEN_OFF cycles into GLANCE/UNLOCK sessions.
      */
-    private fun processScreenSession(
+    private fun processScreenSessions(
+        events: List<RawData>,
+        initialLastProcessedId: Long
+    ): Pair<List<AppSession>, Long> {
+        val sessions = mutableListOf<AppSession>()
+        val processedIndices = mutableSetOf<Int>()
+        var lastSuccessfullyProcessedId = initialLastProcessedId
+
+        for (i in events.indices) {
+            if (i in processedIndices) continue
+
+            val event = events[i]
+
+            if (event.eventLabel == PulseEvents.SCREEN_ON) {
+                val screenResult = processScreenCycle(events, i)
+
+                if (screenResult == null) {
+                    // Incomplete screen cycle - stop processing SCREEN sessions here
+                    Log.d(TAG, "Incomplete SCREEN_ON at ID ${event.id}, stopping SCREEN pass.")
+                    break
+                }
+
+                val (session, indicesToMark) = screenResult
+                sessions.add(session)
+                processedIndices.addAll(indicesToMark)
+                lastSuccessfullyProcessedId = if (indicesToMark.isNotEmpty()) {
+                    events[indicesToMark.last()].id
+                } else {
+                    event.id
+                }
+            } else {
+                // Skip non-SCREEN_ON events in this pass
+                lastSuccessfullyProcessedId = event.id
+            }
+        }
+
+        return Pair(sessions, lastSuccessfullyProcessedId)
+    }
+
+    /**
+     * Processes a single SCREEN_ON -> SCREEN_OFF cycle.
+     */
+    private fun processScreenCycle(
         events: List<RawData>,
         screenOnIndex: Int
     ): Pair<AppSession, List<Int>>? {
         val screenOnEvent = events[screenOnIndex]
         val indicesToMark = mutableListOf<Int>()
-        
+
         var didUnlock = false
         var didUseApp = false
         var screenOffTime: Long? = null
-        
-        // Scan forward from SCREEN_ON to find SCREEN_OFF
+
         for (j in (screenOnIndex + 1) until events.size) {
             val event = events[j]
-            
+
             when (event.eventLabel) {
                 PulseEvents.UNLOCK -> {
                     didUnlock = true
@@ -159,55 +194,46 @@ class PulseDataProcessor(
                     didUseApp = true
                     // Don't mark - APP sessions are processed separately
                 }
-                PulseEvents.APP_CLOSE -> {
-                    // Don't mark - APP sessions are processed separately
-                }
                 PulseEvents.SCREEN_OFF -> {
-                    // Found the end of this screen cycle
                     screenOffTime = event.timestamp
                     indicesToMark.add(j)
                     break
                 }
                 PulseEvents.SCREEN_ON -> {
-                    // Jitter check: If very close to the first SCREEN_ON, skip
+                    // Jitter check
                     if (event.timestamp - screenOnEvent.timestamp < PULSE_JITTER_THRESHOLD_MS) {
                         indicesToMark.add(j)
                         continue
                     }
-                    // Another SCREEN_ON without SCREEN_OFF - incomplete data
+                    // Another SCREEN_ON without SCREEN_OFF - incomplete
                     return null
                 }
             }
         }
-        
+
         if (screenOffTime == null) {
-            // No SCREEN_OFF found - incomplete
             return null
         }
-        
-        // Determine session type
+
         val sessionType = when {
             !didUnlock -> PulseEvents.SESSION_GLANCE
             didUnlock && !didUseApp -> PulseEvents.SESSION_UNLOCK_NOAPP
-            didUnlock && didUseApp -> PulseEvents.SESSION_UNLOCK_APP
-            else -> PulseEvents.SESSION_GLANCE
+            else -> PulseEvents.SESSION_UNLOCK_APP
         }
-        
-        val dateStr = getDateString(screenOnEvent.timestamp)
+
         val session = createSession(
             pkg = "system",
             start = screenOnEvent.timestamp,
             end = screenOffTime,
             type = sessionType,
-            date = dateStr
+            date = getDateString(screenOnEvent.timestamp)
         )
-        
+
         return Pair(session, indicesToMark)
     }
 
     /**
      * Finds the real close event for an APP_OPEN, handling jitter.
-     * Uses PULSE_JITTER_THRESHOLD_MS to determine if events are jitter.
      */
     private fun findRealCloseEvent(
         events: List<RawData>,
@@ -216,7 +242,7 @@ class PulseDataProcessor(
     ): Pair<Long, List<Int>>? {
         val indicesToMark = mutableListOf<Int>()
         var currentOpenIndex = startIndex
-        val startOpenEvent = events[startIndex]
+        val startEvent = events[startIndex]
 
         while (true) {
             var nextSamePackageIndex: Int? = null
@@ -241,9 +267,19 @@ class PulseDataProcessor(
             }
 
             val nextEvent = events[nextSamePackageIndex]
+            val timeDiff = nextEvent.timestamp - events[currentOpenIndex].timestamp
+
+            // If the next event (OPEN or CLOSE) is within jitter threshold, skip it
+            if (timeDiff < PULSE_JITTER_THRESHOLD_MS && !hasOtherAppInBetween) {
+                indicesToMark.add(nextSamePackageIndex)
+                if (nextEvent.eventLabel == PulseEvents.APP_OPEN) {
+                    currentOpenIndex = nextSamePackageIndex
+                }
+                continue
+            }
 
             if (nextEvent.eventLabel == PulseEvents.APP_CLOSE) {
-                // Check for jitter using threshold
+                // Check for jitter after CLOSE
                 val afterCloseIndex = nextSamePackageIndex + 1
                 if (afterCloseIndex < events.size && !hasOtherAppInBetween) {
                     val afterCloseEvent = events[afterCloseIndex]
@@ -262,7 +298,7 @@ class PulseDataProcessor(
                 indicesToMark.add(nextSamePackageIndex)
                 return Pair(nextEvent.timestamp, indicesToMark)
             } else {
-                // Another OPEN - close at this timestamp
+                // Another OPEN - use as close time but don't mark it
                 return Pair(nextEvent.timestamp, indicesToMark)
             }
         }
@@ -280,13 +316,13 @@ class PulseDataProcessor(
             val addedScreenTime = daySessions
                 .filter { it.type == PulseEvents.SESSION_APP }
                 .sumOf { it.duration }
-            
-            val addedUnlocks = daySessions.count { 
-                it.type == PulseEvents.SESSION_UNLOCK_NOAPP || it.type == PulseEvents.SESSION_UNLOCK_APP 
+
+            val addedUnlocks = daySessions.count {
+                it.type == PulseEvents.SESSION_UNLOCK_NOAPP || it.type == PulseEvents.SESSION_UNLOCK_APP
             }
-            
-            val addedGlances = daySessions.count { 
-                it.type == PulseEvents.SESSION_GLANCE 
+
+            val addedGlances = daySessions.count {
+                it.type == PulseEvents.SESSION_GLANCE
             }
 
             val updatedStats = existingStats.copy(
