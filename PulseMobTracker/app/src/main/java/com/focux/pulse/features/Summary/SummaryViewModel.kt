@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.focux.pulse.data_manager.*
 import com.focux.pulse.utils.AppInfoHelper
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -47,63 +48,67 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    private var fetchJob: Job? = null
+
     fun loadDataForDate(dateStr: String) {
-        viewModelScope.launch {
-            val stats = analyticsDao.getDailyStats(dateStr)
-            _dailyStats.value = stats
+        fetchJob?.cancel()
+        fetchJob = viewModelScope.launch {
+            analyticsDao.getDailyStatsFlow(dateStr).collect { stats ->
+                _dailyStats.value = stats
 
-            if (stats != null) {
-                // Convert DailyStats to UI models
-                _phoneActivity.value = PhoneActivityData(
-                    totalTime = formatDuration(stats.totalScreenTime),
-                    productiveTime = formatDuration(stats.productiveTime),
-                    neutralTime = formatDuration(stats.neutralTime),
-                    distractingTime = formatDuration(stats.distractingTime),
-                    topApps = buildTopAppsList(stats)
-                )
+                if (stats != null) {
+                    // Convert DailyStats to UI models
+                    _phoneActivity.value = PhoneActivityData(
+                        totalTime = formatDuration(stats.totalScreenTime),
+                        productiveTime = formatDuration(stats.productiveTime),
+                        neutralTime = formatDuration(stats.neutralTime),
+                        distractingTime = formatDuration(stats.distractingTime),
+                        topApps = buildTopAppsList(stats)
+                    )
 
-                _deviceAccess.value = DeviceAccessData(
-                    unlocks = stats.unlockNoAppCount + stats.unlockAppCount,
-                    glances = stats.screenCheckCount
-                )
+                    _deviceAccess.value = DeviceAccessData(
+                        unlocks = stats.unlockNoAppCount + stats.unlockAppCount,
+                        glances = stats.screenCheckCount
+                    )
 
-                _offlineStreak.value = if (stats.offlineStreakDuration > 0) {
-                    OfflineStreakData(
-                        duration = formatDuration(stats.offlineStreakDuration),
-                        startTime = formatTime(stats.offlineStreakStart),
-                        endTime = formatTime(stats.offlineStreakEnd)
+                    _offlineStreak.value = if (stats.offlineStreakDuration > 0) {
+                        OfflineStreakData(
+                            duration = formatDuration(stats.offlineStreakDuration),
+                            startTime = formatTime(stats.offlineStreakStart),
+                            endTime = formatTime(stats.offlineStreakEnd)
+                        )
+                    } else {
+                        OfflineStreakData("0m", "--:--", "--:--")
+                    }
+
+                    _firstLastApps.value = FirstLastAppsData(
+                        morningTime = if (stats.firstAppStartTime > 0) formatTime(stats.firstAppStartTime) else "--:--",
+                        morningApp = AppUsage(
+                            name = getAppName(stats.firstAppPackage),
+                            iconName = stats.firstAppPackage ?: "app_icon",
+                            duration = "",
+                            type = ActivityType.Neutral
+                        ),
+                        nightTime = if (stats.lastAppStartTime > 0) formatTime(stats.lastAppStartTime) else "--:--",
+                        nightApp = AppUsage(
+                            name = getAppName(stats.lastAppPackage),
+                            iconName = stats.lastAppPackage ?: "app_icon",
+                            duration = "",
+                            type = ActivityType.Neutral
+                        )
                     )
                 } else {
-                    OfflineStreakData("0m", "--:--", "--:--")
-                }
-
-                _firstLastApps.value = FirstLastAppsData(
-                    morningTime = if (stats.firstAppStartTime > 0) formatTime(stats.firstAppStartTime) else "--:--",
-                    morningApp = AppUsage(
-                        name = getAppName(stats.firstAppPackage),
-                        iconName = stats.firstAppPackage ?: "app_icon",
-                        duration = "",
-                        type = ActivityType.Neutral
-                    ),
-                    nightTime = if (stats.lastAppStartTime > 0) formatTime(stats.lastAppStartTime) else "--:--",
-                    nightApp = AppUsage(
-                        name = getAppName(stats.lastAppPackage),
-                        iconName = stats.lastAppPackage ?: "app_icon",
-                        duration = "",
-                        type = ActivityType.Neutral
+                    // No data for this date
+                    _phoneActivity.value = PhoneActivityData("0h 0m", "0h 0m", "0h 0m", "0h 0m", emptyList())
+                    _deviceAccess.value = DeviceAccessData(0, 0)
+                    _offlineStreak.value = OfflineStreakData("0m", "--:--", "--:--")
+                    _firstLastApps.value = FirstLastAppsData(
+                        "--:--",
+                        AppUsage("No data", "app_icon", "", null),
+                        "--:--",
+                        AppUsage("No data", "app_icon", "", null)
                     )
-                )
-            } else {
-                // No data for this date
-                _phoneActivity.value = PhoneActivityData("0h 0m", "0h 0m", "0h 0m", "0h 0m", emptyList())
-                _deviceAccess.value = DeviceAccessData(0, 0)
-                _offlineStreak.value = OfflineStreakData("0m", "--:--", "--:--")
-                _firstLastApps.value = FirstLastAppsData(
-                    "--:--",
-                    AppUsage("No data", "app_icon", "", null),
-                    "--:--",
-                    AppUsage("No data", "app_icon", "", null)
-                )
+                }
             }
         }
     }

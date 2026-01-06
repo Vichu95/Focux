@@ -54,6 +54,12 @@ interface AnalyticsDao {
     suspend fun getDailyStats(date: String): DailyStats?
 
     /**
+     * Observable Flow version for UI to react to changes automatically.
+     */
+    @Query("SELECT * FROM daily_stats WHERE date = :date")
+    fun getDailyStatsFlow(date: String): kotlinx.coroutines.flow.Flow<DailyStats?>
+
+    /**
      * Retrieves stats for the last N days, ordered by date descending.
      */
     @Query("SELECT * FROM daily_stats ORDER BY date DESC LIMIT :days")
