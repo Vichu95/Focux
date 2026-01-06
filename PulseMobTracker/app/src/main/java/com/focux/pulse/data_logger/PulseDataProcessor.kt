@@ -30,6 +30,7 @@ class PulseDataProcessor(
 ) {
     companion object {
         private const val TAG = "PulseProcessor"
+        private const val MAX_SESSION_DURATION_MS = 8 * 60 * 60 * 1000L // 8 hours
     }
 
     /**
@@ -115,11 +116,18 @@ class PulseDataProcessor(
                     
                     // Only create session if duration is meaningful (not jitter)
                     if (duration >= PULSE_JITTER_THRESHOLD_MS) {
+                        val finalCloseTime = if (duration > MAX_SESSION_DURATION_MS) {
+                            Log.w(TAG, "Cap session > 8h: $duration for ${event.packageName}")
+                            event.timestamp + MAX_SESSION_DURATION_MS
+                        } else {
+                            closeTime
+                        }
+
                         // Use createSessions to handle Day Boundary splitting
                         sessions.addAll(createSessions(
                             pkg = event.packageName ?: "unknown",
                             start = event.timestamp,
-                            end = closeTime,
+                            end = finalCloseTime,
                             type = PulseEvents.SESSION_APP
                         ))
                     }
@@ -309,6 +317,14 @@ class PulseDataProcessor(
 
             for (j in (currentOpenIndex + 1) until events.size) {
                 val event = events[j]
+
+                // Global Terminators: Lock or Screen Off ends the session immediately
+                if (event.eventLabel == PulseEvents.LOCK || event.eventLabel == PulseEvents.SCREEN_OFF) {
+                    // Session ends at lock/screen off
+                    // We mark this event as "visited" for the bookmark, logic-wise it's fine
+                    indicesToMark.add(j) 
+                    return Pair(event.timestamp, indicesToMark)
+                }
 
                 if (event.eventLabel == PulseEvents.APP_OPEN && event.packageName != packageName) {
                     hasOtherAppInBetween = true

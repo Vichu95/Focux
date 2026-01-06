@@ -11,7 +11,7 @@ import androidx.room.RoomDatabase
  */
 @Database(
     entities = [RawData::class, SystemState::class, AppSession::class, DailyStats::class, AppInfo::class],
-    version = 3,
+    version = 5,
     exportSchema = false
 )
 abstract class PulseDatabase : RoomDatabase() {

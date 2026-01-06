@@ -2,6 +2,7 @@ package com.focux.pulse.data_manager
 
 import android.app.usage.UsageEvents
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -14,7 +15,12 @@ import androidx.room.PrimaryKey
  * @param packageName The package name of the app associated with the event (can be null for some system events).
  * @param eventLabel A human-readable label for the event type (e.g., "APP_OPEN", "SCREEN_ON").
  */
-@Entity(tableName = "raw_data")
+@Entity(
+    tableName = "raw_data",
+    indices = [
+        Index(value = ["timestamp", "eventType", "packageName", "eventLabel"], unique = true)
+    ]
+)
 data class RawData(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

@@ -19,7 +19,11 @@ import androidx.room.Index
  */
 @Entity(
     tableName = "app_sessions",
-    indices = [Index(value = ["startTime"]), Index(value = ["date"])]
+    indices = [
+        Index(value = ["startTime"]), 
+        Index(value = ["date"]),
+        Index(value = ["packageName", "startTime", "endTime", "date", "type"], unique = true)
+    ]
 )
 data class AppSession(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
