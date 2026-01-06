@@ -327,6 +327,12 @@ class PulseDataProcessor(
                 }
 
                 if (event.eventLabel == PulseEvents.APP_OPEN && event.packageName != packageName) {
+                     // Check ignore list - if it's a valid app switch, terminate current session
+                     if (event.packageName !in PULSE_IGNORED_APPS) {
+                         // Session ends at the start of the next app
+                         // Do NOT mark this event as consumed, it will be processed as next session
+                         return Pair(event.timestamp, indicesToMark)
+                     }
                     hasOtherAppInBetween = true
                 }
 
@@ -409,12 +415,13 @@ class PulseDataProcessor(
             val allDaySessions = analyticsDao.getSessionsForDay(date)
             val appSessions = allDaySessions.filter { it.type == PulseEvents.SESSION_APP }
 
-            // Calculate screen time from UNLOCK sessions (app + no-app)
-            // This counts all time from UNLOCK to LOCK/SCREEN_OFF
-            val unlockSessions = allDaySessions.filter { 
-                it.type == PulseEvents.SESSION_UNLOCK_APP || it.type == PulseEvents.SESSION_UNLOCK_NOAPP 
-            }
-            val totalScreenTime = unlockSessions.sumOf { it.duration }
+            // Calculate total screen time (Sum of ALL session types)
+            // UNLOCK_APP covers "Navigation time" (Screen On -> App Open)
+            // SESSION_APP covers "App Usage" (App Open -> ...)
+            // UNLOCK_NOAPP covers "Phone Check" (Unlock -> Lock)
+            // GLANCE covers "Locked Check" (Screen On -> Off)
+            // Since they are sequential and non-overlapping, simple sum works.
+            val totalScreenTime = allDaySessions.sumOf { it.duration }
 
             // Count unlocks
             val unlockNoAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_NOAPP }
