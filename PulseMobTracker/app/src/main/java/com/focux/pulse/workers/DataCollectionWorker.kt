@@ -27,6 +27,7 @@ class DataCollectionWorker(
             
             // 2. Process Data into Stats
             val processor = com.focux.pulse.data_logger.PulseDataProcessor(
+                applicationContext,
                 database.rawDataDao(),
                 database.analyticsDao(),
                 database.appInfoDao()

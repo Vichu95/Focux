@@ -32,15 +32,27 @@ fun AppIcon(
 ) {
     val context = LocalContext.current
     
-    // Remember the drawable to avoid re-fetching on recomposition
-    val drawable = remember(packageName) {
-        AppInfoHelper.getAppIcon(context, packageName)
+    // Handle empty or invalid package names
+    if (packageName.isBlank() || packageName == "app_icon" || packageName == "unknown") {
+        Image(
+            painter = painterResource(id = R.drawable.temp_icon),
+            contentDescription = contentDescription,
+            modifier = modifier.size(size)
+        )
+        return
     }
     
-    if (drawable != null) {
-        val bitmap = remember(drawable) {
-            drawable.toBitmap()
+    // Remember the bitmap to avoid re-fetching on recomposition
+    val bitmap = remember(packageName) {
+        try {
+            val drawable = AppInfoHelper.getAppIcon(context, packageName)
+            drawable?.toBitmap()
+        } catch (e: Exception) {
+            null
         }
+    }
+    
+    if (bitmap != null) {
         Image(
             bitmap = bitmap.asImageBitmap(),
             contentDescription = contentDescription,

@@ -1,5 +1,6 @@
 package com.focux.pulse.data_logger
 
+import android.content.Context
 import android.util.Log
 import com.focux.pulse.data_manager.*
 import com.focux.pulse.ui.theme.PULSE_IGNORED_APPS
@@ -22,6 +23,7 @@ import java.util.*
  * - SESSION_UNLOCK_APP: Unlocked and used apps (normal usage cycle)
  */
 class PulseDataProcessor(
+    private val context: Context,
     private val rawDataDao: RawDataDao,
     private val analyticsDao: AnalyticsDao,
     private val appInfoDao: AppInfoDao
@@ -528,6 +530,7 @@ class PulseDataProcessor(
 
     /**
      * Registers new apps discovered in sessions to the AppInfo table.
+     * Uses PackageManager to resolve human-readable app names.
      */
     private suspend fun registerNewApps(appSessions: List<AppSession>) {
         val packages = appSessions
@@ -535,8 +538,11 @@ class PulseDataProcessor(
             .filter { it !in PULSE_IGNORED_APPS }
             .distinct()
         
-        // Insert if not exists (IGNORE conflict strategy)
-        val newApps = packages.map { AppInfo(packageName = it) }
+        // Create AppInfo with resolved app names
+        val newApps = packages.map { pkg ->
+            val appName = com.focux.pulse.utils.AppInfoHelper.getAppName(context, pkg)
+            AppInfo(packageName = pkg, appName = appName)
+        }
         appInfoDao.insertAllIfNotExists(newApps)
     }
 
