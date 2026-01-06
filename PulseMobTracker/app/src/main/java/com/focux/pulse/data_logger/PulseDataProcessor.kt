@@ -7,6 +7,7 @@ import com.focux.pulse.ui.theme.PULSE_JITTER_THRESHOLD_MS
 import com.focux.pulse.ui.theme.PULSE_SLEEP_THRESHOLD_MS
 import com.focux.pulse.ui.theme.PULSE_SLEEP_WINDOW_START_HOUR
 import com.focux.pulse.ui.theme.PULSE_SLEEP_WINDOW_END_HOUR
+import com.focux.pulse.ui.theme.PULSE_UNMATCHED_SKIP_THRESHOLD
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -92,9 +93,19 @@ class PulseDataProcessor(
                     val closeResult = findRealCloseEvent(events, i, event.packageName ?: "")
 
                     if (closeResult == null) {
-                        // Unmatched OPEN - stop processing APP sessions here
-                        Log.d(TAG, "Unmatched APP_OPEN at ID ${event.id}, stopping APP pass.")
-                        break
+                        // Unmatched OPEN - check if we should skip or wait
+                        val eventsAfter = events.size - i - 1
+                        
+                        if (eventsAfter >= PULSE_UNMATCHED_SKIP_THRESHOLD) {
+                            // Enough events have passed, safe to skip this unmatched OPEN
+                            Log.d(TAG, "Skipping unmatched APP_OPEN at ID ${event.id} for ${event.packageName} (${eventsAfter} events after)")
+                            lastSuccessfullyProcessedId = event.id
+                            continue
+                        } else {
+                            // Not enough events yet, wait for more data
+                            Log.d(TAG, "Unmatched APP_OPEN at ID ${event.id}, waiting for more data (${eventsAfter} events after)")
+                            break
+                        }
                     }
 
                     val (closeTime, indicesToMark) = closeResult
@@ -112,6 +123,7 @@ class PulseDataProcessor(
                     }
 
                     processedIndices.addAll(indicesToMark)
+                    processedIndices.add(i)  // Mark the OPEN as processed too
                     lastSuccessfullyProcessedId = if (indicesToMark.isNotEmpty()) {
                         events[indicesToMark.last()].id
                     } else {

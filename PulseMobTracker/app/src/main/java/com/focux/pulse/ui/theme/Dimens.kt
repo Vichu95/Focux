@@ -129,3 +129,10 @@ const val PULSE_SLEEP_THRESHOLD_MS = 3 * 60 * 60 * 1000L  // 3 hours
  */
 const val PULSE_SLEEP_WINDOW_START_HOUR = 0   // 12 AM
 const val PULSE_SLEEP_WINDOW_END_HOUR = 6     // 6 AM
+
+/**
+ * Minimum events to look ahead before skipping an unmatched APP_OPEN.
+ * If we see this many more events without finding the matching APP_CLOSE,
+ * safely skip and move on. This prevents blocking on missing CLOSE events.
+ */
+const val PULSE_UNMATCHED_SKIP_THRESHOLD = 15
