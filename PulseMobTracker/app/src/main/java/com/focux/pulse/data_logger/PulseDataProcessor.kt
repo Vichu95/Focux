@@ -115,12 +115,12 @@ class PulseDataProcessor(
                     
                     // Only create session if duration is meaningful (not jitter)
                     if (duration >= PULSE_JITTER_THRESHOLD_MS) {
-                        sessions.add(createSession(
+                        // Use createSessions to handle Day Boundary splitting
+                        sessions.addAll(createSessions(
                             pkg = event.packageName ?: "unknown",
                             start = event.timestamp,
                             end = closeTime,
-                            type = PulseEvents.SESSION_APP,
-                            date = getDateString(event.timestamp)
+                            type = PulseEvents.SESSION_APP
                         ))
                     }
 
@@ -173,8 +173,8 @@ class PulseDataProcessor(
                     break
                 }
 
-                val (session, indicesToMark) = screenResult
-                sessions.add(session)
+                val (resultSessions, indicesToMark) = screenResult
+                sessions.addAll(resultSessions)
                 processedIndices.addAll(indicesToMark)
                 lastSuccessfullyProcessedId = if (indicesToMark.isNotEmpty()) {
                     events[indicesToMark.last()].id
@@ -203,11 +203,12 @@ class PulseDataProcessor(
     private fun processScreenCycle(
         events: List<RawData>,
         screenOnIndex: Int
-    ): Pair<AppSession, List<Int>>? {
+    ): Pair<List<AppSession>, List<Int>>? {
         val screenOnEvent = events[screenOnIndex]
         val indicesToMark = mutableListOf<Int>()
 
         var hasUnlock = false
+        var isUnlockApp = false
         var endTime: Long? = null
 
         for (j in (screenOnIndex + 1) until events.size) {
@@ -218,68 +219,63 @@ class PulseDataProcessor(
                     hasUnlock = true
                     indicesToMark.add(j)
                 }
-                PulseEvents.LOCK -> {
-                    // LOCK ends UNLOCK_NOAPP sessions
-                    if (hasUnlock) {
-                        endTime = event.timestamp
-                        indicesToMark.add(j)
-                        // Create UNLOCK_NOAPP session
-                        val session = createSession(
-                            pkg = "system",
-                            start = screenOnEvent.timestamp,
-                            end = endTime,
-                            type = PulseEvents.SESSION_UNLOCK_NOAPP,
-                            date = getDateString(screenOnEvent.timestamp)
-                        )
-                        return Pair(session, indicesToMark)
-                    }
-                    // LOCK without prior UNLOCK - skip
-                    indicesToMark.add(j)
-                }
                 PulseEvents.APP_OPEN -> {
-                    // Skip ignored apps (launcher, etc.) - they don't count as "using an app"
+                    // Skip ignored apps
                     val packageName = event.packageName ?: ""
                     if (packageName in PULSE_IGNORED_APPS) {
                         continue
                     }
-                    // APP_OPEN = UNLOCK_APP, end immediately
-                    endTime = event.timestamp
-                    // Don't mark APP_OPEN - APP sessions are processed separately
-                    val session = createSession(
-                        pkg = "system",
-                        start = screenOnEvent.timestamp,
-                        end = endTime,
-                        type = PulseEvents.SESSION_UNLOCK_APP,
-                        date = getDateString(screenOnEvent.timestamp)
-                    )
-                    return Pair(session, indicesToMark)
+                    // Valid app used! Mark this session as UNLOCK_APP
+                    isUnlockApp = true
+                    
+                    // Don't mark index - leave for app processing
                 }
-                PulseEvents.SCREEN_OFF -> {
-                    // SCREEN_OFF ends GLANCE (if no unlock) or UNLOCK_NOAPP (if unlock but no lock yet)
-                    if (!hasUnlock) {
-                        // GLANCE: no unlock, ended with SCREEN_OFF
+                PulseEvents.LOCK -> {
+                    if (hasUnlock) {
                         endTime = event.timestamp
                         indicesToMark.add(j)
-                        val session = createSession(
+                        
+                        // Determine type: UNLOCK_APP (if app used) or UNLOCK_NOAPP (if no app used)
+                        val type = if (isUnlockApp) PulseEvents.SESSION_UNLOCK_APP else PulseEvents.SESSION_UNLOCK_NOAPP
+                        
+                        val sessions = createSessions(
                             pkg = "system",
                             start = screenOnEvent.timestamp,
                             end = endTime,
-                            type = PulseEvents.SESSION_GLANCE,
-                            date = getDateString(screenOnEvent.timestamp)
+                            type = type
                         )
-                        return Pair(session, indicesToMark)
+                        return Pair(sessions, indicesToMark)
                     }
-                    // If unlock happened, SCREEN_OFF can be fallback end for UNLOCK_NOAPP
+                    // LOCK without unlock - skip
+                    indicesToMark.add(j)
+                }
+                PulseEvents.SCREEN_OFF -> {
+                    if (!hasUnlock) {
+                        // GLANCE: no unlock
+                        endTime = event.timestamp
+                        indicesToMark.add(j)
+                        val sessions = createSessions(
+                            pkg = "system",
+                            start = screenOnEvent.timestamp,
+                            end = endTime,
+                            type = PulseEvents.SESSION_GLANCE
+                        )
+                        return Pair(sessions, indicesToMark)
+                    }
+                    
+                    // Fallback: If unlocked but no LOCK event before SCREEN_OFF
                     endTime = event.timestamp
                     indicesToMark.add(j)
-                    val session = createSession(
+                    
+                    val type = if (isUnlockApp) PulseEvents.SESSION_UNLOCK_APP else PulseEvents.SESSION_UNLOCK_NOAPP
+                    
+                    val sessions = createSessions(
                         pkg = "system",
                         start = screenOnEvent.timestamp,
                         end = endTime,
-                        type = PulseEvents.SESSION_UNLOCK_NOAPP,
-                        date = getDateString(screenOnEvent.timestamp)
+                        type = type
                     )
-                    return Pair(session, indicesToMark)
+                    return Pair(sessions, indicesToMark)
                 }
                 PulseEvents.SCREEN_ON -> {
                     // Jitter check
@@ -287,15 +283,14 @@ class PulseDataProcessor(
                         indicesToMark.add(j)
                         continue
                     }
-                    // Another SCREEN_ON - incomplete
-                    return null
+                    // Incomplete cycle
+                    return null 
                 }
             }
         }
-
-        // No end marker found - incomplete
         return null
     }
+
 
     /**
      * Finds the real close event for an APP_OPEN, handling jitter.
@@ -398,8 +393,12 @@ class PulseDataProcessor(
             val allDaySessions = analyticsDao.getSessionsForDay(date)
             val appSessions = allDaySessions.filter { it.type == PulseEvents.SESSION_APP }
 
-            // Calculate screen time from APP sessions
-            val totalScreenTime = appSessions.sumOf { it.duration }
+            // Calculate screen time from UNLOCK sessions (app + no-app)
+            // This counts all time from UNLOCK to LOCK/SCREEN_OFF
+            val unlockSessions = allDaySessions.filter { 
+                it.type == PulseEvents.SESSION_UNLOCK_APP || it.type == PulseEvents.SESSION_UNLOCK_NOAPP 
+            }
+            val totalScreenTime = unlockSessions.sumOf { it.duration }
 
             // Count unlocks
             val unlockNoAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_NOAPP }
@@ -546,15 +545,61 @@ class PulseDataProcessor(
         appInfoDao.insertAllIfNotExists(newApps)
     }
 
-    private fun createSession(pkg: String, start: Long, end: Long, type: String, date: String): AppSession {
-        return AppSession(
-            packageName = pkg,
-            startTime = start,
-            endTime = end,
-            duration = end - start,
-            type = type,
-            date = date
-        )
+
+
+    /**
+     * Creates one or multiple AppSessions, splitting at Day Boundary if needed.
+     * This handles sessions spanning across midnight (11:50 PM - 12:10 AM).
+     */
+    private fun createSessions(
+        pkg: String,
+        start: Long,
+        end: Long,
+        type: String
+    ): List<AppSession> {
+        val sessions = mutableListOf<AppSession>()
+        var currentStart = start
+
+        while (currentStart < end) {
+            // Find the boundary for the current "Day"
+            // For now, hardcoded to 12 AM midnight boundary
+            // In future, can be updated to support custom day start hours
+            val boundary = getNextDayBoundary(currentStart)
+            
+            // If the session ends before the boundary, it's a single session
+            val splitEnd = if (end <= boundary) end else boundary
+            
+            // Add session for this chunk
+            if (splitEnd > currentStart) { // Safety check
+                sessions.add(AppSession(
+                    packageName = pkg,
+                    startTime = currentStart,
+                    endTime = splitEnd,
+                    duration = splitEnd - currentStart,
+                    type = type,
+                    date = getDateString(currentStart)
+                ))
+            }
+
+            // Move start to next chunk (boundary)
+            currentStart = boundary
+        }
+        return sessions
+    }
+
+    /**
+     * Returns the timestamp of the NEXT day start (Midnight).
+     * Helps in splitting sessions.
+     */
+    private fun getNextDayBoundary(timestamp: Long): Long {
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = timestamp
+        cal.add(Calendar.DAY_OF_YEAR, 1)
+        cal.set(Calendar.HOUR_OF_DAY, 0) // Future: Configurable Day Start Hour
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
     }
 
     private fun getDateString(timestamp: Long): String {
