@@ -16,15 +16,15 @@ object AppInfoHelper {
 
     /**
      * Returns the human-readable app name (e.g., "Instagram")
-     * Falls back to package name if app not found.
+     * into a readable format.
      */
     fun getAppName(context: Context, packageName: String): String {
+        val pm = context.packageManager
         return try {
-            val pm = context.packageManager
             val appInfo = pm.getApplicationInfo(packageName, 0)
-            pm.getApplicationLabel(appInfo).toString()
+            appInfo.loadLabel(pm).toString()
         } catch (e: PackageManager.NameNotFoundException) {
-            // Fallback to last part of package name
+            // Fallback to last part of package name if truly not found
             packageName.split(".").lastOrNull()?.replaceFirstChar { it.uppercase() } ?: packageName
         }
     }
@@ -34,9 +34,10 @@ object AppInfoHelper {
      * Returns a default icon if the app is not found.
      */
     fun getAppIcon(context: Context, packageName: String): Drawable? {
+        val pm = context.packageManager
         return try {
-            val pm = context.packageManager
-            pm.getApplicationIcon(packageName)
+            val appInfo = pm.getApplicationInfo(packageName, 0)
+            appInfo.loadIcon(pm)
         } catch (e: PackageManager.NameNotFoundException) {
             // Return default launcher icon
             ContextCompat.getDrawable(context, R.drawable.ic_launcher_foreground)

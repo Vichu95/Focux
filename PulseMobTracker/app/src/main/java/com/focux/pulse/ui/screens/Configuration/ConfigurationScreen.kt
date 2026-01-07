@@ -70,12 +70,11 @@ fun ConfigurationScreen() {
                             try {
                                 val db = PulseDatabase.getDatabase(context)
                                 
-                                // Clear all tables
+                                // Reset Indexes / Clear DB
                                 db.rawDataDao().deleteAll()
                                 db.analyticsDao().deleteAllSessions()
                                 db.analyticsDao().deleteAllDailyStats()
                                 
-                                // Reset processing indexes
                                 db.analyticsDao().updateState(SystemState("last_processed_app_id", "0"))
                                 db.analyticsDao().updateState(SystemState("last_processed_screen_id", "0"))
                                 
@@ -92,6 +91,42 @@ fun ConfigurationScreen() {
                 ) {
                     Text(
                         text = "Clear Database & Reset Indexes",
+                        color = PulseAppColorBackground
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                val db = PulseDatabase.getDatabase(context)
+                                val appDao = db.appInfoDao()
+                                
+                                val allApps = appDao.getAllApps()
+                                var updatedCount = 0
+                                
+                                allApps.forEach { appInfo ->
+                                    val realName = AppInfoHelper.getAppName(context, appInfo.packageName)
+                                    if (realName != appInfo.appName && realName != appInfo.packageName) {
+                                        appDao.updateAppName(appInfo.packageName, realName)
+                                        updatedCount++
+                                    }
+                                }
+                                statusMessage = "✓ Refreshed names for $updatedCount apps!"
+                            } catch (e: Exception) {
+                                statusMessage = "✗ Error: ${e.message}"
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PulseAppColorProductive
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Refresh App Names",
                         color = PulseAppColorBackground
                     )
                 }

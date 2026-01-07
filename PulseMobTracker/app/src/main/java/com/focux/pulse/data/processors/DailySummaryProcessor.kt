@@ -173,10 +173,20 @@ class DailySummaryProcessor(
             .distinct()
         
         // Create AppInfo with resolved app names
-        val newApps = packages.map { pkg ->
+        val appInfos = packages.map { pkg ->
             val appName = AppInfoHelper.getAppName(context, pkg)
             AppInfo(packageName = pkg, appName = appName)
         }
-        appInfoDao.insertAllIfNotExists(newApps)
+        
+        // 1. Insert new apps (ignore conflicts)
+        appInfoDao.insertAllIfNotExists(appInfos)
+        
+        // 2. Update names for ALL processed apps 
+        // This fixes stale "App" names if permission was granted later
+        appInfos.forEach { info ->
+            if (info.appName != "App" && info.appName != "Android" && info.appName != info.packageName) {
+               appInfoDao.updateAppName(info.packageName, info.appName)
+            }
+        }
     }
 }

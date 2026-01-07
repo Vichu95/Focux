@@ -33,6 +33,12 @@ interface AppInfoDao {
     suspend fun insertAllIfNotExists(apps: List<AppInfo>)
 
     /**
+     * Update app name (useful if name resolution was fixed).
+     */
+    @Query("UPDATE app_info SET appName = :appName WHERE packageName = :packageName")
+    suspend fun updateAppName(packageName: String, appName: String)
+
+    /**
      * Update app category.
      */
     @Query("UPDATE app_info SET category = :category WHERE packageName = :packageName")
