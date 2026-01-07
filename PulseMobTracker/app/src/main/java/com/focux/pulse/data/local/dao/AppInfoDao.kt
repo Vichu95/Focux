@@ -49,4 +49,9 @@ interface AppInfoDao {
      */
     @Query("SELECT * FROM app_info WHERE category = :category")
     suspend fun getAppsByCategory(category: String): List<AppInfo>
+    /**
+     * Delete all app info.
+     */
+    @Query("DELETE FROM app_info")
+    suspend fun deleteAll()
 }
