@@ -11,10 +11,10 @@ import androidx.room.Query
  */
 @Dao
 interface RawDataDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(rawData: RawData)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(events: List<RawData>)
 
     @Query("SELECT * FROM raw_data ORDER BY timestamp DESC")
