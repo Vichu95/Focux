@@ -80,7 +80,7 @@ class SessionProcessor(
             analyticsDao.insertSessions(sortedSessions)
             
             // Delegate to DailySummaryProcessor
-            dailyProcessor.updateDailyStats(sortedSessions)
+            dailyProcessor.updateDailyStats(sortedSessions, ignoredApps)
         }
     }
 }

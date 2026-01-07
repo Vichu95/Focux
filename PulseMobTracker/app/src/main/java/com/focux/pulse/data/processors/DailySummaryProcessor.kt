@@ -27,8 +27,16 @@ class DailySummaryProcessor(
      * Updates DailyStats based on new sessions.
      * Calculates: screen time, unlocks, glances, top apps, first/last app.
      */
-    suspend fun updateDailyStats(newSessions: List<AppSession>) {
+    /**
+     * Updates DailyStats based on new sessions.
+     * Calculates: screen time, unlocks, glances, top apps, first/last app.
+     * @param ignoredApps Set of package names to exclude from Top Apps and First/Last app logic.
+     */
+    suspend fun updateDailyStats(newSessions: List<AppSession>, ignoredApps: Set<String>) {
         val sessionsByDay = newSessions.groupBy { it.date }
+
+        // Fetch launchers to exclude from Total Screen Time (independent of general ignore list)
+        val launcherPackages = AppInfoHelper.getLauncherPackages(context)
 
         for ((date, daySessions) in sessionsByDay) {
             val existingStats = analyticsDao.getDailyStats(date) ?: DailyStats(date)
@@ -38,7 +46,10 @@ class DailySummaryProcessor(
             val appSessions = allDaySessions.filter { it.type == PulseEvents.SESSION_APP }
 
             // Calculate total screen time (Sum of ALL session types)
-            val totalScreenTime = allDaySessions.sumOf { it.duration }
+            // User Request: Ignore launcher timing, but include other ignored apps
+            val totalScreenTime = allDaySessions
+                .filter { it.packageName !in launcherPackages }
+                .sumOf { it.duration }
 
             // Count unlocks
             val unlockNoAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_NOAPP }
@@ -47,7 +58,7 @@ class DailySummaryProcessor(
 
             // Top 3 apps by duration (excluding ignored apps)
             val appDurations = appSessions
-                .filter { it.packageName !in PULSE_IGNORED_APPS }
+                .filter { it.packageName !in ignoredApps }
                 .groupBy { it.packageName }
                 .mapValues { (_, sessions) -> sessions.sumOf { it.duration } }
                 .toList()
@@ -60,7 +71,7 @@ class DailySummaryProcessor(
 
             // First and last app of the day (by start time)
             val sortedAppSessions = appSessions
-                .filter { it.packageName !in PULSE_IGNORED_APPS }
+                .filter { it.packageName !in ignoredApps }
                 .sortedBy { it.startTime }
             
             val firstApp = sortedAppSessions.firstOrNull()
@@ -111,7 +122,7 @@ class DailySummaryProcessor(
             analyticsDao.updateDailyStats(updatedStats)
 
             // Auto-discover new apps and add to AppInfo table
-            registerNewApps(appSessions)
+            registerNewApps(appSessions, ignoredApps)
         }
     }
 
@@ -166,10 +177,10 @@ class DailySummaryProcessor(
     /**
      * Registers new apps discovered in sessions to the AppInfo table.
      */
-    private suspend fun registerNewApps(appSessions: List<AppSession>) {
+    private suspend fun registerNewApps(appSessions: List<AppSession>, ignoredApps: Set<String>) {
         val packages = appSessions
             .map { it.packageName }
-            .filter { it !in PULSE_IGNORED_APPS }
+            .filter { it !in ignoredApps }
             .distinct()
         
         // Create AppInfo with resolved app names
