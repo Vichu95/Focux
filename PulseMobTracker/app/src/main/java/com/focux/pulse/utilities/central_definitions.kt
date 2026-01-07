@@ -16,18 +16,11 @@ const val PulseAppDataLoggingFrequency = 15
 const val PULSE_JITTER_THRESHOLD_MS = 10L
 
 /**
- * Launcher app package name.
- * This app is always running on home screen and should be ignored for UNLOCK_APP detection.
- */
-const val PULSE_LAUNCHER_PACKAGE = "com.google.android.apps.nexuslauncher"
-
-/**
  * Additional apps to ignore for screen session detection.
  * These apps won't trigger UNLOCK_APP when opened.
  * User can add custom packages here in the future.
  */
 val PULSE_IGNORED_APPS: Set<String> = setOf(
-    PULSE_LAUNCHER_PACKAGE,
     // Add more packages here as needed
 )
 

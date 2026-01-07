@@ -4,13 +4,14 @@ import android.util.Log
 import com.focux.pulse.data.local.entities.AppSession
 import com.focux.pulse.data.local.entities.PulseEvents
 import com.focux.pulse.data.local.entities.RawData
-import com.focux.pulse.utilities.PULSE_IGNORED_APPS
 import com.focux.pulse.utilities.PULSE_JITTER_THRESHOLD_MS
 
 /**
  * Validates and processes raw SCREEN_ON cycles into GLANCE/UNLOCK sessions.
  */
-class ScreenSessionProcessor {
+class ScreenSessionProcessor(
+    private val ignoredApps: Set<String>
+) {
 
     companion object {
         private const val TAG = "ScreenSessionProcessor"
@@ -83,7 +84,7 @@ class ScreenSessionProcessor {
                 PulseEvents.APP_OPEN -> {
                     // Skip ignored apps
                     val packageName = event.packageName ?: ""
-                    if (packageName in PULSE_IGNORED_APPS) {
+                    if (packageName in ignoredApps) {
                         continue
                     }
                     // Valid app used! Mark this session as UNLOCK_APP

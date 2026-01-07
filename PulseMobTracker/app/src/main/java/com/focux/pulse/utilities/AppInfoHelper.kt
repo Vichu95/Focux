@@ -2,9 +2,11 @@ package com.focux.pulse.utilities
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
 import com.focux.pulse.R
+import java.util.ArrayList
 
 /**
  * Helper to fetch app names and icons from PackageManager.
@@ -39,5 +41,26 @@ object AppInfoHelper {
             // Return default launcher icon
             ContextCompat.getDrawable(context, R.drawable.ic_launcher_foreground)
         }
+    }
+
+    /**
+     * Resolves ALL packages that claim to be a Home application (Launchers).
+     * Filters out system fallback (Settings) to return only actual launchers.
+     */
+    fun getLauncherPackages(context: Context): List<String> {
+        val intent = android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
+            addCategory(android.content.Intent.CATEGORY_HOME)
+        }
+
+        // Match all activities that have this category
+        val list = context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        
+        return list
+            .map { it.activityInfo.packageName }
+            .filter { packageName ->
+                packageName != "com.android.settings" && 
+                packageName != "com.android.tv.settings"
+            }
+            .distinct()
     }
 }

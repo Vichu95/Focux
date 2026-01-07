@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.focux.pulse.data.local.dao.*
 import com.focux.pulse.data.local.entities.*
+import com.focux.pulse.utilities.AppInfoHelper
+import com.focux.pulse.utilities.PULSE_IGNORED_APPS
 
 /**
  * The "Brain" of the analytics pipeline.
@@ -20,8 +22,13 @@ class SessionProcessor(
         private const val TAG = "SessionProcessor"
     }
 
-    private val appProcessor = AppSessionProcessor()
-    private val screenProcessor = ScreenSessionProcessor()
+    private val ignoredApps: Set<String> by lazy {
+        val launchers = AppInfoHelper.getLauncherPackages(context)
+        PULSE_IGNORED_APPS + launchers
+    }
+
+    private val appProcessor = AppSessionProcessor(ignoredApps)
+    private val screenProcessor = ScreenSessionProcessor(ignoredApps)
     private val dailyProcessor = DailySummaryProcessor(context, analyticsDao, appInfoDao)
 
     /**

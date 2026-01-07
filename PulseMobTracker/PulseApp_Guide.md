@@ -64,10 +64,12 @@ This is the heartbeat of the app.
 
 #### 3. `processors/SessionProcessor.kt` (Orchestrator)
 *   **Role**: The "Brain". Orchestrates the pipeline data flow.
-*   **Logic**: It delegates work to specialized sub-processors:
-    1.  **`AppSessionProcessor`**: Processes raw events into App Sessions.
-    2.  **`ScreenSessionProcessor`**: Processes screen cycles into Unlock/Glance sessions.
-    3.  **`DailySummaryProcessor`**: Aggregates sessions into daily statistics.
+*   **Logic**:
+    *   **Dynamic Configuration**: Resolves the default launcher package at runtime using `AppInfoHelper` and injects it into sub-processors.
+    *   **Delegation**: Delegates work to specialized sub-processors:
+        1.  **`AppSessionProcessor`**: Processing App Sessions (with ignored launcher).
+        2.  **`ScreenSessionProcessor`**: Processing Unlock/Glance Sessions (with ignored launcher).
+        3.  **`DailySummaryProcessor`**: Aggregates sessions into daily statistics.
 
 #### 4. `processors/AppSessionProcessor.kt`
 *   **Role**: Handles App Usage logic.

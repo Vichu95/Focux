@@ -4,7 +4,6 @@ import android.util.Log
 import com.focux.pulse.data.local.entities.AppSession
 import com.focux.pulse.data.local.entities.PulseEvents
 import com.focux.pulse.data.local.entities.RawData
-import com.focux.pulse.utilities.PULSE_IGNORED_APPS
 import com.focux.pulse.utilities.PULSE_JITTER_THRESHOLD_MS
 import com.focux.pulse.utilities.PULSE_UNMATCHED_SKIP_THRESHOLD
 
@@ -15,7 +14,9 @@ import com.focux.pulse.utilities.PULSE_UNMATCHED_SKIP_THRESHOLD
  * - Missing CLOSE events (implicit close)
  * - Session capping (max 8 hours)
  */
-class AppSessionProcessor {
+class AppSessionProcessor(
+    private val ignoredApps: Set<String>
+) {
 
     companion object {
         private const val TAG = "AppSessionProcessor"
@@ -131,7 +132,7 @@ class AppSessionProcessor {
 
                 if (event.eventLabel == PulseEvents.APP_OPEN && event.packageName != packageName) {
                      // Check ignore list - if it's a valid app switch, terminate current session
-                     if (event.packageName !in PULSE_IGNORED_APPS) {
+                     if (event.packageName !in ignoredApps) {
                          // Session ends at the start of the next app
                          // Do NOT mark this event as consumed, it will be processed as next session
                          return Pair(event.timestamp, indicesToMark)

@@ -16,6 +16,7 @@ import com.focux.pulse.data.local.PulseDatabase
 import com.focux.pulse.data.local.entities.SystemState
 import com.focux.pulse.ui.theme.*
 import com.focux.pulse.utilities.PULSE_IGNORED_APPS
+import com.focux.pulse.utilities.AppInfoHelper
 import kotlinx.coroutines.launch
 
 @Composable
@@ -128,9 +129,15 @@ fun ConfigurationScreen() {
                     color = PulseAppColorSecondary
                 )
                 
-                PULSE_IGNORED_APPS.forEach { pkg ->
+                val launchers = remember(context) { AppInfoHelper.getLauncherPackages(context) }
+                val displayList = remember(launchers) {
+                   PULSE_IGNORED_APPS + launchers
+                }
+
+                displayList.distinct().forEach { pkg ->
+                    val isLauncher = pkg in launchers
                     Text(
-                        text = "• $pkg",
+                        text = "• $pkg${if (isLauncher) " (Launcher)" else ""}",
                         style = PulseAppFontBody,
                         color = PulseAppColorSecondary
                     )
