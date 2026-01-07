@@ -12,11 +12,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.focux.pulse.features.Configuration.ConfigurationScreen
-import com.focux.pulse.features.Insights.InsightsScreen
-import com.focux.pulse.features.Summary.SummaryScreen
-import com.focux.pulse.features.Timeline.TimelineScreen
-import com.focux.pulse.ui.components.BottomNavBar
+import com.focux.pulse.ui.screens.Configuration.ConfigurationScreen
+import com.focux.pulse.ui.screens.Insights.InsightsScreen
+import com.focux.pulse.ui.screens.Summary.SummaryScreen
+import com.focux.pulse.ui.screens.Timeline.TimelineScreen
+import com.focux.pulse.ui.screens.components.BottomNavBar
 import com.focux.pulse.ui.theme.*
 
 import com.focux.pulse.ui.theme.PulseTheme
@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
                 if (hasPermission) {
                     MainAppStructure()
                 } else {
-                    com.focux.pulse.ui.onboarding.PermissionScreen()
+                    com.focux.pulse.ui.screens.onboarding.PermissionScreen()
                 }
             }
         }
@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
         val workManager = androidx.work.WorkManager.getInstance(this)
 
         // 1. Periodic Work (Every 15 mins) - The heartbeat
-        val periodicRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.workers.DataCollectionWorker>(
+        val periodicRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>(
             PulseAppDataLoggingFrequency.toLong(), java.util.concurrent.TimeUnit.MINUTES
         ).build()
 
@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
         )
 
         // 2. Immediate Work (App Open / Triggered) - Capture data right now
-        val oneTimeRequest = androidx.work.OneTimeWorkRequestBuilder<com.focux.pulse.workers.DataCollectionWorker>()
+        val oneTimeRequest = androidx.work.OneTimeWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>()
             .build()
             
         workManager.enqueueUniqueWork(
