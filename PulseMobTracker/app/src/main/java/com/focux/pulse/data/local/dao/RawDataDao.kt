@@ -47,5 +47,11 @@ interface RawDataDao {
      */
     @Query("DELETE FROM raw_data")
     suspend fun deleteAll()
+
+    /**
+     * Resets the auto-increment counter for raw_data.
+     */
+    @Query("DELETE FROM sqlite_sequence WHERE name = 'raw_data'")
+    suspend fun resetSequence()
 }
 

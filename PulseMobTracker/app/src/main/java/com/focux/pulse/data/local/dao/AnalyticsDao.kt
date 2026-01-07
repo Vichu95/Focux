@@ -84,4 +84,10 @@ interface AnalyticsDao {
      */
     @Query("DELETE FROM daily_stats")
     suspend fun deleteAllDailyStats()
+
+    /**
+     * Resets the auto-increment counter for app_sessions.
+     */
+    @Query("DELETE FROM sqlite_sequence WHERE name = 'app_sessions'")
+    suspend fun resetSessionSequence()
 }

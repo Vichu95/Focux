@@ -125,6 +125,13 @@ class SystemUsageSource(
             }
         }
 
+        // Double-check: Make sure DB is STILL empty after the long fetch
+        val freshCheck = rawDataDao.getLastEvent()
+        if (freshCheck != null) {
+            Log.d("SystemUsageSource", "Historical data collection aborted - data appeared during fetch")
+            return@withContext
+        }
+
         if (rawDataList.isNotEmpty()) {
             Log.d("SystemUsageSource", "Inserting ${rawDataList.size} historical events")
             rawDataDao.insertAll(rawDataList)

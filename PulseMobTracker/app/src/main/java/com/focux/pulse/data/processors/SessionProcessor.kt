@@ -73,11 +73,14 @@ class SessionProcessor(
 
         // Save all sessions and update stats
         if (allSessions.isNotEmpty()) {
-            Log.d(TAG, "Created ${allSessions.size} total sessions")
-            analyticsDao.insertSessions(allSessions)
+            // FIX: Sort by start time so DB IDs roughly correspond to time order
+            val sortedSessions = allSessions.sortedBy { it.startTime }
+            
+            Log.d(TAG, "Created ${sortedSessions.size} total sessions")
+            analyticsDao.insertSessions(sortedSessions)
             
             // Delegate to DailySummaryProcessor
-            dailyProcessor.updateDailyStats(allSessions)
+            dailyProcessor.updateDailyStats(sortedSessions)
         }
     }
 }

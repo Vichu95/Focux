@@ -72,7 +72,11 @@ fun ConfigurationScreen() {
                                 
                                 // Reset Indexes / Clear DB
                                 db.rawDataDao().deleteAll()
+                                db.rawDataDao().resetSequence()
+                                
                                 db.analyticsDao().deleteAllSessions()
+                                db.analyticsDao().resetSessionSequence()
+                                
                                 db.analyticsDao().deleteAllDailyStats()
                                 db.appInfoDao().deleteAll()
                                 
