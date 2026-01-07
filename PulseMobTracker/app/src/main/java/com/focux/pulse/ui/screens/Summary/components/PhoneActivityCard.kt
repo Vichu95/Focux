@@ -21,7 +21,8 @@ fun PhoneActivityCard(data: PhoneActivityData) {
     Column(
         modifier = Modifier
             .width(PulseAppCardWidth)
-            .height(PulseAppPhoneActivityCardHeight)
+            .wrapContentHeight() // Allow card to grow with the list
+            .defaultMinSize(minHeight = PulseAppPhoneActivityCardHeight)
             .background(Color.Transparent, RoundedCornerShape(PulseAppCornerRadiusMedium))
             .border(PulseAppBorderWidthThick, PulseAppColorPrimary, RoundedCornerShape(PulseAppCornerRadiusMedium))
             .padding(PulseAppPaddingMedium),
@@ -60,8 +61,6 @@ fun PhoneActivityCard(data: PhoneActivityData) {
                 LegendItem("Distracting", data.distractingTime)
             }
         }
-
-        Spacer(modifier = Modifier.weight(1f))
 
         // App Icons Row
         Row(

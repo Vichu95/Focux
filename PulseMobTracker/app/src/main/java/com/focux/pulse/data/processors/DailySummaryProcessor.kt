@@ -71,7 +71,7 @@ class DailySummaryProcessor(
 
             // First and last app of the day (by start time)
             val sortedAppSessions = appSessions
-                .filter { it.packageName !in ignoredApps }
+                .filter { it.packageName !in ignoredApps && it.packageName !in launcherPackages }
                 .sortedBy { it.startTime }
             
             val firstApp = sortedAppSessions.firstOrNull()
@@ -180,7 +180,6 @@ class DailySummaryProcessor(
     private suspend fun registerNewApps(appSessions: List<AppSession>, ignoredApps: Set<String>) {
         val packages = appSessions
             .map { it.packageName }
-            .filter { it !in ignoredApps }
             .distinct()
         
         // Create AppInfo with resolved app names

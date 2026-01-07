@@ -24,7 +24,9 @@ class SessionProcessor(
 
     private val ignoredApps: Set<String> by lazy {
         val launchers = AppInfoHelper.getLauncherPackages(context)
-        PULSE_IGNORED_APPS + launchers
+        val combined = PULSE_IGNORED_APPS + launchers
+        Log.d(TAG, "Ignored Apps (Launchers: $launchers): $combined")
+        combined
     }
 
     private val appProcessor = AppSessionProcessor(ignoredApps)

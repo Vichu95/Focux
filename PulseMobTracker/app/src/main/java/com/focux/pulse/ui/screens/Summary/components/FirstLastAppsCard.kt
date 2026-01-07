@@ -16,6 +16,8 @@ import com.focux.pulse.R
 import com.focux.pulse.utilities.FirstLastAppsData
 import com.focux.pulse.ui.theme.*
 
+import com.focux.pulse.ui.screens.components.AppIcon
+
 @Composable
 fun FirstLastAppsCard(data: FirstLastAppsData) {
     // Frame First and Last App (CSS Specs)
@@ -63,10 +65,10 @@ fun FirstLastAppsCard(data: FirstLastAppsData) {
                         color = PulseAppColorSecondary // White
                     )
                     Spacer(modifier = Modifier.width(16.dp)) // Gap 16px
-                    Image(
-                        painter = painterResource(id = if(data.morningApp.iconName.contains("instagram")) R.drawable.instagram_logo else R.drawable.temp_icon),
+                    AppIcon(
+                        packageName = data.morningApp.iconName,
                         contentDescription = data.morningApp.name,
-                        modifier = Modifier.size(PulseAppIconSizeMedium) // 36dp
+                        size = PulseAppIconSizeMedium
                     )
                 }
             }
@@ -100,10 +102,10 @@ fun FirstLastAppsCard(data: FirstLastAppsData) {
                         color = PulseAppColorSecondary // White
                     )
                     Spacer(modifier = Modifier.width(16.dp)) // Gap 16px
-                    Image(
-                        painter = painterResource(id = if(data.nightApp.iconName.contains("gmail")) R.drawable.gmail_logo else R.drawable.temp_icon),
+                    AppIcon(
+                        packageName = data.nightApp.iconName,
                         contentDescription = data.nightApp.name,
-                        modifier = Modifier.size(PulseAppIconSizeMedium) // 36dp
+                        size = PulseAppIconSizeMedium
                     )
                 }
             }
