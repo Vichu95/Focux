@@ -4,9 +4,9 @@ import android.util.Log
 import com.focux.pulse.data.local.entities.AppSession
 import com.focux.pulse.data.local.entities.PulseEvents
 import com.focux.pulse.data.local.entities.RawData
-import com.focux.pulse.ui.theme.PULSE_IGNORED_APPS
-import com.focux.pulse.ui.theme.PULSE_JITTER_THRESHOLD_MS
-import com.focux.pulse.ui.theme.PULSE_UNMATCHED_SKIP_THRESHOLD
+import com.focux.pulse.utilities.PULSE_IGNORED_APPS
+import com.focux.pulse.utilities.PULSE_JITTER_THRESHOLD_MS
+import com.focux.pulse.utilities.PULSE_UNMATCHED_SKIP_THRESHOLD
 
 /**
  * Validates and processes raw APP_OPEN/CLOSE events into AppSessions.

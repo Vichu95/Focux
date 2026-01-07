@@ -7,10 +7,10 @@ import com.focux.pulse.data.local.entities.AppInfo
 import com.focux.pulse.data.local.entities.AppSession
 import com.focux.pulse.data.local.entities.DailyStats
 import com.focux.pulse.data.local.entities.PulseEvents
-import com.focux.pulse.ui.theme.PULSE_IGNORED_APPS
-import com.focux.pulse.ui.theme.PULSE_SLEEP_THRESHOLD_MS
-import com.focux.pulse.ui.theme.PULSE_SLEEP_WINDOW_END_HOUR
-import com.focux.pulse.ui.theme.PULSE_SLEEP_WINDOW_START_HOUR
+import com.focux.pulse.utilities.PULSE_IGNORED_APPS
+import com.focux.pulse.utilities.PULSE_SLEEP_THRESHOLD_MS
+import com.focux.pulse.utilities.PULSE_SLEEP_WINDOW_END_HOUR
+import com.focux.pulse.utilities.PULSE_SLEEP_WINDOW_START_HOUR
 import com.focux.pulse.utilities.AppInfoHelper
 import java.util.Calendar
 

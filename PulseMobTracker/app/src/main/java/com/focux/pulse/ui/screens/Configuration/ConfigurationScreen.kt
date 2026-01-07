@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.focux.pulse.data.local.PulseDatabase
 import com.focux.pulse.data.local.entities.SystemState
 import com.focux.pulse.ui.theme.*
+import com.focux.pulse.utilities.PULSE_IGNORED_APPS
 import kotlinx.coroutines.launch
 
 @Composable

@@ -17,7 +17,7 @@ import com.focux.pulse.ui.screens.Insights.InsightsScreen
 import com.focux.pulse.ui.screens.Summary.SummaryScreen
 import com.focux.pulse.ui.screens.Timeline.TimelineScreen
 import com.focux.pulse.ui.screens.components.BottomNavBar
-import com.focux.pulse.ui.theme.*
+import com.focux.pulse.utilities.PulseAppDataLoggingFrequency
 
 import com.focux.pulse.ui.theme.PulseTheme
 
