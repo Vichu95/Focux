@@ -27,14 +27,33 @@ class ScreenSessionProcessor(
         val sessions = mutableListOf<AppSession>()
         val processedIndices = mutableSetOf<Int>()
         var lastSuccessfullyProcessedId = initialLastProcessedId
+        var lastNotificationTimestamp: Long = 0
 
         for (i in events.indices) {
             if (i in processedIndices) continue
 
             val event = events[i]
 
-            if (event.eventLabel == PulseEvents.SCREEN_ON) {
-                val screenResult = processScreenCycle(events, i)
+            if (event.eventLabel == PulseEvents.NOTIFICATION) {
+                // 1. Create Point Session for Notification
+                // "For timing of the notification, just use start time as notification time, and end time as same."
+                val notifSession = SessionSplitter.createSessions(
+                    pkg = "system",
+                    start = event.timestamp,
+                    end = event.timestamp,
+                    type = PulseEvents.SESSION_NOTIFICATION
+                )
+                sessions.addAll(notifSession)
+                
+                // Track timestamp for correlation
+                lastNotificationTimestamp = event.timestamp
+                
+                // Mark processed
+                processedIndices.add(i)
+                lastSuccessfullyProcessedId = event.id
+            } 
+            else if (event.eventLabel == PulseEvents.SCREEN_ON) {
+                val screenResult = processScreenCycle(events, i, lastNotificationTimestamp)
 
                 if (screenResult == null) {
                     // Incomplete screen cycle - stop processing SCREEN sessions here
@@ -51,7 +70,8 @@ class ScreenSessionProcessor(
                     event.id
                 }
             } else {
-                // Skip non-SCREEN_ON events in this pass
+                // Skip non-SCREEN_ON events in this pass (but advance ID if it's safe)
+                // Actually safer to only advance if we are sure it's processed or irrelevant
                 lastSuccessfullyProcessedId = event.id
             }
         }
@@ -64,7 +84,8 @@ class ScreenSessionProcessor(
      */
     private fun processScreenCycle(
         events: List<RawData>,
-        screenOnIndex: Int
+        screenOnIndex: Int,
+        lastNotificationTimestamp: Long
     ): Pair<List<AppSession>, List<Int>>? {
         val screenOnEvent = events[screenOnIndex]
         val indicesToMark = mutableListOf<Int>()
@@ -113,14 +134,19 @@ class ScreenSessionProcessor(
                 }
                 PulseEvents.SCREEN_OFF -> {
                     if (!hasUnlock) {
-                        // GLANCE: no unlock
+                        // GLANCE or NOTIFICATION-GLANCE
                         endTime = event.timestamp
                         indicesToMark.add(j)
+                        
+                        // Check for Notification Correlation (within 2 seconds)
+                        val isNotificationDriven = (screenOnEvent.timestamp - lastNotificationTimestamp) in 0..2000
+                        val type = if (isNotificationDriven) PulseEvents.SESSION_NOTIFICATION else PulseEvents.SESSION_GLANCE
+                        
                         val sessions = SessionSplitter.createSessions(
                             pkg = "system",
                             start = screenOnEvent.timestamp,
                             end = endTime,
-                            type = PulseEvents.SESSION_GLANCE
+                            type = type
                         )
                         return Pair(sessions, indicesToMark)
                     }

@@ -27,7 +27,8 @@ data class RawData(
     val timestamp: Long,
     val eventType: Int,
     val packageName: String?,
-    val eventLabel: String
+    val eventLabel: String,
+    val readableTime: String = ""
 )
 
 /**
@@ -42,11 +43,14 @@ object PulseEvents {
     const val LOCK = "LOCK"
     const val SCREEN_ON = "SCREEN_ON"
     const val SCREEN_OFF = "SCREEN_OFF"
+    const val NOTIFICATION = "NOTIFICATION"  // Type 12
     const val UNKNOWN = "UNKNOWN"
     
     // Session types for processed data
     const val SESSION_APP = "SESSION_APP"                     // Normal app usage session
     const val SESSION_GLANCE = "SESSION_GLANCE"               // Screen on, no unlock
+    const val SESSION_NOTIFICATION = "SESSION_NOTIFICATION"   // Notification interruption (Point or Glance)
+    const val SESSION_OFFLINE = "SESSION_OFFLINE"             // Offline gap between sessions
     const val SESSION_UNLOCK_NOAPP = "SESSION_UNLOCK_NOAPP"   // Unlocked but no app used
     const val SESSION_UNLOCK_APP = "SESSION_UNLOCK_APP"       // Unlocked and used apps
 
@@ -61,6 +65,7 @@ object PulseEvents {
             UsageEvents.Event.KEYGUARD_SHOWN -> LOCK
             UsageEvents.Event.SCREEN_INTERACTIVE -> SCREEN_ON
             UsageEvents.Event.SCREEN_NON_INTERACTIVE -> SCREEN_OFF
+            12 -> NOTIFICATION // UsageEvents.Event.NOTIFICATION_INTERRUPTION (API 28+)
             else -> UNKNOWN
         }
     }

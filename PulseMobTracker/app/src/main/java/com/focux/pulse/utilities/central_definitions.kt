@@ -43,3 +43,9 @@ const val PULSE_SLEEP_WINDOW_END_HOUR = 6     // 6 AM
  * safely skip and move on. This prevents blocking on missing CLOSE events.
  */
 const val PULSE_UNMATCHED_SKIP_THRESHOLD = 15
+
+/**
+ * Minimum duration of a gap to be considered "OFFLINE".
+ * Gaps smaller than this are ignored/merged to reduce jitter.
+ */
+const val PULSE_MIN_OFFLINE_THRESHOLD_MS = 60 * 1000L // 1 minute

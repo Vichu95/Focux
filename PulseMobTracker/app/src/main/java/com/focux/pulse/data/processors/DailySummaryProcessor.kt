@@ -130,10 +130,15 @@ class DailySummaryProcessor(
      * Calculates the longest offline streak (gap between sessions) excluding sleep.
      */
     private fun calculateOfflineStreak(sessions: List<AppSession>): Triple<Long, Long, Long>? {
-        if (sessions.size < 2) return null
+        // Filter out passive sessions (Notifications) - they don't break the streak
+        val activeSessions = sessions.filter { 
+            it.type != PulseEvents.SESSION_NOTIFICATION 
+        }
+
+        if (activeSessions.size < 2) return null
 
         // Sort sessions by start time
-        val sortedSessions = sessions.sortedBy { it.startTime }
+        val sortedSessions = activeSessions.sortedBy { it.startTime }
         
         // Calculate gaps between sessions
         val gaps = mutableListOf<Triple<Long, Long, Long>>()  // (duration, start, end)
@@ -150,24 +155,42 @@ class DailySummaryProcessor(
         
         if (gaps.isEmpty()) return null
         
-        // Filter out sleep gaps: >= threshold AND within sleep window (12AM-6AM)
+        // Filter out sleep gaps: >= threshold AND overlaps with sleep window (00:00 - 06:00)
         val calendar = Calendar.getInstance()
         val nonSleepGaps = gaps.filter { (duration, start, end) ->
-            // Check if this is a sleep gap
+            // Check if this is a sleep gap (long enough)
             val isSleepDuration = duration >= PULSE_SLEEP_THRESHOLD_MS
             
-            // Check if gap overlaps with sleep window
-            calendar.timeInMillis = start
-            val startHour = calendar.get(Calendar.HOUR_OF_DAY)
-            calendar.timeInMillis = end
-            val endHour = calendar.get(Calendar.HOUR_OF_DAY)
-            
-            val isInSleepWindow = (startHour >= PULSE_SLEEP_WINDOW_START_HOUR && startHour < PULSE_SLEEP_WINDOW_END_HOUR) ||
-                                  (endHour >= PULSE_SLEEP_WINDOW_START_HOUR && endHour < PULSE_SLEEP_WINDOW_END_HOUR) ||
-                                  (startHour < PULSE_SLEEP_WINDOW_START_HOUR && endHour >= PULSE_SLEEP_WINDOW_END_HOUR)
-            
-            // Exclude if both conditions are met (it's a sleep gap)
-            !(isSleepDuration && isInSleepWindow)
+            if (!isSleepDuration) {
+                true // Keep short gaps (not sleep)
+            } else {
+                // Check if gap overlaps with sleep window (cross-midnight support)
+                calendar.timeInMillis = start
+                val startHour = calendar.get(Calendar.HOUR_OF_DAY)
+                calendar.timeInMillis = end
+                val endHour = calendar.get(Calendar.HOUR_OF_DAY)
+                
+                // Logic: Does the gap intersect 00:00-06:00?
+                // Simplest check: start or end is in window, OR gap covers the entire window
+                
+                // Helper to check if hour is in window
+                fun isHourInWindow(h: Int) = h in PULSE_SLEEP_WINDOW_START_HOUR until PULSE_SLEEP_WINDOW_END_HOUR
+                
+                val startInWindow = isHourInWindow(startHour)
+                val endInWindow = isHourInWindow(endHour)
+                
+                // If it starts before window and ends after window (e.g. 23:00 to 07:00), it covers the window.
+                // Since window starts at 0, checking if start > end (wrapping) handles this roughly, 
+                // but checking strict containment is better for 0-6 range.
+                // Assuming sleep window is strictly 00:00 to 06:00 for now.
+                
+                val spansWindow = startHour > endHour && endHour >= PULSE_SLEEP_WINDOW_END_HOUR 
+                // e.g. Start 23, End 7. 23 > 7, 7 >= 6.
+                
+                val isSleepOverlap = startInWindow || endInWindow || spansWindow
+                
+                !isSleepOverlap // Keep only if it DOES NOT overlap sleep
+            }
         }
         
         // Return the longest non-sleep gap

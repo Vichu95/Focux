@@ -32,5 +32,7 @@ data class AppSession(
     val endTime: Long,
     val duration: Long,
     val type: String,
-    val date: String
+    val date: String,
+    val startTimeStr: String = "",
+    val endTimeStr: String = ""
 )

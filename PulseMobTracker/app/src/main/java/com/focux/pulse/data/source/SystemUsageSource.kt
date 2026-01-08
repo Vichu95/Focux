@@ -65,7 +65,8 @@ class SystemUsageSource(
                     timestamp = event.timeStamp,
                     eventType = event.eventType,
                     packageName = event.packageName,
-                    eventLabel = label
+                    eventLabel = label,
+                    readableTime = com.focux.pulse.utilities.TimeUtils.format(event.timeStamp)
                 )
             } else {
                 null
@@ -119,7 +120,8 @@ class SystemUsageSource(
                     timestamp = event.timeStamp,
                     eventType = event.eventType,
                     packageName = event.packageName,
-                    eventLabel = label
+                    eventLabel = label,
+                    readableTime = com.focux.pulse.utilities.TimeUtils.format(event.timeStamp)
                 )
             } else {
                 null

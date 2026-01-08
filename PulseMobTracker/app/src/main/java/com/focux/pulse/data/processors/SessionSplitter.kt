@@ -39,7 +39,9 @@ object SessionSplitter {
                     endTime = splitEnd,
                     duration = splitEnd - currentStart,
                     type = type,
-                    date = getDateString(currentStart)
+                    date = getDateString(currentStart),
+                    startTimeStr = com.focux.pulse.utilities.TimeUtils.format(currentStart),
+                    endTimeStr = com.focux.pulse.utilities.TimeUtils.format(splitEnd)
                 ))
             }
 

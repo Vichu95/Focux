@@ -75,14 +75,39 @@ class SessionProcessor(
 
         // Save all sessions and update stats
         if (allSessions.isNotEmpty()) {
-            // FIX: Sort by start time so DB IDs roughly correspond to time order
+            // 1. Strict Sort by Start Time
             val sortedSessions = allSessions.sortedBy { it.startTime }
             
-            Log.d(TAG, "Created ${sortedSessions.size} total sessions")
-            analyticsDao.insertSessions(sortedSessions)
+            // 2. Inject Offline Gaps
+            val finalSessions = mutableListOf<AppSession>()
+            if (sortedSessions.isNotEmpty()) {
+                finalSessions.add(sortedSessions[0])
+                
+                for (i in 0 until sortedSessions.size - 1) {
+                    val currentSession = sortedSessions[i]
+                    val nextSession = sortedSessions[i+1]
+                    
+                    val gap = nextSession.startTime - currentSession.endTime
+                    
+                    if (gap >= com.focux.pulse.utilities.PULSE_MIN_OFFLINE_THRESHOLD_MS) {
+                        // Create offline session(s) using Splitter (handles day boundary automatically)
+                        val offlineSessions = SessionSplitter.createSessions(
+                            pkg = "system",
+                            start = currentSession.endTime,
+                            end = nextSession.startTime,
+                            type = PulseEvents.SESSION_OFFLINE
+                        )
+                        finalSessions.addAll(offlineSessions)
+                    }
+                    finalSessions.add(nextSession)
+                }
+            }
             
-            // Delegate to DailySummaryProcessor
-            dailyProcessor.updateDailyStats(sortedSessions, ignoredApps)
+            Log.d(TAG, "Created ${finalSessions.size} total sessions (with offline gaps)")
+            analyticsDao.insertSessions(finalSessions)
+            
+            // Delegate to DailySummaryProcessor (use finalSessions!)
+            dailyProcessor.updateDailyStats(finalSessions, ignoredApps)
         }
     }
 }
