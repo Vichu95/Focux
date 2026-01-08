@@ -74,14 +74,14 @@ fun ConfigurationScreen() {
                                 workManager.cancelUniqueWork("DataCollectionWork")
                                 workManager.cancelUniqueWork("ImmediateDataSync")
                                 
+                                // Give workers a moment to stop
+                                kotlinx.coroutines.delay(500)
+                                
                                 val db = PulseDatabase.getDatabase(context)
                                 
-                                // 2. Reset Indexes / Clear DB
-                                db.rawDataDao().deleteAll()
-                                db.rawDataDao().resetSequence()
-                                
-                                db.analyticsDao().deleteAllSessions()
-                                db.analyticsDao().resetSessionSequence()
+                                // 2. Reset Indexes / Clear DB (Transactional)
+                                db.rawDataDao().clearAllAndReset()
+                                db.analyticsDao().clearAllSessionsAndReset()
                                 
                                 db.analyticsDao().deleteAllDailyStats()
                                 db.appInfoDao().deleteAll()
@@ -91,10 +91,9 @@ fun ConfigurationScreen() {
                                 
                                 // 3. Restart Data Collection immediately
                                 val periodicRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>(
-                                    PULSE_IGNORED_APPS.size.toLong().coerceAtLeast(15), java.util.concurrent.TimeUnit.MINUTES // Using constant would be better if accessible
+                                    // Use 15 minutes as minimum interval
+                                    15, java.util.concurrent.TimeUnit.MINUTES
                                 ).setInitialDelay(2, java.util.concurrent.TimeUnit.SECONDS).build() 
-                                // Note: PulseAppDataLoggingFrequency is constant 15, hardcoding 15 for simplicity or importing if possible.
-                                // It seems PULSE_IGNORED_APPS is visible, PulseAppDataLoggingFrequency is in central_definitions too.
                                 
                                 val restartRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>(
                                     15, java.util.concurrent.TimeUnit.MINUTES

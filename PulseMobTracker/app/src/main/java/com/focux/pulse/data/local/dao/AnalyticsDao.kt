@@ -90,4 +90,14 @@ interface AnalyticsDao {
      */
     @Query("DELETE FROM sqlite_sequence WHERE name = 'app_sessions'")
     suspend fun resetSessionSequence()
+
+    /**
+     * Atomically deletes all sessions and resets the ID sequence.
+     * This transaction guarantees that no new data is inserted between strict deletion and reset.
+     */
+    @Transaction
+    suspend fun clearAllSessionsAndReset() {
+        deleteAllSessions()
+        resetSessionSequence()
+    }
 }

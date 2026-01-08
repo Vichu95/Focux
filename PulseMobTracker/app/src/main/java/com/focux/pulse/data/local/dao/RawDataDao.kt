@@ -53,5 +53,14 @@ interface RawDataDao {
      */
     @Query("DELETE FROM sqlite_sequence WHERE name = 'raw_data'")
     suspend fun resetSequence()
+
+    /**
+     * Atomically deletes all raw data and resets the ID sequence.
+     */
+    @Transaction
+    suspend fun clearAllAndReset() {
+        deleteAll()
+        resetSequence()
+    }
 }
 
