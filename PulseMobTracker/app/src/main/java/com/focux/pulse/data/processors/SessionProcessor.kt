@@ -78,32 +78,40 @@ class SessionProcessor(
             // 1. Strict Sort by Start Time
             val sortedSessions = allSessions.sortedBy { it.startTime }
             
-            // 2. Inject Offline Gaps
-            val finalSessions = mutableListOf<AppSession>()
-            if (sortedSessions.isNotEmpty()) {
-                finalSessions.add(sortedSessions[0])
-                
-                for (i in 0 until sortedSessions.size - 1) {
-                    val currentSession = sortedSessions[i]
-                    val nextSession = sortedSessions[i+1]
+            // 2. Identify "Active" sessions for Gap Calculation
+            // We ignore "Passive" sessions (Notification) when determining offline streaks.
+            // However, GLANCE (Manual Screen On) counts as a break, so we keep it.
+            val activeSessions = sortedSessions.filter { 
+                it.type != PulseEvents.SESSION_NOTIFICATION
+            }
+            
+            val offlineSessions = mutableListOf<AppSession>()
+            
+            if (activeSessions.isNotEmpty()) {
+                for (i in 0 until activeSessions.size - 1) {
+                    val currentSession = activeSessions[i]
+                    val nextSession = activeSessions[i+1]
                     
                     val gap = nextSession.startTime - currentSession.endTime
                     
                     if (gap >= com.focux.pulse.utilities.PULSE_MIN_OFFLINE_THRESHOLD_MS) {
-                        // Create offline session(s) using Splitter (handles day boundary automatically)
-                        val offlineSessions = SessionSplitter.createSessions(
+                        // Create offline session(s) spanning the entire gap
+                        // This will naturally overlap with any passive sessions in between
+                        val newOffline = SessionSplitter.createSessions(
                             pkg = "system",
                             start = currentSession.endTime,
                             end = nextSession.startTime,
                             type = PulseEvents.SESSION_OFFLINE
                         )
-                        finalSessions.addAll(offlineSessions)
+                        offlineSessions.addAll(newOffline)
                     }
-                    finalSessions.add(nextSession)
                 }
             }
             
-            Log.d(TAG, "Created ${finalSessions.size} total sessions (with offline gaps)")
+            // 3. Merge Active, Passive, and Offline sessions
+            val finalSessions = (sortedSessions + offlineSessions).sortedBy { it.startTime }
+
+            Log.d(TAG, "Created ${finalSessions.size} total sessions (Active: ${activeSessions.size}, Offline: ${offlineSessions.size})")
             analyticsDao.insertSessions(finalSessions)
             
             // Delegate to DailySummaryProcessor (use finalSessions!)
