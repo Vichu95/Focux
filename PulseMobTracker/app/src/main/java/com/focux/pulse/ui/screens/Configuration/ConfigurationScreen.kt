@@ -68,9 +68,15 @@ fun ConfigurationScreen() {
                     onClick = {
                         scope.launch {
                             try {
+                                val workManager = androidx.work.WorkManager.getInstance(context)
+                                
+                                // 1. Stop background workers to prevent race conditions
+                                workManager.cancelUniqueWork("DataCollectionWork")
+                                workManager.cancelUniqueWork("ImmediateDataSync")
+                                
                                 val db = PulseDatabase.getDatabase(context)
                                 
-                                // Reset Indexes / Clear DB
+                                // 2. Reset Indexes / Clear DB
                                 db.rawDataDao().deleteAll()
                                 db.rawDataDao().resetSequence()
                                 
@@ -83,7 +89,29 @@ fun ConfigurationScreen() {
                                 db.analyticsDao().updateState(SystemState("last_processed_app_id", "0"))
                                 db.analyticsDao().updateState(SystemState("last_processed_screen_id", "0"))
                                 
-                                statusMessage = "✓ Database cleared and indexes reset!"
+                                // 3. Restart Data Collection immediately
+                                val periodicRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>(
+                                    PULSE_IGNORED_APPS.size.toLong().coerceAtLeast(15), java.util.concurrent.TimeUnit.MINUTES // Using constant would be better if accessible
+                                ).setInitialDelay(2, java.util.concurrent.TimeUnit.SECONDS).build() 
+                                // Note: PulseAppDataLoggingFrequency is constant 15, hardcoding 15 for simplicity or importing if possible.
+                                // It seems PULSE_IGNORED_APPS is visible, PulseAppDataLoggingFrequency is in central_definitions too.
+                                
+                                val restartRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>(
+                                    15, java.util.concurrent.TimeUnit.MINUTES
+                                ).build()
+
+                                workManager.enqueueUniquePeriodicWork(
+                                    "DataCollectionWork",
+                                    androidx.work.ExistingPeriodicWorkPolicy.UPDATE, // UPDATE to replace the cancelled one
+                                    restartRequest
+                                )
+                                
+                                // Trigger immediate one-time sync to repopulate historical data
+                                val oneTimeRequest = androidx.work.OneTimeWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>()
+                                    .build()
+                                workManager.enqueue(oneTimeRequest)
+
+                                statusMessage = "✓ Database cleared & restarted!"
                             } catch (e: Exception) {
                                 statusMessage = "✗ Error: ${e.message}"
                             }

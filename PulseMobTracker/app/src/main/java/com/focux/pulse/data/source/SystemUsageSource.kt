@@ -73,8 +73,9 @@ class SystemUsageSource(
         }
 
         if (rawDataList.isNotEmpty()) {
-            Log.d("SystemUsageSource", "Inserting ${rawDataList.size} events (duplicates will be ignored by DB)")
-            rawDataDao.insertAll(rawDataList)
+            val sortedEvents = rawDataList.sortedBy { it.timestamp }
+            Log.d("SystemUsageSource", "Inserting ${sortedEvents.size} events (duplicates will be ignored by DB)")
+            rawDataDao.insertAll(sortedEvents)
         } else {
             Log.d("SystemUsageSource", "No new events found")
         }
@@ -133,8 +134,9 @@ class SystemUsageSource(
         }
 
         if (rawDataList.isNotEmpty()) {
-            Log.d("SystemUsageSource", "Inserting ${rawDataList.size} historical events")
-            rawDataDao.insertAll(rawDataList)
+            val sortedEvents = rawDataList.sortedBy { it.timestamp }
+            Log.d("SystemUsageSource", "Inserting ${sortedEvents.size} historical events")
+            rawDataDao.insertAll(sortedEvents)
         } else {
             Log.d("SystemUsageSource", "No historical events found")
         }
