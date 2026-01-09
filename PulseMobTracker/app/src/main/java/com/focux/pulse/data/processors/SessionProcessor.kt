@@ -27,7 +27,7 @@ class SessionProcessor(
     }
 
     private val launcherPackages: Set<String> by lazy {
-        AppInfoHelper.getLauncherPackages(context)
+        AppInfoHelper.getLauncherPackages(context).toSet()
     }
 
     private val screenIgnoredApps: Set<String> by lazy {
@@ -141,7 +141,8 @@ class SessionProcessor(
             analyticsDao.insertSessions(finalSessions)
             
             // Delegate to DailySummaryProcessor (use finalSessions!)
-            dailyProcessor.updateDailyStats(finalSessions, ignoredApps)
+            // We pass PULSE_IGNORED_APPS so it knows what to exclude from Top Apps / New App Registration
+            dailyProcessor.updateDailyStats(finalSessions, PULSE_IGNORED_APPS)
         }
     }
 }
