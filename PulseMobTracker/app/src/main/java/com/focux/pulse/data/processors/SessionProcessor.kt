@@ -37,20 +37,24 @@ class SessionProcessor(
     }
 
     // --- SPLIT LOGIC EXPLANATION ---
-    // We split the "Ignored Apps" list to support our Hybrid Metrics Model:
-    // 1. AppProcessor: Needs to track EVERYTHING the user does, including Launchers.
-    //    So we ONLY ignore strict System UIDs (PULSE_IGNORED_APPS).
-    //    Result: Launchers generate SESSION_APP events with valid duration.
+    // We split the "Ignored Apps" lists to support our Hybrid Metrics Model AND Raw Data Logging:
     
-    // 2. ScreenProcessor: Needs to detect "Passive/Checking" behavior.
-    //    If a user unlocks and only stays on the Launcher, that's a "Check" (Unlock No App).
-    //    So we MUST ignore Launchers here.
-    //    Result: Launchers trigger SESSION_UNLOCK_NOAPP events (for Glance Counting).
+    // 1. AppProcessor: (USER REQUEST: LOG EVERYTHING)
+    //    We pass an EMPTY set of ignored apps.
+    //    Why? We want the `app_sessions` table to be a true "Raw Record" of usage.
+    //    It will contain System Apps, Launchers, Settings, etc.
+    //    Filtering happens LATER during the "Summary/Metrics" phase.
+    
+    // 2. ScreenProcessor: (Needs Noise Filtering)
+    //    We MUST ignore System Apps + Launchers here.
+    //    Why? To distinguish "Real Usage" from "Brief Checks".
+    //    "Unlock -> Launcher -> Lock" = SESSION_UNLOCK_NOAPP (Glance).
+    //    If we didn't ignore Launcher, it would look like SESSION_UNLOCK_APP.
 
-    // AppProcessor: Only ignore true system apps. Launchers are VALID apps here (we want their duration).
-    private val appProcessor = AppSessionProcessor(ignoredApps = PULSE_IGNORED_APPS)
+    // AppProcessor: Log EVERYTHING. No filtering at ingestion time.
+    private val appProcessor = AppSessionProcessor(ignoredApps = emptySet())
     
-    // ScreenProcessor: Launchers are considered "No App" (part of the glance/check flow).
+    // ScreenProcessor: Ignore System+Launcher to preserve Glance/Check classification logic.
     private val screenProcessor = ScreenSessionProcessor(ignoredApps = screenIgnoredApps)
     private val dailyProcessor = DailySummaryProcessor(context, analyticsDao, appInfoDao)
 

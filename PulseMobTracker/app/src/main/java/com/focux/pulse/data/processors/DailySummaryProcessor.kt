@@ -50,9 +50,12 @@ class DailySummaryProcessor(
             //
             // 1. App Usage: Precise duration of all valid apps.
             //    - Includes: Normal Apps, Launchers (Menu), Settings.
-            //    - Excludes: "System" apps (defined in PULSE_IGNORED_APPS).
+            //    - Excludes: "System" apps (Now filtered HERE, because raw table contains everything).
             val appTime = allDaySessions
-                .filter { it.type == PulseEvents.SESSION_APP }
+                .filter { 
+                    it.type == PulseEvents.SESSION_APP && 
+                    it.packageName !in com.focux.pulse.utilities.PULSE_IGNORED_APPS 
+                }
                 .sumOf { it.duration }
                 
             // 2. Glances/Checks: "Distraction Penalty"
