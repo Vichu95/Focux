@@ -38,6 +38,7 @@ data class DailyStats(
     val totalScreenTime: Long = 0,
     val unlockNoAppCount: Int = 0,
     val unlockAppCount: Int = 0,
+    val glanceCount: Int = 0,       // Strictly SESSION_GLANCE
     val screenCheckCount: Int = 0,  // glances + unlockNoApp
     val productiveTime: Long = 0,
     val neutralTime: Long = 0,

@@ -58,26 +58,40 @@ class DailySummaryProcessor(
                 }
                 .sumOf { it.duration }
                 
-            // 2. Glances/Checks: "Distraction Penalty"
-            //    - SESSION_GLANCE: Locked -> Screen On -> Screen Off (No Unlock).
-            //    - SESSION_UNLOCK_NOAPP: Unlocked -> Launcher (No "Real" App) -> Locked.
-            //    Reflects the cognitive load of "checking" the phone, even if brief.
-            val glanceCount = allDaySessions.count { 
-                it.type == PulseEvents.SESSION_GLANCE || it.type == PulseEvents.SESSION_UNLOCK_NOAPP 
-            }
+            // 2. Glances: "Distraction Penalty"
+            //    Since we reverted the Ignore List, "Launcher" and "System UI" are now valid APP SESSIONS.
+            //    So their duration is ALREADY included in `appTime` above.
+            //    We ONLY need to add penalty for strict Lockscreen Glances (where no app/launcher was ever shown).
             
-            // 3. Weighting: Each check adds a fixed estimate (e.g. 2s) to the total.
-            val glanceTime = glanceCount * com.focux.pulse.utilities.PULSE_GLANCE_ESTIMATE_MS
+            // Raw Glance Count (Strictly Lockscreen Checks) - Requested by User
+            val rawGlanceCount = allDaySessions.count { it.type == PulseEvents.SESSION_GLANCE }
+
+            // 3. Weighting: Only penalize strict glances (2s each)
+            val glanceTime = rawGlanceCount * com.focux.pulse.utilities.PULSE_GLANCE_ESTIMATE_MS
             val totalScreenTime = appTime + glanceTime
 
-            // Count unlocks
-            val unlockNoAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_NOAPP }
+            // --- COUNT LOGIC (MUTUALLY EXCLUSIVE BUCKETS) ---
+            
+            // 1. Unlocks (Sessions)
+            //    User unlocked AND opened a meaningful app.
+            //    This is the "Productive/Active" count.
             val unlockAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_APP }
             
-            // "Glances" = User checked phone (Glance) OR User unlocked but didn't open an app (Unlock No App)
+            // 2. Glances (Checks)
+            //    User checked the phone but didn't open a meaningful app.
+            //    - SESSION_GLANCE: Looked at Lockscreen only.
+            //    - SESSION_UNLOCK_NOAPP: Unlocked -> Checked Launcher/Widget -> Locked.
+            //    This is the "Passive/Checking" count.
             val screenCheckCount = allDaySessions.count { 
                 it.type == PulseEvents.SESSION_GLANCE || it.type == PulseEvents.SESSION_UNLOCK_NOAPP 
             }
+            
+            // For DB completeness, we still track the raw NO_APP unlocks separate from glances
+            val unlockNoAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_NOAPP }
+            
+            // Summary for Dashboard:
+            // "Sessions" = unlockAppCount
+            // "Checks"   = screenCheckCount
 
             // Top 3 apps by duration (excluding ignored apps)
             val appDurations = appSessions
@@ -117,6 +131,7 @@ class DailySummaryProcessor(
                 totalScreenTime = totalScreenTime,
                 unlockNoAppCount = unlockNoAppCount,
                 unlockAppCount = unlockAppCount,
+                glanceCount = rawGlanceCount, // NEW: Granular Count
                 screenCheckCount = screenCheckCount,
                 focusScore = focusScore,
                 productiveTime = productiveTime,
