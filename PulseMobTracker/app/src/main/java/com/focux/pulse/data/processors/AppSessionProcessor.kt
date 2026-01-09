@@ -9,6 +9,11 @@ import com.focux.pulse.utilities.PULSE_UNMATCHED_SKIP_THRESHOLD
 
 /**
  * Validates and processes raw APP_OPEN/CLOSE events into AppSessions.
+ * 
+ * IMPORTANT: This processor receives the "Strict" ignored list (System only).
+ * It DOES track Launcher/Home Screen usage as valid 'SESSION_APP' events,
+ * allowing us to capture the duration spent navigating menus.
+ *
  * Handles:
  * - Jitter (rapid open/close)
  * - Missing CLOSE events (implicit close)

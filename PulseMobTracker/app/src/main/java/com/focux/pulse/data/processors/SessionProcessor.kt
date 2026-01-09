@@ -26,15 +26,32 @@ class SessionProcessor(
         private val mutex = Mutex() // Global lock to prevent race conditions (e.g. periodic vs immediate)
     }
 
-    private val ignoredApps: Set<String> by lazy {
-        val launchers = AppInfoHelper.getLauncherPackages(context)
-        val combined = PULSE_IGNORED_APPS + launchers
-        Log.d(TAG, "Ignored Apps (Launchers: $launchers): $combined")
+    private val launcherPackages: Set<String> by lazy {
+        AppInfoHelper.getLauncherPackages(context)
+    }
+
+    private val screenIgnoredApps: Set<String> by lazy {
+        val combined = PULSE_IGNORED_APPS + launcherPackages
+        Log.d(TAG, "Ignored Apps for Screen (inc. Launchers): $combined")
         combined
     }
 
-    private val appProcessor = AppSessionProcessor(ignoredApps)
-    private val screenProcessor = ScreenSessionProcessor(ignoredApps)
+    // --- SPLIT LOGIC EXPLANATION ---
+    // We split the "Ignored Apps" list to support our Hybrid Metrics Model:
+    // 1. AppProcessor: Needs to track EVERYTHING the user does, including Launchers.
+    //    So we ONLY ignore strict System UIDs (PULSE_IGNORED_APPS).
+    //    Result: Launchers generate SESSION_APP events with valid duration.
+    
+    // 2. ScreenProcessor: Needs to detect "Passive/Checking" behavior.
+    //    If a user unlocks and only stays on the Launcher, that's a "Check" (Unlock No App).
+    //    So we MUST ignore Launchers here.
+    //    Result: Launchers trigger SESSION_UNLOCK_NOAPP events (for Glance Counting).
+
+    // AppProcessor: Only ignore true system apps. Launchers are VALID apps here (we want their duration).
+    private val appProcessor = AppSessionProcessor(ignoredApps = PULSE_IGNORED_APPS)
+    
+    // ScreenProcessor: Launchers are considered "No App" (part of the glance/check flow).
+    private val screenProcessor = ScreenSessionProcessor(ignoredApps = screenIgnoredApps)
     private val dailyProcessor = DailySummaryProcessor(context, analyticsDao, appInfoDao)
 
     /**

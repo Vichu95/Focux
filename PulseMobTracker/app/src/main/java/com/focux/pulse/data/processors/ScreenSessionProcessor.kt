@@ -8,6 +8,10 @@ import com.focux.pulse.utilities.PULSE_JITTER_THRESHOLD_MS
 
 /**
  * Validates and processes raw SCREEN_ON cycles into GLANCE/UNLOCK sessions.
+ *
+ * IMPORTANT: This processor receives the "Combined" ignored list (System + Launchers).
+ * It treats Launcher usage as "No Valid App", resulting in SESSION_UNLOCK_NOAPP.
+ * This allows us to count "Unlock -> Menu -> Lock" flows as "Checks/Glances".
  */
 class ScreenSessionProcessor(
     private val ignoredApps: Set<String>
