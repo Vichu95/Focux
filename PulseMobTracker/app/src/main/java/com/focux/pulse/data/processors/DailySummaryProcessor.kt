@@ -45,13 +45,13 @@ class DailySummaryProcessor(
             val allDaySessions = analyticsDao.getSessionsForDay(date)
             val appSessions = allDaySessions.filter { it.type == PulseEvents.SESSION_APP }
 
-            // Calculate total screen time (Sum of APP sessions, excluding Launchers)
-            // Digital Wellbeing often excludes Launcher time from the main "Screen Time" count.
-            // We assume the user wants to match that metric.
+            // Calculate total screen time (Sum of APP sessions, excluding Launchers & Settings)
+            // Verification Step: Testing if excluding Settings + Launcher matches Digital Wellbeing.
             val totalScreenTime = allDaySessions
                 .filter { 
                     it.type == PulseEvents.SESSION_APP && 
-                    it.packageName !in launcherPackages 
+                    it.packageName !in launcherPackages &&
+                    it.packageName != "com.android.settings"
                 }
                 .sumOf { it.duration }
 
