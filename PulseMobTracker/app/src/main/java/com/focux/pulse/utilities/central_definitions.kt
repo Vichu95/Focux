@@ -16,6 +16,14 @@ const val PulseAppDataLoggingFrequency = 15
 const val PULSE_JITTER_THRESHOLD_MS = 10L
 
 /**
+ * Estimated duration for a "Glance" or "Check".
+ * Used to calculate screen time contribution for:
+ * 1. SESSION_GLANCE (Lockscreen check)
+ * 2. SESSION_UNLOCK_NOAPP (Unlock -> Launcher -> Lock)
+ */
+const val PULSE_GLANCE_ESTIMATE_MS = 2000L
+
+/**
  * Additional apps to ignore for screen session detection.
  * These apps won't trigger UNLOCK_APP when opened.
  * User can add custom packages here in the future.

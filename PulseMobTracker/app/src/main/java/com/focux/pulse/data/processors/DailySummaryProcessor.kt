@@ -45,12 +45,22 @@ class DailySummaryProcessor(
             val allDaySessions = analyticsDao.getSessionsForDay(date)
             val appSessions = allDaySessions.filter { it.type == PulseEvents.SESSION_APP }
 
-            // Calculate total screen time (Sum of ALL APP sessions)
-            // Final Logic: We include ALL apps (Launchers, Settings, System) to reflect 
-            // "True Screen On Time". This provides the honest physical usage metric.
-            val totalScreenTime = allDaySessions
+            // Calculate total screen time (Hybrid Model)
+            // 1. App Usage: Sum of ALL APP sessions (Precise duration).
+            //    Note: Launchers are currently IGNORED by AppProcessor, so they don't appear here.
+            // 2. Glances/Checks: Fixed estimate (2s) per event.
+            //    This covers "Look at Lockscreen" (GLANCE) and "Look at Launcher" (UNLOCK_NOAPP).
+            
+            val appTime = allDaySessions
                 .filter { it.type == PulseEvents.SESSION_APP }
                 .sumOf { it.duration }
+                
+            val glanceCount = allDaySessions.count { 
+                it.type == PulseEvents.SESSION_GLANCE || it.type == PulseEvents.SESSION_UNLOCK_NOAPP 
+            }
+            
+            val glanceTime = glanceCount * com.focux.pulse.utilities.PULSE_GLANCE_ESTIMATE_MS
+            val totalScreenTime = appTime + glanceTime
 
             // Count unlocks
             val unlockNoAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_NOAPP }
