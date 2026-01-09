@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.data.local.PulseDatabase
 import com.focux.pulse.data.local.entities.SystemState
+import androidx.room.withTransaction
 import com.focux.pulse.ui.theme.*
 import com.focux.pulse.utilities.PULSE_IGNORED_APPS
 import com.focux.pulse.utilities.AppInfoHelper
@@ -70,45 +71,40 @@ fun ConfigurationScreen() {
                             try {
                                 val workManager = androidx.work.WorkManager.getInstance(context)
                                 
-                                // 1. Stop background workers to prevent race conditions
+                                // 1. Stop background workers (Critical!)
                                 workManager.cancelUniqueWork("DataCollectionWork")
                                 workManager.cancelUniqueWork("ImmediateDataSync")
-                                
-                                // Give workers a moment to stop
-                                kotlinx.coroutines.delay(500)
+                                kotlinx.coroutines.delay(2000) // Increase delay to 2s to be safe
                                 
                                 val db = PulseDatabase.getDatabase(context)
                                 
-                                // 2. Reset Indexes / Clear DB (Transactional)
-                                db.rawDataDao().clearAllAndReset()
-                                db.analyticsDao().clearAllSessionsAndReset()
+                                // 2. "Nuclear" Reset via MaintenanceDao
+                                db.maintenanceDao().clearAllAndReset()
                                 
-                                db.analyticsDao().deleteAllDailyStats()
-                                db.appInfoDao().deleteAll()
-                                
+                                // Reset memory state and SKIP history re-import
                                 db.analyticsDao().updateState(SystemState("last_processed_app_id", "0"))
                                 db.analyticsDao().updateState(SystemState("last_processed_screen_id", "0"))
-                                
-                                // 3. Restart Data Collection immediately
-                                val periodicRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>(
-                                    // Use 15 minutes as minimum interval
-                                    15, java.util.concurrent.TimeUnit.MINUTES
-                                ).setInitialDelay(2, java.util.concurrent.TimeUnit.SECONDS).build() 
-                                
+
+                                // 3. Restart Data Collection
                                 val restartRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>(
                                     15, java.util.concurrent.TimeUnit.MINUTES
                                 ).build()
 
                                 workManager.enqueueUniquePeriodicWork(
                                     "DataCollectionWork",
-                                    androidx.work.ExistingPeriodicWorkPolicy.UPDATE, // UPDATE to replace the cancelled one
+                                    androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
                                     restartRequest
                                 )
                                 
-                                // Trigger immediate one-time sync to repopulate historical data
                                 val oneTimeRequest = androidx.work.OneTimeWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>()
                                     .build()
-                                workManager.enqueue(oneTimeRequest)
+                                    
+                                // Fix Race Condition: Use UniqueWork to ensure we don't double-queue
+                                workManager.enqueueUniqueWork(
+                                    "ImmediateDataSync",
+                                    androidx.work.ExistingWorkPolicy.REPLACE,
+                                    oneTimeRequest
+                                )
 
                                 statusMessage = "✓ Database cleared & restarted!"
                             } catch (e: Exception) {

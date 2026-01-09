@@ -100,4 +100,7 @@ interface AnalyticsDao {
         deleteAllSessions()
         resetSessionSequence()
     }
+
+    @Query("DELETE FROM sqlite_sequence")
+    suspend fun resetAllSequences()
 }

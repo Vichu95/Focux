@@ -21,6 +21,7 @@ abstract class PulseDatabase : RoomDatabase() {
     abstract fun rawDataDao(): RawDataDao
     abstract fun analyticsDao(): AnalyticsDao
     abstract fun appInfoDao(): AppInfoDao
+    abstract fun maintenanceDao(): MaintenanceDao
 
     companion object {
         @Volatile

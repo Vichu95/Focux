@@ -7,6 +7,9 @@ import com.focux.pulse.data.local.entities.*
 import com.focux.pulse.utilities.AppInfoHelper
 import com.focux.pulse.utilities.PULSE_IGNORED_APPS
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
 /**
  * The "Brain" of the analytics pipeline.
  * Orchestrates the processing of raw events into sessions and daily stats
@@ -20,6 +23,7 @@ class SessionProcessor(
 ) {
     companion object {
         private const val TAG = "SessionProcessor"
+        private val mutex = Mutex() // Global lock to prevent race conditions (e.g. periodic vs immediate)
     }
 
     private val ignoredApps: Set<String> by lazy {
@@ -37,8 +41,9 @@ class SessionProcessor(
      * Main processing entry point.
      * Processes APP sessions and SCREEN sessions with SEPARATE bookmarks.
      * This ensures one type doesn't block the other.
+     * Protected by Mutex to ensure atomic processing and prevent duplicate sessions.
      */
-    suspend fun processPendingData() {
+    suspend fun processPendingData() = mutex.withLock {
         val allSessions = mutableListOf<AppSession>()
         
         // PASS 1: Process APP sessions (independent bookmark)
