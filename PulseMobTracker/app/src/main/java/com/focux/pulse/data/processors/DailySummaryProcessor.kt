@@ -45,16 +45,24 @@ class DailySummaryProcessor(
             val allDaySessions = analyticsDao.getSessionsForDay(date)
             val appSessions = allDaySessions.filter { it.type == PulseEvents.SESSION_APP }
 
-            // Calculate total screen time (Sum of ALL session types)
-            // User Request: Ignore launcher timing, but include other ignored apps
+            // Calculate total screen time (Sum of APP sessions, excluding Launchers)
+            // Digital Wellbeing often excludes Launcher time from the main "Screen Time" count.
+            // We assume the user wants to match that metric.
             val totalScreenTime = allDaySessions
-                .filter { it.packageName !in launcherPackages }
+                .filter { 
+                    it.type == PulseEvents.SESSION_APP && 
+                    it.packageName !in launcherPackages 
+                }
                 .sumOf { it.duration }
 
             // Count unlocks
             val unlockNoAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_NOAPP }
             val unlockAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_APP }
-            val screenCheckCount = allDaySessions.count { it.type == PulseEvents.SESSION_GLANCE }
+            
+            // "Glances" = User checked phone (Glance) OR User unlocked but didn't open an app (Unlock No App)
+            val screenCheckCount = allDaySessions.count { 
+                it.type == PulseEvents.SESSION_GLANCE || it.type == PulseEvents.SESSION_UNLOCK_NOAPP 
+            }
 
             // Top 3 apps by duration (excluding ignored apps)
             val appDurations = appSessions
