@@ -22,7 +22,7 @@ class DataCollectionWorker(
             val database = PulseDatabase.getDatabase(applicationContext)
             
             // 1. Collect Raw Data (includes historical on first run)
-            val logger = SystemUsageSource(applicationContext, database.rawDataDao())
+            val logger = SystemUsageSource(applicationContext, database.rawDataDao(), database.analyticsDao())
             logger.collectHistoricalData()  // Only runs if DB is empty
             logger.logUsageStats()
             
