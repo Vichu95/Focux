@@ -69,7 +69,7 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
                     )
 
                     _deviceAccess.value = DeviceAccessData(
-                        unlocks = stats.unlockNoAppCount + stats.unlockAppCount,
+                        unlocks = stats.unlockAppCount,
                         glances = stats.screenCheckCount
                     )
 
