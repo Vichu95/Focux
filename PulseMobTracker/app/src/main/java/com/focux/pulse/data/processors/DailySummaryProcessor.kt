@@ -45,6 +45,71 @@ class DailySummaryProcessor(
             val allDaySessions = analyticsDao.getSessionsForDay(date)
             val appSessions = allDaySessions.filter { it.type == PulseEvents.SESSION_APP }
 
+            // --- SLEEP ANALYSIS ALGORITHM (User Defined) ---
+            // MOVED UP to support "Functional Day" metrics (First App after waking up)
+            
+            // 1. Define Window: Yesterday 10 PM (22:00) to Today 7 AM (07:00)
+            val sdfFull = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+            val sdfDay = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+            val currentDateObj = sdfDay.parse(date) ?: java.util.Date()
+            val calendar = Calendar.getInstance()
+            calendar.time = currentDateObj
+            
+            // Set Window End (Today 07:00)
+            calendar.set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_WAKEUP_HOUR)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            val sleepWindowEndMs = calendar.timeInMillis
+            
+            // Set Window Start (Yesterday 22:00)
+            calendar.add(Calendar.DAY_OF_YEAR, -1)
+            calendar.set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_BEDTIME_HOUR)
+            val sleepWindowStartMs = calendar.timeInMillis
+            
+            // 2. Fetch Overlapping Sessions (Cross-Day)
+            val potentialSleepSessions = analyticsDao.getSessionsOverlapping(sleepWindowStartMs, sleepWindowEndMs)
+            
+            // 3. Step 1: Filter ALL Offline Sessions in Window
+            val windowOfflineSessions = potentialSleepSessions.filter { 
+                it.type == PulseEvents.SESSION_OFFLINE 
+            }
+
+            // 4. Step 2: Threshold Filter (Determine Bounds)
+            val thresholdSessions = windowOfflineSessions.filter { 
+                it.duration >= com.focux.pulse.utilities.PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS
+            }
+            
+            var derivedSleepStart = 0L
+            var derivedSleepEnd = 0L
+            var sleepBreakCount = 0
+            var sleepPhoneDuration = 0L
+            
+            if (thresholdSessions.isNotEmpty()) {
+                // Determine Bounds from Anchor Sessions
+                derivedSleepStart = thresholdSessions.minOf { it.startTime }
+                derivedSleepEnd = thresholdSessions.maxOf { it.endTime }
+                
+                // 5. Step 3: Refine List (Re-include small offline sessions WITHIN bounds)
+                val finalOfflineSegments = windowOfflineSessions.filter { 
+                    it.startTime >= derivedSleepStart && it.endTime <= derivedSleepEnd
+                }
+                
+                // 6. Metrics Calculation
+                sleepBreakCount = (finalOfflineSegments.size - 1).coerceAtLeast(0)
+                
+                val totalSleepSpan = derivedSleepEnd - derivedSleepStart
+                val totalOfflineDuration = finalOfflineSegments.sumOf { it.duration }
+                sleepPhoneDuration = (totalSleepSpan - totalOfflineDuration).coerceAtLeast(0)
+            } else {
+                // Fallback: Use calculated Window End as "Wake Up Time" if no sleep detected?
+                // Or stick to 0L so we don't filter arbitrarily?
+                // User requirement: "Day starts when I wake up".
+                // If we don't detect sleep, we have no "Wake Up Time". 
+                // Using 0L ensures we consume ALL sessions (fallback to standard day).
+                derivedSleepStart = 0L
+                derivedSleepEnd = 0L
+            }
+
             // --- HYBRID METRICS CALCULATION ---
             // Formula: Total Time = (Sum of App Durations) + (Glance Count * Penalty)
             //
@@ -107,83 +172,41 @@ class DailySummaryProcessor(
             val topApp3 = appDurations.getOrNull(2)
 
             // First and last app of the day (by start time)
+            // UPDATED: Filter OUT sessions before "Wake Up" (derivedSleepEnd)
             val sortedAppSessions = appSessions
-                .filter { it.packageName !in ignoredApps && it.packageName !in launcherPackages }
+                .filter { 
+                    it.packageName !in ignoredApps && 
+                    it.packageName !in launcherPackages &&
+                    it.startTime > derivedSleepEnd // First App MUST be after waking up
+                }
                 .sortedBy { it.startTime }
             
             val firstApp = sortedAppSessions.firstOrNull()
-            val lastApp = sortedAppSessions.lastOrNull()
+            val lastApp = sortedAppSessions.lastOrNull() // Last app logic remains "Last of Day"
 
             // Focus score: simple formula (can be enhanced later)
             val totalUnlocks = unlockNoAppCount + unlockAppCount
             val focusScore = (100 - totalUnlocks * 2).coerceIn(0, 100)
 
             // Calculate offline streak (longest gap excluding sleep)
-            val offlineStreak = calculateOfflineStreak(allDaySessions)
+            // UPDATED: Only calculate streaks during Active Day (After Wake Up)
+            val activeOfflineSessions = allDaySessions.filter { 
+                it.type == PulseEvents.SESSION_OFFLINE &&
+                it.startTime > derivedSleepEnd // Only after waking up
+            }
+            
+            val maxOfflineSession = activeOfflineSessions.maxByOrNull { it.duration }
+            
+            val offlineStreakDuration = maxOfflineSession?.duration ?: 0L
+            val offlineStreakStart = maxOfflineSession?.startTime ?: 0L
+            val offlineStreakEnd = maxOfflineSession?.endTime ?: 0L
 
             // Calculate time by category (for now, all apps are NEUTRAL)
             val productiveTime = 0L
             val neutralTime = totalScreenTime  // All time is neutral until apps are categorized
             val distractingTime = 0L
-
-            // --- SLEEP ANALYSIS ALGORITHM (User Defined) ---
-            // 1. Define Window: Yesterday 10 PM (22:00) to Today 7 AM (07:00)
-            val sdfFull = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
-            val sdfDay = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-            val currentDateObj = sdfDay.parse(date) ?: java.util.Date()
-            val calendar = Calendar.getInstance()
-            calendar.time = currentDateObj
             
-            // Set Window End (Today 07:00)
-            calendar.set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_WAKEUP_HOUR)
-            calendar.set(Calendar.MINUTE, 0)
-            calendar.set(Calendar.SECOND, 0)
-            val sleepWindowEndMs = calendar.timeInMillis
-            
-            // Set Window Start (Yesterday 22:00)
-            calendar.add(Calendar.DAY_OF_YEAR, -1)
-            calendar.set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_BEDTIME_HOUR)
-            val sleepWindowStartMs = calendar.timeInMillis
-            
-            // 2. Fetch Overlapping Sessions (Cross-Day)
-            val potentialSleepSessions = analyticsDao.getSessionsOverlapping(sleepWindowStartMs, sleepWindowEndMs)
-            
-            // 3. Step 1: Filter ALL Offline Sessions in Window
-            val windowOfflineSessions = potentialSleepSessions.filter { 
-                it.type == PulseEvents.SESSION_OFFLINE 
-            }
-
-            // 4. Step 2: Threshold Filter (Determine Bounds)
-            val thresholdSessions = windowOfflineSessions.filter { 
-                it.duration >= com.focux.pulse.utilities.PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS
-            }
-            
-            var derivedSleepStart = 0L
-            var derivedSleepEnd = 0L
-            var sleepBreakCount = 0
-            var sleepPhoneDuration = 0L
-            
-            if (thresholdSessions.isNotEmpty()) {
-                // Determine Bounds from Anchor Sessions
-                derivedSleepStart = thresholdSessions.minOf { it.startTime }
-                derivedSleepEnd = thresholdSessions.maxOf { it.endTime }
-                
-                // 5. Step 3: Refine List (Re-include small offline sessions WITHIN bounds)
-                val finalOfflineSegments = windowOfflineSessions.filter { 
-                    it.startTime >= derivedSleepStart && it.endTime <= derivedSleepEnd
-                }
-                
-                // 6. Metrics Calculation
-                sleepBreakCount = (finalOfflineSegments.size - 1).coerceAtLeast(0)
-                
-                val totalSleepSpan = derivedSleepEnd - derivedSleepStart
-                val totalOfflineDuration = finalOfflineSegments.sumOf { it.duration }
-                sleepPhoneDuration = (totalSleepSpan - totalOfflineDuration).coerceAtLeast(0)
-            } else {
-                // Fallback: If no sleep detected, use Last/First App for timestamps
-                derivedSleepStart = lastApp?.endTime ?: 0L
-                derivedSleepEnd = firstApp?.startTime ?: 0L
-            }
+            // Auto-discover new apps (at end)
 
             val updatedStats = DailyStats(
                 date = date,
@@ -205,9 +228,9 @@ class DailySummaryProcessor(
                 lastAppStartTime = lastApp?.startTime ?: 0,
                 lastAppEndTime = lastApp?.endTime ?: 0,
                 // Offline streak
-                offlineStreakDuration = offlineStreak?.first ?: 0,
-                offlineStreakStart = offlineStreak?.second ?: 0,
-                offlineStreakEnd = offlineStreak?.third ?: 0,
+                offlineStreakDuration = offlineStreakDuration,
+                offlineStreakStart = offlineStreakStart,
+                offlineStreakEnd = offlineStreakEnd,
                 // Top 3 apps
                 topApp1Package = topApp1?.first,
                 topApp1Duration = topApp1?.second ?: 0,
@@ -225,82 +248,92 @@ class DailySummaryProcessor(
                 sleepReadableEnd = if (derivedSleepEnd > 0) java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(derivedSleepEnd)) else "--:--"
             )
             analyticsDao.updateDailyStats(updatedStats)
+            
+            // --- BACK-UPDATE YESTERDAY'S LAST APP ---
+            // "Last app of yesterday" = The absolute last app used before Sleep Start (even if early AM Today)
+            if (derivedSleepStart > 0) {
+                calendar.time = currentDateObj
+                calendar.add(Calendar.DAY_OF_YEAR, -1)
+                val prevDate = sdfDay.format(calendar.time)
+                
+                val prevStats = analyticsDao.getDailyStats(prevDate)
+                
+                if (prevStats != null) {
+                    val prevDaySessions = analyticsDao.getSessionsForDay(prevDate)
+                    
+                    // Handle Late Night usage (Today's sessions showing up before derived sleep start)
+                    // We include sessions that STARTED before sleep (even if they end after, we'll clip them)
+                    val earlyTodaySessions = if (derivedSleepStart > 0) {
+                        allDaySessions.filter { it.startTime < derivedSleepStart }
+                    } else {
+                        emptyList()
+                    }
+                    
+                    val combinedSessions = prevDaySessions + earlyTodaySessions
+                    var statsToUpdate = prevStats
+                    
+                    val correctedLastApp = combinedSessions
+                        .filter { 
+                            it.type == PulseEvents.SESSION_APP &&
+                            it.packageName !in ignoredApps && 
+                            it.packageName !in launcherPackages &&
+                            it.endTime <= derivedSleepStart
+                        }
+                        .maxByOrNull { it.startTime }
+                        
+                    // 1. Correct Last App
+                    if (correctedLastApp != null && (correctedLastApp.packageName != prevStats.lastAppPackage || prevStats.lastAppPackage == null)) {
+                        statsToUpdate = statsToUpdate.copy(
+                            lastAppPackage = correctedLastApp.packageName,
+                            lastAppStartTime = correctedLastApp.startTime,
+                            lastAppEndTime = correctedLastApp.endTime
+                        )
+                    }
+                    
+                    // 2. Correct Offline Streak
+                    // Calculate "Effective" offline streak by clipping sessions at Sleep Start
+                    val bestOfflineData = combinedSessions
+                        .filter { it.type == PulseEvents.SESSION_OFFLINE }
+                        .mapNotNull { session ->
+                            if (session.startTime >= derivedSleepStart) {
+                                // Started after/at sleep start: Ignore
+                                null
+                            } else if (session.endTime <= derivedSleepStart) {
+                                // Entirely before sleep: Keep full
+                                Triple(session.duration, session.startTime, session.endTime)
+                            } else {
+                                // Overlaps start of sleep: Clip it
+                                val clippedDuration = derivedSleepStart - session.startTime
+                                Triple(clippedDuration, session.startTime, derivedSleepStart)
+                            }
+                        }
+                        .maxByOrNull { it.first }
+                    
+                    // Always update (even if smaller)
+                    val correctedDuration = bestOfflineData?.first ?: 0L
+                    val correctedStart = bestOfflineData?.second ?: 0L
+                    val correctedEnd = bestOfflineData?.third ?: 0L
+                    
+                    if (correctedDuration != statsToUpdate.offlineStreakDuration) {
+                        statsToUpdate = statsToUpdate.copy(
+                             offlineStreakDuration = correctedDuration,
+                             offlineStreakStart = correctedStart,
+                             offlineStreakEnd = correctedEnd
+                        )
+                    }
+
+                    if (statsToUpdate != prevStats) {
+                        analyticsDao.updateDailyStats(statsToUpdate)
+                    }
+                }
+            }
 
             // Auto-discover new apps and add to AppInfo table
             registerNewApps(appSessions, ignoredApps)
         }
     }
 
-    /**
-     * Calculates the longest offline streak (gap between sessions) excluding sleep.
-     */
-    private fun calculateOfflineStreak(sessions: List<AppSession>): Triple<Long, Long, Long>? {
-        // Filter out passive sessions (Notifications) - they don't break the streak
-        val activeSessions = sessions.filter { 
-            it.type != PulseEvents.SESSION_NOTIFICATION 
-        }
 
-        if (activeSessions.size < 2) return null
-
-        // Sort sessions by start time
-        val sortedSessions = activeSessions.sortedBy { it.startTime }
-        
-        // Calculate gaps between sessions
-        val gaps = mutableListOf<Triple<Long, Long, Long>>()  // (duration, start, end)
-        
-        for (i in 0 until sortedSessions.size - 1) {
-            val currentEnd = sortedSessions[i].endTime
-            val nextStart = sortedSessions[i + 1].startTime
-            
-            if (nextStart > currentEnd) {
-                val gapDuration = nextStart - currentEnd
-                gaps.add(Triple(gapDuration, currentEnd, nextStart))
-            }
-        }
-        
-        if (gaps.isEmpty()) return null
-        
-        // Filter out sleep gaps: >= threshold AND overlaps with sleep window (00:00 - 06:00)
-        val calendar = Calendar.getInstance()
-        val nonSleepGaps = gaps.filter { (duration, start, end) ->
-            // Check if this is a sleep gap (long enough)
-            val isSleepDuration = duration >= PULSE_SLEEP_THRESHOLD_MS
-            
-            if (!isSleepDuration) {
-                true // Keep short gaps (not sleep)
-            } else {
-                // Check if gap overlaps with sleep window (cross-midnight support)
-                calendar.timeInMillis = start
-                val startHour = calendar.get(Calendar.HOUR_OF_DAY)
-                calendar.timeInMillis = end
-                val endHour = calendar.get(Calendar.HOUR_OF_DAY)
-                
-                // Logic: Does the gap intersect 00:00-06:00?
-                // Simplest check: start or end is in window, OR gap covers the entire window
-                
-                // Helper to check if hour is in window
-                fun isHourInWindow(h: Int) = h in PULSE_SLEEP_WINDOW_START_HOUR until PULSE_SLEEP_WINDOW_END_HOUR
-                
-                val startInWindow = isHourInWindow(startHour)
-                val endInWindow = isHourInWindow(endHour)
-                
-                // If it starts before window and ends after window (e.g. 23:00 to 07:00), it covers the window.
-                // Since window starts at 0, checking if start > end (wrapping) handles this roughly, 
-                // but checking strict containment is better for 0-6 range.
-                // Assuming sleep window is strictly 00:00 to 06:00 for now.
-                
-                val spansWindow = startHour > endHour && endHour >= PULSE_SLEEP_WINDOW_END_HOUR 
-                // e.g. Start 23, End 7. 23 > 7, 7 >= 6.
-                
-                val isSleepOverlap = startInWindow || endInWindow || spansWindow
-                
-                !isSleepOverlap // Keep only if it DOES NOT overlap sleep
-            }
-        }
-        
-        // Return the longest non-sleep gap
-        return nonSleepGaps.maxByOrNull { it.first }
-    }
 
     /**
      * Registers new apps discovered in sessions to the AppInfo table.
