@@ -39,6 +39,14 @@ interface AnalyticsDao {
     @Query("SELECT * FROM app_sessions WHERE date = :date ORDER BY startTime DESC")
     suspend fun getSessionsForDay(date: String): List<AppSession>
 
+    /**
+     * Retrieves all sessions that overlap with the specified time range.
+     * Used for Sleep Algorithm to find sessions crossing 'User Sleep Window'.
+     * Overlap Condition: (A.Start < B.End) AND (A.End > B.Start)
+     */
+    @Query("SELECT * FROM app_sessions WHERE startTime < :endTimestamp AND endTime > :startTimestamp ORDER BY startTime ASC")
+    suspend fun getSessionsOverlapping(startTimestamp: Long, endTimestamp: Long): List<AppSession>
+
     // --- Daily Stats ---
 
     /**

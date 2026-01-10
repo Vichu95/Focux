@@ -126,17 +126,79 @@ class DailySummaryProcessor(
             val neutralTime = totalScreenTime  // All time is neutral until apps are categorized
             val distractingTime = 0L
 
-            // SMART SLEEP DETECTION
-            val sleepSession = calculateSleepSession(allDaySessions)
-            val actualSleepStart = sleepSession?.first ?: (lastApp?.endTime ?: 0L)
-            val actualSleepEnd = sleepSession?.second ?: (firstApp?.startTime ?: 0L)
+            // --- SLEEP ANALYSIS ALGORITHM (User Defined) ---
+            // 1. Define Window: Yesterday 10 PM (22:00) to Today 7 AM (07:00)
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+            val currentDateObj = sdf.parse(date) ?: java.util.Date()
+            val calendar = Calendar.getInstance()
+            calendar.time = currentDateObj
+            
+            // Set Window End (Today 07:00)
+            calendar.set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_WAKEUP_HOUR)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            val sleepWindowEndMs = calendar.timeInMillis
+            
+            // Set Window Start (Yesterday 22:00)
+            calendar.add(Calendar.DAY_OF_YEAR, -1)
+            calendar.set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_BEDTIME_HOUR)
+            val sleepWindowStartMs = calendar.timeInMillis
+            
+            // 2. Fetch Overlapping Sessions (Cross-Day)
+            val potentialSleepSessions = analyticsDao.getSessionsOverlapping(sleepWindowStartMs, sleepWindowEndMs)
+            
+            // 3. Filter for valid OFFLINE sleep segments
+            //    Criteria: must be inside window AND > 10 min threshold
+            //    Note: We clamp the session times to the window if they exceed it? 
+            //    User said: "checking end time >= sleep start OR start time <= sleep end". The DAO query covers this.
+            //    "filter out sessions between our start and end".
+            
+            val validOfflineSegments = potentialSleepSessions.filter { 
+                it.type == PulseEvents.SESSION_OFFLINE &&
+                it.duration >= com.focux.pulse.utilities.PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS
+            }
+            
+            var derivedSleepStart = 0L
+            var derivedSleepEnd = 0L
+            var sleepBreakCount = 0
+            var sleepPhoneDuration = 0L
+            
+            if (validOfflineSegments.isNotEmpty()) {
+                // 4. Determine Actual Sleep Start/End
+                //    Start = Earliest Start of filtered sessions
+                //    End   = Latest End of filtered sessions
+                //    (We rely on the filtered list which are sessions roughly inside the window)
+                derivedSleepStart = validOfflineSegments.minOf { it.startTime }
+                derivedSleepEnd = validOfflineSegments.maxOf { it.endTime }
+                
+                // 5. Calculate Breaks
+                //    Count = (Number of segments) - 1. (1 segment = 0 breaks)
+                sleepBreakCount = (validOfflineSegments.size - 1).coerceAtLeast(0)
+                
+                // 6. Calculate Phone Usage during Sleep (The Gaps)
+                //    Total Span = derivedSleepEnd - derivedSleepStart
+                //    Total Offline = Sum of durations of segments
+                //    Phone Usage = Total Span - Total Offline
+                val totalSleepSpan = derivedSleepEnd - derivedSleepStart
+                val totalOfflineDuration = validOfflineSegments.sumOf { it.duration }
+                sleepPhoneDuration = (totalSleepSpan - totalOfflineDuration).coerceAtLeast(0)
+            } else {
+                // Fallback: If no sleep detected, defaults? 
+                // Or maybe keep 0 to indicate "No Sleep Detected"?
+                // User asked to use offline sessions. If none found, better to report 0 or fallback?
+                // "Fallback to First/Last app" was the OLD requirement.
+                // For now, let's keep 0 to see if it works, or maybe fallback to lastApp/firstApp for timestamps only.
+                // Let's fallback timestamps to be safe for UI, but metrics 0.
+                derivedSleepStart = lastApp?.endTime ?: 0L
+                derivedSleepEnd = firstApp?.startTime ?: 0L
+            }
 
             val updatedStats = DailyStats(
                 date = date,
                 totalScreenTime = totalScreenTime,
                 unlockNoAppCount = unlockNoAppCount,
                 unlockAppCount = unlockAppCount,
-                glanceCount = rawGlanceCount, // NEW: Granular Count
+                glanceCount = rawGlanceCount,
                 screenCheckCount = screenCheckCount,
                 focusScore = focusScore,
                 productiveTime = productiveTime,
@@ -161,12 +223,14 @@ class DailySummaryProcessor(
                 topApp2Duration = topApp2?.second ?: 0,
                 topApp3Package = topApp3?.first,
                 topApp3Duration = topApp3?.second ?: 0,
-                // Sleep Schedule (Smart Detection with Fallback)
-                sleepTimeStart = actualSleepStart,
-                sleepTimeEnd = actualSleepEnd,
+                // Sleep Schedule (New Algorithm)
+                sleepTimeStart = derivedSleepStart,
+                sleepTimeEnd = derivedSleepEnd,
+                sleepBreakCount = sleepBreakCount,
+                sleepPhoneDuration = sleepPhoneDuration,
                 // Debug/Readable Strings
-                sleepReadableStart = if (actualSleepStart > 0) java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(actualSleepStart)) else "--:--",
-                sleepReadableEnd = if (actualSleepEnd > 0) java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(actualSleepEnd)) else "--:--"
+                sleepReadableStart = if (derivedSleepStart > 0) java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(derivedSleepStart)) else "--:--",
+                sleepReadableEnd = if (derivedSleepEnd > 0) java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(derivedSleepEnd)) else "--:--"
             )
             analyticsDao.updateDailyStats(updatedStats)
 
@@ -244,66 +308,6 @@ class DailySummaryProcessor(
         
         // Return the longest non-sleep gap
         return nonSleepGaps.maxByOrNull { it.first }
-    }
-
-    /**
-     * Calculates the "Sleep Session" based on activity gaps.
-     * Criteria:
-     * 1. Gap duration >= PULSE_SLEEP_THRESHOLD_MS (3h)
-     * 2. Overlaps with Sleep Window (00:00 - 06:00)
-     * Returns: (Sleep Start [Bedtime], Sleep End [WakeUp]) or null.
-     */
-    private fun calculateSleepSession(sessions: List<AppSession>): Pair<Long, Long>? {
-        // Filter out passive sessions (Notifications)
-        val activeSessions = sessions.filter { 
-            it.type != PulseEvents.SESSION_NOTIFICATION 
-        }
-
-        if (activeSessions.size < 2) return null
-
-        // Sort sessions by start time
-        val sortedSessions = activeSessions.sortedBy { it.startTime }
-        
-        // Find potential sleep gaps
-        val sleepGaps = mutableListOf<Triple<Long, Long, Long>>() // (duration, start, end)
-        
-        val calendar = Calendar.getInstance()
-
-        for (i in 0 until sortedSessions.size - 1) {
-            val currentEnd = sortedSessions[i].endTime
-            val nextStart = sortedSessions[i + 1].startTime
-            
-            if (nextStart > currentEnd) {
-                val gapDuration = nextStart - currentEnd
-                
-                // 1. Check Duration (> 3h)
-                if (gapDuration >= PULSE_SLEEP_THRESHOLD_MS) {
-                    
-                    // 2. Check Overlap with Sleep Window (00:00 - 06:00)
-                    calendar.timeInMillis = currentEnd
-                    val startHour = calendar.get(Calendar.HOUR_OF_DAY)
-                    calendar.timeInMillis = nextStart
-                    val endHour = calendar.get(Calendar.HOUR_OF_DAY)
-
-                    fun isHourInWindow(h: Int) = h in PULSE_SLEEP_WINDOW_START_HOUR until PULSE_SLEEP_WINDOW_END_HOUR
-                    
-                    val startInWindow = isHourInWindow(startHour)
-                    val endInWindow = isHourInWindow(endHour)
-                    
-                    // Spans window criteria (Start 23:00 -> End 07:00 covers 00:00-06:00)
-                    val spansWindow = startHour > endHour && endHour >= PULSE_SLEEP_WINDOW_END_HOUR
-                    
-                    if (startInWindow || endInWindow || spansWindow) {
-                        sleepGaps.add(Triple(gapDuration, currentEnd, nextStart))
-                    }
-                }
-            }
-        }
-        
-        // Return the best sleep candidates (longest duration in window)
-        // Returns Pair(Bedtime, WakeUp)
-        val bestSleep = sleepGaps.maxByOrNull { it.first }
-        return if (bestSleep != null) Pair(bestSleep.second, bestSleep.third) else null
     }
 
     /**

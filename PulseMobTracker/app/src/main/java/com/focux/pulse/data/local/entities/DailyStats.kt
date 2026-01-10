@@ -70,5 +70,9 @@ data class DailyStats(
     
     // Debug/Readable Sleep Times
     val sleepReadableStart: String = "",
-    val sleepReadableEnd: String = ""
+    val sleepReadableEnd: String = "",
+    
+    // Sleep Analysis
+    val sleepBreakCount: Int = 0,      // Number of times checked phone during sleep
+    val sleepPhoneDuration: Long = 0   // Total duration spent on phone during sleep (ms)
 )
