@@ -6,6 +6,11 @@ import com.focux.pulse.data.local.entities.PulseEvents
 import com.focux.pulse.data.local.entities.RawData
 import com.focux.pulse.utilities.PULSE_JITTER_THRESHOLD_MS
 
+import com.focux.pulse.utilities.TimeUtils
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 /**
  * Validates and processes raw SCREEN_ON cycles into GLANCE/UNLOCK sessions.
  *
@@ -32,6 +37,8 @@ class ScreenSessionProcessor(
         val processedIndices = mutableSetOf<Int>()
         var lastSuccessfullyProcessedId = initialLastProcessedId
         var lastNotificationTimestamp: Long = 0
+        
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
         for (i in events.indices) {
             if (i in processedIndices) continue
@@ -41,13 +48,17 @@ class ScreenSessionProcessor(
             if (event.eventLabel == PulseEvents.NOTIFICATION) {
                 // 1. Create Point Session for Notification
                 // "For timing of the notification, just use start time as notification time, and end time as same."
-                val notifSession = SessionSplitter.createSessions(
-                    pkg = "system",
-                    start = event.timestamp,
-                    end = event.timestamp,
-                    type = PulseEvents.SESSION_NOTIFICATION
+                val notifSession = AppSession(
+                    packageName = "notification",
+                    startTime = event.timestamp,
+                    endTime = event.timestamp,
+                    duration = 0,
+                    type = PulseEvents.SESSION_NOTIFICATION,
+                    date = sdf.format(Date(event.timestamp)),
+                    startTimeStr = TimeUtils.format(event.timestamp),
+                    endTimeStr = TimeUtils.format(event.timestamp)
                 )
-                sessions.addAll(notifSession)
+                sessions.add(notifSession)
                 
                 // Track timestamp for correlation
                 lastNotificationTimestamp = event.timestamp
@@ -57,7 +68,7 @@ class ScreenSessionProcessor(
                 lastSuccessfullyProcessedId = event.id
             } 
             else if (event.eventLabel == PulseEvents.SCREEN_ON) {
-                val screenResult = processScreenCycle(events, i, lastNotificationTimestamp)
+                val screenResult = processScreenCycle(events, i, lastNotificationTimestamp, sdf)
 
                 if (screenResult == null) {
                     // Incomplete screen cycle - stop processing SCREEN sessions here
@@ -89,10 +100,12 @@ class ScreenSessionProcessor(
     private fun processScreenCycle(
         events: List<RawData>,
         screenOnIndex: Int,
-        lastNotificationTimestamp: Long
+        lastNotificationTimestamp: Long,
+        sdf: SimpleDateFormat
     ): Pair<List<AppSession>, List<Int>>? {
         val screenOnEvent = events[screenOnIndex]
         val indicesToMark = mutableListOf<Int>()
+        indicesToMark.add(screenOnIndex) // Mark SCREEN_ON as processed
 
         var hasUnlock = false
         var isUnlockApp = false
@@ -125,13 +138,17 @@ class ScreenSessionProcessor(
                         // Determine type: UNLOCK_APP (if app used) or UNLOCK_NOAPP (if no app used)
                         val type = if (isUnlockApp) PulseEvents.SESSION_UNLOCK_APP else PulseEvents.SESSION_UNLOCK_NOAPP
                         
-                        val sessions = SessionSplitter.createSessions(
-                            pkg = "system",
-                            start = screenOnEvent.timestamp,
-                            end = endTime,
-                            type = type
+                        val session = AppSession(
+                            packageName = "system",
+                            startTime = screenOnEvent.timestamp,
+                            endTime = endTime,
+                            duration = endTime - screenOnEvent.timestamp,
+                            type = type,
+                            date = sdf.format(Date(screenOnEvent.timestamp)),
+                            startTimeStr = TimeUtils.format(screenOnEvent.timestamp),
+                            endTimeStr = TimeUtils.format(endTime)
                         )
-                        return Pair(sessions, indicesToMark)
+                        return Pair(listOf(session), indicesToMark)
                     }
                     // LOCK without unlock - skip
                     indicesToMark.add(j)
@@ -146,13 +163,17 @@ class ScreenSessionProcessor(
                         val isNotificationDriven = (screenOnEvent.timestamp - lastNotificationTimestamp) in 0..2000
                         val type = if (isNotificationDriven) PulseEvents.SESSION_NOTIFICATION else PulseEvents.SESSION_GLANCE
                         
-                        val sessions = SessionSplitter.createSessions(
-                            pkg = "system",
-                            start = screenOnEvent.timestamp,
-                            end = endTime,
-                            type = type
+                        val session = AppSession(
+                            packageName = "system",
+                            startTime = screenOnEvent.timestamp,
+                            endTime = endTime,
+                            duration = endTime - screenOnEvent.timestamp,
+                            type = type,
+                            date = sdf.format(Date(screenOnEvent.timestamp)),
+                            startTimeStr = TimeUtils.format(screenOnEvent.timestamp),
+                            endTimeStr = TimeUtils.format(endTime)
                         )
-                        return Pair(sessions, indicesToMark)
+                        return Pair(listOf(session), indicesToMark)
                     }
                     
                     // Fallback: If unlocked but no LOCK event before SCREEN_OFF
@@ -161,13 +182,17 @@ class ScreenSessionProcessor(
                     
                     val type = if (isUnlockApp) PulseEvents.SESSION_UNLOCK_APP else PulseEvents.SESSION_UNLOCK_NOAPP
                     
-                    val sessions = SessionSplitter.createSessions(
-                        pkg = "system",
-                        start = screenOnEvent.timestamp,
-                        end = endTime,
-                        type = type
+                    val session = AppSession(
+                        packageName = "system",
+                        startTime = screenOnEvent.timestamp,
+                        endTime = endTime,
+                        duration = endTime - screenOnEvent.timestamp,
+                        type = type,
+                        date = sdf.format(Date(screenOnEvent.timestamp)),
+                        startTimeStr = TimeUtils.format(screenOnEvent.timestamp),
+                        endTimeStr = TimeUtils.format(endTime)
                     )
-                    return Pair(sessions, indicesToMark)
+                    return Pair(listOf(session), indicesToMark)
                 }
                 PulseEvents.SCREEN_ON -> {
                     // Jitter check

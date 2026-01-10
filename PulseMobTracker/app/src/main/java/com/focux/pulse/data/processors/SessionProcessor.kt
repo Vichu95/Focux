@@ -123,13 +123,18 @@ class SessionProcessor(
                     if (gap >= com.focux.pulse.utilities.PULSE_MIN_OFFLINE_THRESHOLD_MS) {
                         // Create offline session(s) spanning the entire gap
                         // This will naturally overlap with any passive sessions in between
-                        val newOffline = SessionSplitter.createSessions(
-                            pkg = "system",
-                            start = currentSession.endTime,
-                            end = nextSession.startTime,
-                            type = PulseEvents.SESSION_OFFLINE
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                        val newOffline = AppSession(
+                            packageName = "system",
+                            startTime = currentSession.endTime,
+                            endTime = nextSession.startTime,
+                            duration = nextSession.startTime - currentSession.endTime,
+                            type = PulseEvents.SESSION_OFFLINE,
+                            date = sdf.format(java.util.Date(currentSession.endTime)),
+                            startTimeStr = com.focux.pulse.utilities.TimeUtils.format(currentSession.endTime),
+                            endTimeStr = com.focux.pulse.utilities.TimeUtils.format(nextSession.startTime)
                         )
-                        offlineSessions.addAll(newOffline)
+                        offlineSessions.add(newOffline)
                     }
                 }
             }

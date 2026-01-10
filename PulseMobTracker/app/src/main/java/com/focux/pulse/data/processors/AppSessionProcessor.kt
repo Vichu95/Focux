@@ -76,12 +76,17 @@ class AppSessionProcessor(
                             closeTime
                         }
 
-                        // Use SessionSplitter to handle Day Boundary splitting
-                        sessions.addAll(SessionSplitter.createSessions(
-                            pkg = event.packageName ?: "unknown",
-                            start = event.timestamp,
-                            end = finalCloseTime,
-                            type = PulseEvents.SESSION_APP
+                        // Create Session (No Splitting)
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                        sessions.add(AppSession(
+                            packageName = event.packageName ?: "unknown",
+                            startTime = event.timestamp,
+                            endTime = finalCloseTime,
+                            duration = finalCloseTime - event.timestamp,
+                            type = PulseEvents.SESSION_APP,
+                            date = sdf.format(java.util.Date(event.timestamp)),
+                            startTimeStr = com.focux.pulse.utilities.TimeUtils.format(event.timestamp),
+                            endTimeStr = com.focux.pulse.utilities.TimeUtils.format(finalCloseTime)
                         ))
                     }
 

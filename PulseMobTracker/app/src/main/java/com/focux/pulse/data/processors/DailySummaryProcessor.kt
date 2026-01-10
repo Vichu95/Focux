@@ -148,22 +148,14 @@ class DailySummaryProcessor(
             // 2. Fetch Overlapping Sessions (Cross-Day)
             val potentialSleepSessions = analyticsDao.getSessionsOverlapping(sleepWindowStartMs, sleepWindowEndMs)
             
-            android.util.Log.d("SleepDebug", "--- Analyzing Date: $date ---")
-            android.util.Log.d("SleepDebug", "Window: ${sdfFull.format(java.util.Date(sleepWindowStartMs))} to ${sdfFull.format(java.util.Date(sleepWindowEndMs))}")
-            
             // 3. Step 1: Filter ALL Offline Sessions in Window
             val windowOfflineSessions = potentialSleepSessions.filter { 
                 it.type == PulseEvents.SESSION_OFFLINE 
             }
-            android.util.Log.d("SleepDebug", "Step 1: Found ${windowOfflineSessions.size} offline sessions in window.")
 
             // 4. Step 2: Threshold Filter (Determine Bounds)
             val thresholdSessions = windowOfflineSessions.filter { 
-                val isLongEnough = it.duration >= com.focux.pulse.utilities.PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS
-                if (isLongEnough) {
-                    android.util.Log.d("SleepDebug", "   > Anchor Session: ${it.duration/60000}m | ${sdfFull.format(java.util.Date(it.startTime))} - ${sdfFull.format(java.util.Date(it.endTime))}")
-                }
-                isLongEnough
+                it.duration >= com.focux.pulse.utilities.PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS
             }
             
             var derivedSleepStart = 0L
@@ -176,18 +168,9 @@ class DailySummaryProcessor(
                 derivedSleepStart = thresholdSessions.minOf { it.startTime }
                 derivedSleepEnd = thresholdSessions.maxOf { it.endTime }
                 
-                android.util.Log.d("SleepDebug", "Step 2: Bounds Determined: \n   Start: ${sdfFull.format(java.util.Date(derivedSleepStart))}\n   End:   ${sdfFull.format(java.util.Date(derivedSleepEnd))}")
-                
                 // 5. Step 3: Refine List (Re-include small offline sessions WITHIN bounds)
                 val finalOfflineSegments = windowOfflineSessions.filter { 
                     it.startTime >= derivedSleepStart && it.endTime <= derivedSleepEnd
-                }
-                
-                android.util.Log.d("SleepDebug", "Step 3: Final Sleep Segments (Count: ${finalOfflineSegments.size})")
-                finalOfflineSegments.forEach {
-                    val isSmall = it.duration < com.focux.pulse.utilities.PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS
-                    val note = if (isSmall) "[Re-included Small Gap]" else "[Anchor]"
-                    android.util.Log.d("SleepDebug", "   > $note ${it.duration/60000}m | ${sdfFull.format(java.util.Date(it.startTime))} - ${sdfFull.format(java.util.Date(it.endTime))}")
                 }
                 
                 // 6. Metrics Calculation
@@ -196,16 +179,8 @@ class DailySummaryProcessor(
                 val totalSleepSpan = derivedSleepEnd - derivedSleepStart
                 val totalOfflineDuration = finalOfflineSegments.sumOf { it.duration }
                 sleepPhoneDuration = (totalSleepSpan - totalOfflineDuration).coerceAtLeast(0)
-                
-                android.util.Log.d("SleepDebug", "Step 4 Metrics: Breaks=$sleepBreakCount | Span=${totalSleepSpan/60000}m | Offline=${totalOfflineDuration/60000}m | PhoneUse=${sleepPhoneDuration/60000}m")
             } else {
-                 android.util.Log.d("SleepDebug", "No Valid Sleep Segments found (>10m). Fallback.")
-
-                // Or maybe keep 0 to indicate "No Sleep Detected"?
-                // User asked to use offline sessions. If none found, better to report 0 or fallback?
-                // "Fallback to First/Last app" was the OLD requirement.
-                // For now, let's keep 0 to see if it works, or maybe fallback to lastApp/firstApp for timestamps only.
-                // Let's fallback timestamps to be safe for UI, but metrics 0.
+                // Fallback: If no sleep detected, use Last/First App for timestamps
                 derivedSleepStart = lastApp?.endTime ?: 0L
                 derivedSleepEnd = firstApp?.startTime ?: 0L
             }
