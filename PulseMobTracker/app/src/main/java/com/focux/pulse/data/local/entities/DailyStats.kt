@@ -62,5 +62,13 @@ data class DailyStats(
     val topApp2Package: String? = null,
     val topApp2Duration: Long = 0,
     val topApp3Package: String? = null,
-    val topApp3Duration: Long = 0
+    val topApp3Duration: Long = 0,
+    
+    // Sleep Schedule (New Columns)
+    val sleepTimeStart: Long = 0, // Bedtime (End of last session)
+    val sleepTimeEnd: Long = 0,   // Wakeup (Start of first session)
+    
+    // Debug/Readable Sleep Times
+    val sleepReadableStart: String = "",
+    val sleepReadableEnd: String = ""
 )

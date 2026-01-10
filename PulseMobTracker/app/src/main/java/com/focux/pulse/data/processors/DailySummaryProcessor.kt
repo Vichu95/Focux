@@ -126,6 +126,11 @@ class DailySummaryProcessor(
             val neutralTime = totalScreenTime  // All time is neutral until apps are categorized
             val distractingTime = 0L
 
+            // SMART SLEEP DETECTION
+            val sleepSession = calculateSleepSession(allDaySessions)
+            val actualSleepStart = sleepSession?.first ?: (lastApp?.endTime ?: 0L)
+            val actualSleepEnd = sleepSession?.second ?: (firstApp?.startTime ?: 0L)
+
             val updatedStats = DailyStats(
                 date = date,
                 totalScreenTime = totalScreenTime,
@@ -155,7 +160,13 @@ class DailySummaryProcessor(
                 topApp2Package = topApp2?.first,
                 topApp2Duration = topApp2?.second ?: 0,
                 topApp3Package = topApp3?.first,
-                topApp3Duration = topApp3?.second ?: 0
+                topApp3Duration = topApp3?.second ?: 0,
+                // Sleep Schedule (Smart Detection with Fallback)
+                sleepTimeStart = actualSleepStart,
+                sleepTimeEnd = actualSleepEnd,
+                // Debug/Readable Strings
+                sleepReadableStart = if (actualSleepStart > 0) java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(actualSleepStart)) else "--:--",
+                sleepReadableEnd = if (actualSleepEnd > 0) java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(actualSleepEnd)) else "--:--"
             )
             analyticsDao.updateDailyStats(updatedStats)
 
@@ -233,6 +244,66 @@ class DailySummaryProcessor(
         
         // Return the longest non-sleep gap
         return nonSleepGaps.maxByOrNull { it.first }
+    }
+
+    /**
+     * Calculates the "Sleep Session" based on activity gaps.
+     * Criteria:
+     * 1. Gap duration >= PULSE_SLEEP_THRESHOLD_MS (3h)
+     * 2. Overlaps with Sleep Window (00:00 - 06:00)
+     * Returns: (Sleep Start [Bedtime], Sleep End [WakeUp]) or null.
+     */
+    private fun calculateSleepSession(sessions: List<AppSession>): Pair<Long, Long>? {
+        // Filter out passive sessions (Notifications)
+        val activeSessions = sessions.filter { 
+            it.type != PulseEvents.SESSION_NOTIFICATION 
+        }
+
+        if (activeSessions.size < 2) return null
+
+        // Sort sessions by start time
+        val sortedSessions = activeSessions.sortedBy { it.startTime }
+        
+        // Find potential sleep gaps
+        val sleepGaps = mutableListOf<Triple<Long, Long, Long>>() // (duration, start, end)
+        
+        val calendar = Calendar.getInstance()
+
+        for (i in 0 until sortedSessions.size - 1) {
+            val currentEnd = sortedSessions[i].endTime
+            val nextStart = sortedSessions[i + 1].startTime
+            
+            if (nextStart > currentEnd) {
+                val gapDuration = nextStart - currentEnd
+                
+                // 1. Check Duration (> 3h)
+                if (gapDuration >= PULSE_SLEEP_THRESHOLD_MS) {
+                    
+                    // 2. Check Overlap with Sleep Window (00:00 - 06:00)
+                    calendar.timeInMillis = currentEnd
+                    val startHour = calendar.get(Calendar.HOUR_OF_DAY)
+                    calendar.timeInMillis = nextStart
+                    val endHour = calendar.get(Calendar.HOUR_OF_DAY)
+
+                    fun isHourInWindow(h: Int) = h in PULSE_SLEEP_WINDOW_START_HOUR until PULSE_SLEEP_WINDOW_END_HOUR
+                    
+                    val startInWindow = isHourInWindow(startHour)
+                    val endInWindow = isHourInWindow(endHour)
+                    
+                    // Spans window criteria (Start 23:00 -> End 07:00 covers 00:00-06:00)
+                    val spansWindow = startHour > endHour && endHour >= PULSE_SLEEP_WINDOW_END_HOUR
+                    
+                    if (startInWindow || endInWindow || spansWindow) {
+                        sleepGaps.add(Triple(gapDuration, currentEnd, nextStart))
+                    }
+                }
+            }
+        }
+        
+        // Return the best sleep candidates (longest duration in window)
+        // Returns Pair(Bedtime, WakeUp)
+        val bestSleep = sleepGaps.maxByOrNull { it.first }
+        return if (bestSleep != null) Pair(bestSleep.second, bestSleep.third) else null
     }
 
     /**

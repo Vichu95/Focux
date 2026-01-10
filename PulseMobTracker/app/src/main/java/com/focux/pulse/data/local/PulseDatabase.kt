@@ -13,7 +13,7 @@ import com.focux.pulse.data.local.dao.*
  */
 @Database(
     entities = [RawData::class, SystemState::class, AppSession::class, DailyStats::class, AppInfo::class],
-    version = 11,
+    version = 13,
     exportSchema = false
 )
 abstract class PulseDatabase : RoomDatabase() {
