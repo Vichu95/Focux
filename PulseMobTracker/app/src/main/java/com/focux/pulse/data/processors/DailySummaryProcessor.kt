@@ -128,8 +128,9 @@ class DailySummaryProcessor(
 
             // --- SLEEP ANALYSIS ALGORITHM (User Defined) ---
             // 1. Define Window: Yesterday 10 PM (22:00) to Today 7 AM (07:00)
-            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-            val currentDateObj = sdf.parse(date) ?: java.util.Date()
+            val sdfFull = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+            val sdfDay = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+            val currentDateObj = sdfDay.parse(date) ?: java.util.Date()
             val calendar = Calendar.getInstance()
             calendar.time = currentDateObj
             
@@ -147,15 +148,22 @@ class DailySummaryProcessor(
             // 2. Fetch Overlapping Sessions (Cross-Day)
             val potentialSleepSessions = analyticsDao.getSessionsOverlapping(sleepWindowStartMs, sleepWindowEndMs)
             
-            // 3. Filter for valid OFFLINE sleep segments
-            //    Criteria: must be inside window AND > 10 min threshold
-            //    Note: We clamp the session times to the window if they exceed it? 
-            //    User said: "checking end time >= sleep start OR start time <= sleep end". The DAO query covers this.
-            //    "filter out sessions between our start and end".
+            android.util.Log.d("SleepDebug", "--- Analyzing Date: $date ---")
+            android.util.Log.d("SleepDebug", "Window: ${sdfFull.format(java.util.Date(sleepWindowStartMs))} to ${sdfFull.format(java.util.Date(sleepWindowEndMs))}")
             
-            val validOfflineSegments = potentialSleepSessions.filter { 
-                it.type == PulseEvents.SESSION_OFFLINE &&
-                it.duration >= com.focux.pulse.utilities.PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS
+            // 3. Step 1: Filter ALL Offline Sessions in Window
+            val windowOfflineSessions = potentialSleepSessions.filter { 
+                it.type == PulseEvents.SESSION_OFFLINE 
+            }
+            android.util.Log.d("SleepDebug", "Step 1: Found ${windowOfflineSessions.size} offline sessions in window.")
+
+            // 4. Step 2: Threshold Filter (Determine Bounds)
+            val thresholdSessions = windowOfflineSessions.filter { 
+                val isLongEnough = it.duration >= com.focux.pulse.utilities.PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS
+                if (isLongEnough) {
+                    android.util.Log.d("SleepDebug", "   > Anchor Session: ${it.duration/60000}m | ${sdfFull.format(java.util.Date(it.startTime))} - ${sdfFull.format(java.util.Date(it.endTime))}")
+                }
+                isLongEnough
             }
             
             var derivedSleepStart = 0L
@@ -163,27 +171,36 @@ class DailySummaryProcessor(
             var sleepBreakCount = 0
             var sleepPhoneDuration = 0L
             
-            if (validOfflineSegments.isNotEmpty()) {
-                // 4. Determine Actual Sleep Start/End
-                //    Start = Earliest Start of filtered sessions
-                //    End   = Latest End of filtered sessions
-                //    (We rely on the filtered list which are sessions roughly inside the window)
-                derivedSleepStart = validOfflineSegments.minOf { it.startTime }
-                derivedSleepEnd = validOfflineSegments.maxOf { it.endTime }
+            if (thresholdSessions.isNotEmpty()) {
+                // Determine Bounds from Anchor Sessions
+                derivedSleepStart = thresholdSessions.minOf { it.startTime }
+                derivedSleepEnd = thresholdSessions.maxOf { it.endTime }
                 
-                // 5. Calculate Breaks
-                //    Count = (Number of segments) - 1. (1 segment = 0 breaks)
-                sleepBreakCount = (validOfflineSegments.size - 1).coerceAtLeast(0)
+                android.util.Log.d("SleepDebug", "Step 2: Bounds Determined: \n   Start: ${sdfFull.format(java.util.Date(derivedSleepStart))}\n   End:   ${sdfFull.format(java.util.Date(derivedSleepEnd))}")
                 
-                // 6. Calculate Phone Usage during Sleep (The Gaps)
-                //    Total Span = derivedSleepEnd - derivedSleepStart
-                //    Total Offline = Sum of durations of segments
-                //    Phone Usage = Total Span - Total Offline
+                // 5. Step 3: Refine List (Re-include small offline sessions WITHIN bounds)
+                val finalOfflineSegments = windowOfflineSessions.filter { 
+                    it.startTime >= derivedSleepStart && it.endTime <= derivedSleepEnd
+                }
+                
+                android.util.Log.d("SleepDebug", "Step 3: Final Sleep Segments (Count: ${finalOfflineSegments.size})")
+                finalOfflineSegments.forEach {
+                    val isSmall = it.duration < com.focux.pulse.utilities.PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS
+                    val note = if (isSmall) "[Re-included Small Gap]" else "[Anchor]"
+                    android.util.Log.d("SleepDebug", "   > $note ${it.duration/60000}m | ${sdfFull.format(java.util.Date(it.startTime))} - ${sdfFull.format(java.util.Date(it.endTime))}")
+                }
+                
+                // 6. Metrics Calculation
+                sleepBreakCount = (finalOfflineSegments.size - 1).coerceAtLeast(0)
+                
                 val totalSleepSpan = derivedSleepEnd - derivedSleepStart
-                val totalOfflineDuration = validOfflineSegments.sumOf { it.duration }
+                val totalOfflineDuration = finalOfflineSegments.sumOf { it.duration }
                 sleepPhoneDuration = (totalSleepSpan - totalOfflineDuration).coerceAtLeast(0)
+                
+                android.util.Log.d("SleepDebug", "Step 4 Metrics: Breaks=$sleepBreakCount | Span=${totalSleepSpan/60000}m | Offline=${totalOfflineDuration/60000}m | PhoneUse=${sleepPhoneDuration/60000}m")
             } else {
-                // Fallback: If no sleep detected, defaults? 
+                 android.util.Log.d("SleepDebug", "No Valid Sleep Segments found (>10m). Fallback.")
+
                 // Or maybe keep 0 to indicate "No Sleep Detected"?
                 // User asked to use offline sessions. If none found, better to report 0 or fallback?
                 // "Fallback to First/Last app" was the OLD requirement.
