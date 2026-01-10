@@ -93,9 +93,9 @@ class DailySummaryProcessor(
             // "Sessions" = unlockAppCount
             // "Checks"   = screenCheckCount
 
-            // Top 3 apps by duration (excluding ignored apps)
+            // Top 3 apps by duration (excluding ignored apps and launchers)
             val appDurations = appSessions
-                .filter { it.packageName !in ignoredApps }
+                .filter { it.packageName !in ignoredApps && it.packageName !in launcherPackages }
                 .groupBy { it.packageName }
                 .mapValues { (_, sessions) -> sessions.sumOf { it.duration } }
                 .toList()
