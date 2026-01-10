@@ -104,10 +104,13 @@ class SessionProcessor(
             // 1. Strict Sort by Start Time
             val sortedSessions = allSessions.sortedBy { it.startTime }
             
+            // 1.5 Clean Phantom Sessions (Apps running without Screen On)
+            val refinedSessions = cleanPhantomSessions(sortedSessions)
+            
             // 2. Identify "Active" sessions for Gap Calculation
             // We ignore "Passive" sessions (Notification) when determining offline streaks.
             // However, GLANCE (Manual Screen On) counts as a break, so we keep it.
-            val activeSessions = sortedSessions.filter { 
+            val activeSessions = refinedSessions.filter { 
                 it.type != PulseEvents.SESSION_NOTIFICATION
             }
             
@@ -140,7 +143,7 @@ class SessionProcessor(
             }
             
             // 3. Merge Active, Passive, and Offline sessions
-            val finalSessions = (sortedSessions + offlineSessions).sortedBy { it.startTime }
+            val finalSessions = (refinedSessions + offlineSessions).sortedBy { it.startTime }
 
             Log.d(TAG, "Created ${finalSessions.size} total sessions (Active: ${activeSessions.size}, Offline: ${offlineSessions.size})")
             analyticsDao.insertSessions(finalSessions)
@@ -148,6 +151,37 @@ class SessionProcessor(
             // Delegate to DailySummaryProcessor (use finalSessions!)
             // We pass PULSE_IGNORED_APPS so it knows what to exclude from Top Apps / New App Registration
             dailyProcessor.updateDailyStats(finalSessions, PULSE_IGNORED_APPS)
+        }
+    }
+
+    /**
+     * Reclassifies App Sessions that occur without a corresponding Screen Session as NOTIFICATIONS.
+     * This prevents background app activity (e.g. Wellbeing, Launcher updates) from breaking offline streaks.
+     */
+    private fun cleanPhantomSessions(sessions: List<AppSession>): List<AppSession> {
+        // Identify "Interactive" windows (Screen On + Unlocked or Glanced)
+        val interactiveSessions = sessions.filter {
+            it.type == PulseEvents.SESSION_GLANCE ||
+            it.type == PulseEvents.SESSION_UNLOCK_NOAPP ||
+            it.type == PulseEvents.SESSION_UNLOCK_APP
+        }
+
+        return sessions.map { session ->
+            if (session.type == PulseEvents.SESSION_APP) {
+                // Check overlap: StartA < EndB && EndA > StartB
+                val hasOverlap = interactiveSessions.any { screen ->
+                    session.startTime < screen.endTime && session.endTime > screen.startTime
+                }
+                
+                if (!hasOverlap) {
+                    Log.d(TAG, "Phantom App Detected: ${session.packageName} at ${session.startTimeStr}. Reclassifying as NOTIFICATION.")
+                    session.copy(type = PulseEvents.SESSION_NOTIFICATION)
+                } else {
+                    session
+                }
+            } else {
+                session
+            }
         }
     }
 }
