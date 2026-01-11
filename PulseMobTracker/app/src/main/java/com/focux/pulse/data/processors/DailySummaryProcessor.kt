@@ -223,8 +223,10 @@ class DailySummaryProcessor(
             // -------------------------------------------------------------
             // 4. SCENARIO C: HISTORICAL CORRECTION (YESTERDAY)
             // -------------------------------------------------------------
-            // If we found a valid sleep start (e.g. 2:15 AM today), we must update Yesterday's stats.
-            // Yesterday's "Active Day" ended at 2:15 AM (Sleep Start).
+            
+            // -------------------------------------------------------------
+            // 4. SCENARIO C: HISTORICAL CORRECTION (YESTERDAY)
+            // -------------------------------------------------------------
             
             if (!isPendingPhase && actualSleepSession != null) {
                 val yesterdayCal = Calendar.getInstance().apply { time = currentDateObj; add(Calendar.DAY_OF_YEAR, -1) }
@@ -233,29 +235,53 @@ class DailySummaryProcessor(
                 val yesterdayStats = analyticsDao.getDailyStats(yesterdayDate)
                 
                 if (yesterdayStats != null) {
-                    // Fetch LAST session closest to Sleep Start
-                    // Query window: [Yesterday Noon -> Today Sleep Start]
-                    // This catches late night usage (e.g. 1 AM)
-                    val lateWindowStart = yesterdayCal.apply { set(Calendar.HOUR_OF_DAY, 12) }.timeInMillis
+                    // Effective Day for Yesterday: [Yesterday WakeUp -> Today WakeUp]
+                    // Why Today WakeUp? Because "Last App" might be during a 3 AM waking moment (if Sleep is 4 AM).
                     
-                    val lateSessions = analyticsDao.getSessionsOverlapping(lateWindowStart, finalSleepStart)
+                    val yesterdayStart = if (yesterdayStats.sleepTimeEnd > 0) yesterdayStats.sleepTimeEnd else {
+                        yesterdayCal.apply { set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_WAKEUP_HOUR); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0) }.timeInMillis
+                    }
                     
-                    val correctedLastApp = lateSessions
+                    // We fetch sessions all the way to "Today's Wake Up". 
+                    // This creates a superset window to allow finding apps in potential night gaps.
+                    val extendedWindowEnd = finalSleepEnd 
+                    val sleepOnset = finalSleepStart
+
+                    // Fetch full window
+                    val effectiveDaySessions = analyticsDao.getSessionsOverlapping(yesterdayStart, extendedWindowEnd)
+                    
+                    // 1. Recalculate Last App (Latest session in the full window)
+                    // Note: This inherently excludes the sleep session itself (as it's offline).
+                    // If user woke at 3 AM used app, then slept 4 AM - 7 AM. 
+                    // 4-7 is Sleep. 3 AM App lies in window.
+                    val correctedLastApp = effectiveDaySessions
                         .filter { 
                              it.type == PulseEvents.SESSION_APP && 
                              it.packageName !in ignoredApps && it.packageName !in launcherPackages
                         }
                         .maxByOrNull { it.startTime }
+
+                    // 2. Recalculate Offline Streak (Max offline BEFORE Sleep Onset)
+                    // User Rule: "offline streak should not include the next days sleep time"
+                    // So we filter sessions that end BEFORE (or at) sleepOnset.
+                    val correctedOfflineStreak = effectiveDaySessions
+                        .filter { 
+                            it.type == PulseEvents.SESSION_OFFLINE && 
+                            it.endTime <= sleepOnset 
+                        }
+                        .maxByOrNull { it.duration }
+
+                    // Update Yesterday's Stats
+                    val updatedYesterday = yesterdayStats.copy(
+                        lastAppPackage = correctedLastApp?.packageName ?: yesterdayStats.lastAppPackage,
+                        lastAppStartTime = correctedLastApp?.startTime ?: yesterdayStats.lastAppStartTime,
+                        lastAppEndTime = correctedLastApp?.endTime ?: yesterdayStats.lastAppEndTime,
                         
-                    if (correctedLastApp != null) {
-                        // Update Yesterday's Last App
-                        val updatedYesterday = yesterdayStats.copy(
-                            lastAppPackage = correctedLastApp.packageName,
-                            lastAppStartTime = correctedLastApp.startTime,
-                            lastAppEndTime = correctedLastApp.endTime
-                        )
-                        analyticsDao.updateDailyStats(updatedYesterday)
-                    }
+                        offlineStreakDuration = correctedOfflineStreak?.duration ?: yesterdayStats.offlineStreakDuration,
+                        offlineStreakStart = correctedOfflineStreak?.startTime ?: yesterdayStats.offlineStreakStart,
+                        offlineStreakEnd = correctedOfflineStreak?.endTime ?: yesterdayStats.offlineStreakEnd
+                    )
+                    analyticsDao.updateDailyStats(updatedYesterday)
                 }
             }
         }
