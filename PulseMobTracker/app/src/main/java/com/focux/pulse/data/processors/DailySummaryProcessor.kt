@@ -34,179 +34,142 @@ class DailySummaryProcessor(
      * @param ignoredApps Set of package names to exclude from Top Apps and First/Last app logic.
      */
     suspend fun updateDailyStats(newSessions: List<AppSession>, ignoredApps: Set<String>) {
-        // Sort keys to process chronologically (Oldest -> Newest) to maintain Watermark logic
+        // Sort keys to process chronologically (Oldest -> Newest)
+        // This is crucial so we "Correct" yesterday before processing today? 
+        // Actually, "Correction" happens when looking back from Today. So order matters.
         val sessionsByDay = newSessions.groupBy { it.date }.toSortedMap()
 
-        // Fetch launchers to exclude from Total Screen Time (independent of general ignore list)
+        // Fetch launchers to exclude from Total Screen Time
         val launcherPackages = AppInfoHelper.getLauncherPackages(context)
         
         val sdfDay = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
         val now = System.currentTimeMillis()
         
-        // OPTIMIZATION: Get the "High Water Mark" (Last successfully calculated date)
-        // Format: "YYYY-MM-DD". Default to empty/null if fresh.
-        var lastCalculatedDate = analyticsDao.getState("sleep_calculated") ?: ""
-
-        for ((date, daySessions) in sessionsByDay) {
-            val existingStats = analyticsDao.getDailyStats(date) ?: DailyStats(date)
-            
-            // Check Watermark: Is this date already settled?
-            // String comparison works for YYYY-MM-DD: "2024-01-01" < "2024-01-02"
-            val isAlreadyFinalized = lastCalculatedDate.isNotEmpty() && date <= lastCalculatedDate
-
-            // Get ALL APP sessions for this day
-            val allDaySessions = analyticsDao.getSessionsForDay(date)
-            val appSessions = allDaySessions.filter { it.type == PulseEvents.SESSION_APP }
-
+        // We will process each day independently, but with a look-back correction.
+        for (date in sessionsByDay.keys) {
             val currentDateObj = sdfDay.parse(date) ?: java.util.Date()
             val calendar = Calendar.getInstance()
             calendar.time = currentDateObj
-
-            // 1. Determine "Active Day" Boundaries (Sleep Logic)
             
-            // Set User-Defined Sleep Window (Target)
+            // -------------------------------------------------------------
+            // 1. DETERMINE "PENDING" vs "FINALIZED" PHASE
+            // -------------------------------------------------------------
+            
+            // Target Wakeup: Today 07:00
+            calendar.set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_WAKEUP_HOUR)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            val targetWakeUpTime = calendar.timeInMillis
+            
+            // Target Bedtime (Start of Sleep Window): Yesterday 22:00 (or User Set)
+            // Note: This matches simple logic. Ideally, we read from User Preferences.
             calendar.add(Calendar.DAY_OF_YEAR, -1)
             calendar.set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_BEDTIME_HOUR)
-            calendar.set(Calendar.MINUTE, 0)
-            calendar.set(Calendar.SECOND, 0)
-            val targetSleepStart = calendar.timeInMillis
-
-            // End: Today 07:00 (Back to Today)
-            calendar.add(Calendar.DAY_OF_YEAR, 1) 
-            calendar.set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_WAKEUP_HOUR)
-            val targetSleepEnd = calendar.timeInMillis
-            
-            // Midnight Today (00:00)
-            calendar.time = currentDateObj
-            calendar.set(Calendar.HOUR_OF_DAY, 0)
-            calendar.set(Calendar.MINUTE, 0)
-            calendar.set(Calendar.SECOND, 0)
-            val midnightToday = calendar.timeInMillis
-
-            var finalSleepStart = 0L
-            var finalSleepEnd = 0L
-            
-            // LOGIC SPLIT: PENDING vs FINALIZED
+            val targetSleepWindowStart = calendar.timeInMillis
             
             val isToday = (sdfDay.format(java.util.Date(now)) == date)
-            val isPendingPhase = isToday && (now < targetSleepEnd)
+            val isPendingPhase = isToday && (now < targetWakeUpTime)
 
-            if (isAlreadyFinalized) {
-                // OPTIMIZATION: Date is <= lastCalculatedDate. Reuse stable values.
-                finalSleepStart = existingStats.sleepTimeStart
-                finalSleepEnd = existingStats.sleepTimeEnd
-            } else if (isPendingPhase) {
-                // PHASE 1: PENDING (During Sleep Window)
-                // Use Defaults
-                finalSleepStart = targetSleepStart
-                finalSleepEnd = targetSleepEnd
-            } else {
-                // PHASE 2: FINALIZED (After Sleep Window / History)
-                // Calculate ACTUAL sleep from offline sessions
-                val potentialSleepSessions = analyticsDao.getSessionsOverlapping(targetSleepStart, targetSleepEnd)
+            // -------------------------------------------------------------
+            // 2. DEFINE BOUNDARIES & SLEEP (Scenario A vs Scenario B)
+            // -------------------------------------------------------------
+            
+            var dayMetricStart: Long
+            var finalSleepStart: Long
+            var finalSleepEnd: Long
+            
+            // Needed for Correction Check
+            var actualSleepSession: AppSession? = null
+
+            if (isPendingPhase) {
+                // SCENARIO A: PENDING (Before 7 AM Today)
+                // - Sleep: Defaults (Target)
+                // - Day Start: Midnight (00:00)
                 
-                val windowOfflineSessions = potentialSleepSessions.filter { 
-                    it.type == PulseEvents.SESSION_OFFLINE 
-                }
+                finalSleepStart = targetSleepWindowStart
+                finalSleepEnd = targetWakeUpTime
+                
+                // Midnight
+                val midCal = Calendar.getInstance().apply { time = currentDateObj; set(Calendar.HOUR_OF_DAY,0); set(Calendar.MINUTE,0); set(Calendar.SECOND,0) }
+                dayMetricStart = midCal.timeInMillis
 
-                val thresholdSessions = windowOfflineSessions.filter { 
+            } else {
+                // SCENARIO B: FINALIZED (Yesterday or Today after 7 AM)
+                // - Sleep: Find actual largest offline gap in [Yesterday 22:00 - Today 07:00]
+                // - Day Start: Actual Sleep End
+                
+                val potentialSleepSessions = analyticsDao.getSessionsOverlapping(targetSleepWindowStart, targetWakeUpTime)
+                
+                val validOfflineSessions = potentialSleepSessions.filter { 
+                    it.type == PulseEvents.SESSION_OFFLINE && 
                     it.duration >= com.focux.pulse.utilities.PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS
                 }
                 
-                if (thresholdSessions.isNotEmpty()) {
-                    finalSleepStart = thresholdSessions.minOf { it.startTime }
-                    finalSleepEnd = thresholdSessions.maxOf { it.endTime }
-                    
-                    // Mark as FINALIZED (Update Watermark)
-                    // We found a valid sleep session -> This day is now settled.
-                    // Only update if this date is NEWER than current watermark
-                    if (date > lastCalculatedDate) {
-                        analyticsDao.updateState(SystemState("sleep_calculated", date))
-                        lastCalculatedDate = date // Update local var for next iteration logic
-                    }
-                } else {
-                    // Fallback: No sleep detected
-                    finalSleepStart = 0L
-                    finalSleepEnd = 0L
-                    
-                    // If day is seemingly over (not today), allowing finalizing even if no sleep found?
-                    // User logic: "after each succesful parsing... update"
-                    // If no sleep is found but we are actively processing history, we should probably mark it done to avoid perpetual re-check.
-                    if (!isToday && date > lastCalculatedDate) {
-                        analyticsDao.updateState(SystemState("sleep_calculated", date))
-                        lastCalculatedDate = date
-                    }
-                }
-            }
-
-            // 2. Define "Day Start" for Metrics
-            // If Pending: Midnight (00:00)
-            // If Finalized: Actual Sleep End (Wake Up) OR Midnight if no sleep (or 0L, or re-used existing)
-            val dayMetricStart = if (isPendingPhase) midnightToday else finalSleepEnd
-
-            // 3. Calculate Metrics
-            
-            // --- First App ---
-            // OPTIMIZATION: Reuse if finalized
-            var resolvedFirstAppPackage = existingStats.firstAppPackage
-            var resolvedFirstAppStart = existingStats.firstAppStartTime
-            var resolvedFirstAppEnd = existingStats.firstAppEndTime
-            
-            if (!isAlreadyFinalized) {
-                val fa = appSessions
-                    .filter { 
-                        it.packageName !in ignoredApps && 
-                        it.packageName !in launcherPackages &&
-                        it.startTime >= dayMetricStart
-                    }
-                    .sortedBy { it.startTime }
-                    .firstOrNull()
+                // Find the "Best" sleep session (e.g. longest in window)
+                actualSleepSession = validOfflineSessions.maxByOrNull { it.duration }
                 
-                resolvedFirstAppPackage = fa?.packageName
-                resolvedFirstAppStart = fa?.startTime ?: 0
-                resolvedFirstAppEnd = fa?.endTime ?: 0
+                if (actualSleepSession != null) {
+                    finalSleepStart = actualSleepSession!!.startTime
+                    finalSleepEnd = actualSleepSession!!.endTime
+                } else {
+                    // Fallback to Defaults if no sleep found
+                    finalSleepStart = targetSleepWindowStart
+                    finalSleepEnd = targetWakeUpTime
+                }
+                
+                dayMetricStart = finalSleepEnd
             }
+            
+            // -------------------------------------------------------------
+            // 3. FETCH DAY DATA & CALCULATE METRICS
+            // -------------------------------------------------------------
+            
+            val allDaySessions = analyticsDao.getSessionsForDay(date)
+            // Only count sessions that started AFTER our metric start
+            // (e.g. If day started at 8 AM, ignore 7 AM noise)
+            val metricSessions = allDaySessions.filter { it.startTime >= dayMetricStart }
+            
+            val appSessions = metricSessions.filter { it.type == PulseEvents.SESSION_APP }
 
-            // --- Last App --- (ALWAYS Recalculate - user might be using phone right now)
+            // --- First App ---
+            val firstApp = appSessions
+                .filter { it.packageName !in ignoredApps && it.packageName !in launcherPackages }
+                .minByOrNull { it.startTime }
+                
+            // --- Last App ---
+            // Just satisfy the "Latest" available. 
+            // Note: If finalizing history, this is "Latest app used on that calendar day".
+            // Correction logic usually fixes Yesterday's Last App to be "Before Sleep".
             val lastApp = appSessions
-                .filter { 
-                    it.packageName !in ignoredApps && 
-                    it.packageName !in launcherPackages &&
-                    it.startTime >= dayMetricStart
-                }
-                .sortedBy { it.startTime }
-                .lastOrNull()
+                .filter { it.packageName !in ignoredApps && it.packageName !in launcherPackages }
+                .maxByOrNull { it.startTime }
 
-            // --- Offline Streak --- (ALWAYS Recalculate)
-            val offlineStreakSession = allDaySessions
-                .filter { 
-                    it.type == PulseEvents.SESSION_OFFLINE &&
-                    it.startTime >= dayMetricStart
-                }
+            // --- Offline Streak ---
+            // "Max offline session after day start"
+            val offlineStreakSession = metricSessions
+                .filter { it.type == PulseEvents.SESSION_OFFLINE }
                 .maxByOrNull { it.duration }
 
-            // --- Standard Metrics (Screen Time, Unlocks etc.) ---
-            val appTime = allDaySessions
+            // --- Standard Totals ---
+            val appTime = metricSessions
                 .filter { 
                     it.type == PulseEvents.SESSION_APP && 
                     it.packageName !in com.focux.pulse.utilities.PULSE_IGNORED_APPS 
                 }
                 .sumOf { it.duration }
                 
-            val rawGlanceCount = allDaySessions.count { it.type == PulseEvents.SESSION_GLANCE }
+            val rawGlanceCount = metricSessions.count { it.type == PulseEvents.SESSION_GLANCE }
             val glanceTime = rawGlanceCount * com.focux.pulse.utilities.PULSE_GLANCE_ESTIMATE_MS
             val totalScreenTime = appTime + glanceTime
             
-            val unlockAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_APP }
-            val unlockNoAppCount = allDaySessions.count { it.type == PulseEvents.SESSION_UNLOCK_NOAPP }
-            val screenCheckCount = allDaySessions.count { 
+            val unlockAppCount = metricSessions.count { it.type == PulseEvents.SESSION_UNLOCK_APP }
+            val unlockNoAppCount = metricSessions.count { it.type == PulseEvents.SESSION_UNLOCK_NOAPP }
+            val screenCheckCount = metricSessions.count { 
                 it.type == PulseEvents.SESSION_GLANCE || it.type == PulseEvents.SESSION_UNLOCK_NOAPP 
             }
-            
             val totalUnlocks = unlockNoAppCount + unlockAppCount
-            val focusScore = (100 - totalUnlocks * 2).coerceIn(0, 100)
-
-            // Top 3 apps
+            
+            // --- Top 3 Apps ---
             val appDurations = appSessions
                 .filter { it.packageName !in ignoredApps && it.packageName !in launcherPackages }
                 .groupBy { it.packageName }
@@ -214,54 +177,87 @@ class DailySummaryProcessor(
                 .toList()
                 .sortedByDescending { it.second }
                 .take(3)
-
+                
             val topApp1 = appDurations.getOrNull(0)
             val topApp2 = appDurations.getOrNull(1)
             val topApp3 = appDurations.getOrNull(2)
-
-            val updatedStats = DailyStats(
+            
+            // Save TODAY Stats
+            val dailyStats = DailyStats(
                 date = date,
                 totalScreenTime = totalScreenTime,
                 unlockNoAppCount = unlockNoAppCount,
                 unlockAppCount = unlockAppCount,
                 glanceCount = rawGlanceCount,
                 screenCheckCount = screenCheckCount,
-                focusScore = focusScore,
+                focusScore = (100 - totalUnlocks * 2).coerceIn(0, 100),
                 productiveTime = 0,
                 neutralTime = totalScreenTime,
                 distractingTime = 0,
-                // First app (Reused or New)
-                firstAppPackage = resolvedFirstAppPackage,
-                firstAppStartTime = resolvedFirstAppStart,
-                firstAppEndTime = resolvedFirstAppEnd,
-                // Last app
+                firstAppPackage = firstApp?.packageName,
+                firstAppStartTime = firstApp?.startTime ?: 0,
+                firstAppEndTime = firstApp?.endTime ?: 0,
                 lastAppPackage = lastApp?.packageName,
                 lastAppStartTime = lastApp?.startTime ?: 0,
                 lastAppEndTime = lastApp?.endTime ?: 0,
-                // Offline streak
                 offlineStreakDuration = offlineStreakSession?.duration ?: 0,
                 offlineStreakStart = offlineStreakSession?.startTime ?: 0,
                 offlineStreakEnd = offlineStreakSession?.endTime ?: 0,
-                // Top 3 apps
                 topApp1Package = topApp1?.first,
                 topApp1Duration = topApp1?.second ?: 0,
                 topApp2Package = topApp2?.first,
                 topApp2Duration = topApp2?.second ?: 0,
                 topApp3Package = topApp3?.first,
                 topApp3Duration = topApp3?.second ?: 0,
-                // Sleep Schedule
                 sleepTimeStart = finalSleepStart,
                 sleepTimeEnd = finalSleepEnd,
                 sleepBreakCount = 0,
                 sleepPhoneDuration = 0,
-                // Debug values
-                sleepReadableStart = if (finalSleepStart > 0) java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(finalSleepStart)) else "--:--",
-                sleepReadableEnd = if (finalSleepEnd > 0) java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(finalSleepEnd)) else "--:--"
+                sleepReadableStart = com.focux.pulse.utilities.TimeUtils.format(finalSleepStart),
+                sleepReadableEnd = com.focux.pulse.utilities.TimeUtils.format(finalSleepEnd)
             )
-            analyticsDao.updateDailyStats(updatedStats)
-            
-            // Auto-discover new apps and add to AppInfo table
+            analyticsDao.updateDailyStats(dailyStats)
             registerNewApps(appSessions, ignoredApps)
+
+
+            // -------------------------------------------------------------
+            // 4. SCENARIO C: HISTORICAL CORRECTION (YESTERDAY)
+            // -------------------------------------------------------------
+            // If we found a valid sleep start (e.g. 2:15 AM today), we must update Yesterday's stats.
+            // Yesterday's "Active Day" ended at 2:15 AM (Sleep Start).
+            
+            if (!isPendingPhase && actualSleepSession != null) {
+                val yesterdayCal = Calendar.getInstance().apply { time = currentDateObj; add(Calendar.DAY_OF_YEAR, -1) }
+                val yesterdayDate = sdfDay.format(yesterdayCal.time)
+                
+                val yesterdayStats = analyticsDao.getDailyStats(yesterdayDate)
+                
+                if (yesterdayStats != null) {
+                    // Fetch LAST session closest to Sleep Start
+                    // Query window: [Yesterday Noon -> Today Sleep Start]
+                    // This catches late night usage (e.g. 1 AM)
+                    val lateWindowStart = yesterdayCal.apply { set(Calendar.HOUR_OF_DAY, 12) }.timeInMillis
+                    
+                    val lateSessions = analyticsDao.getSessionsOverlapping(lateWindowStart, finalSleepStart)
+                    
+                    val correctedLastApp = lateSessions
+                        .filter { 
+                             it.type == PulseEvents.SESSION_APP && 
+                             it.packageName !in ignoredApps && it.packageName !in launcherPackages
+                        }
+                        .maxByOrNull { it.startTime }
+                        
+                    if (correctedLastApp != null) {
+                        // Update Yesterday's Last App
+                        val updatedYesterday = yesterdayStats.copy(
+                            lastAppPackage = correctedLastApp.packageName,
+                            lastAppStartTime = correctedLastApp.startTime,
+                            lastAppEndTime = correctedLastApp.endTime
+                        )
+                        analyticsDao.updateDailyStats(updatedYesterday)
+                    }
+                }
+            }
         }
     }
 
