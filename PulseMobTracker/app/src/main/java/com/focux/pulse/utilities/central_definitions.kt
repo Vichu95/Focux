@@ -39,11 +39,11 @@ val PULSE_IGNORED_APPS: Set<String> = setOf(
 const val PULSE_SLEEP_THRESHOLD_MS = 3 * 60 * 60 * 1000L  // 3 hours
 
 /**
- * Sleep window: Target Bedtime is 10 PM (22:00) Previous Day.
+ * Sleep window: Target Bedtime is 11 PM (23:00) Previous Day.
  * Target Wakup is 7 AM (07:00) Current Day.
  * Used to identify sleep sessions.
  */
-const val PULSE_SLEEP_TARGET_BEDTIME_HOUR = 22 // 10 PM
+const val PULSE_SLEEP_TARGET_BEDTIME_HOUR = 23 // 11 PM
 const val PULSE_SLEEP_TARGET_WAKEUP_HOUR = 7   // 7 AM
 
 // Deprecated Old Constants (keeping for now to avoid breakages before full migration)
@@ -52,9 +52,9 @@ const val PULSE_SLEEP_WINDOW_END_HOUR = 6
 
 /**
  * Minimum duration for an offline session to be considered part of sleep.
- * Removes short "jitter" gaps (e.g. 5 mins).
+ * Removes short "jitter" gaps (e.g. 15 mins).
  */
-const val PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS = 10 * 60 * 1000L // 10 minutes
+const val PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS = 60 * 60 * 1000L // 60 minutes
 
 /**
  * Minimum events to look ahead before skipping an unmatched APP_OPEN.

@@ -9,7 +9,6 @@ import com.focux.pulse.data.local.entities.DailyStats
 import com.focux.pulse.data.local.entities.PulseEvents
 import com.focux.pulse.data.local.entities.SystemState
 import com.focux.pulse.utilities.PULSE_IGNORED_APPS
-import com.focux.pulse.utilities.PULSE_SLEEP_THRESHOLD_MS
 import com.focux.pulse.utilities.PULSE_SLEEP_WINDOW_END_HOUR
 import com.focux.pulse.utilities.PULSE_SLEEP_WINDOW_START_HOUR
 import com.focux.pulse.utilities.AppInfoHelper
@@ -80,6 +79,8 @@ class DailySummaryProcessor(
             
             // Needed for Correction Check
             var actualSleepSession: AppSession? = null
+            var sleepBreakCount = 0
+            var sleepPhoneDuration = 0L
 
             if (isPendingPhase) {
                 // SCENARIO A: PENDING (Before 7 AM Today)
@@ -100,17 +101,40 @@ class DailySummaryProcessor(
                 
                 val potentialSleepSessions = analyticsDao.getSessionsOverlapping(targetSleepWindowStart, targetWakeUpTime)
                 
+                // 2. Filter sessions less than threshold
                 val validOfflineSessions = potentialSleepSessions.filter { 
                     it.type == PulseEvents.SESSION_OFFLINE && 
                     it.duration >= com.focux.pulse.utilities.PULSE_MIN_SLEEP_OFFLINE_THRESHOLD_MS
                 }
                 
-                // Find the "Best" sleep session (e.g. longest in window)
-                actualSleepSession = validOfflineSessions.maxByOrNull { it.duration }
-                
-                if (actualSleepSession != null) {
-                    finalSleepStart = actualSleepSession!!.startTime
-                    finalSleepEnd = actualSleepSession!!.endTime
+                // Variables now updated in outer scope
+
+                if (validOfflineSessions.isNotEmpty()) {
+                    // 3. Find Earliest Start and Largest End
+                    finalSleepStart = validOfflineSessions.minOf { it.startTime }
+                    finalSleepEnd = validOfflineSessions.maxOf { it.endTime }
+                    
+                    // 4. Get all offline sessions in between (inclusive)
+                    // We reuse potentialSleepSessions as it already covers the target window. 
+                    // Technically we should ensure we don't miss anything if sleep extends way out, 
+                    // but potentialSleepSessions is the best source we have loaded.
+                    val allSleepParts = potentialSleepSessions.filter { 
+                        it.type == PulseEvents.SESSION_OFFLINE &&
+                        it.startTime >= finalSleepStart &&
+                        it.endTime <= finalSleepEnd
+                    }
+                    
+                    // 5. Calculate Metrics
+                    // Breaks = Number of offline chunks - 1 
+                    // (e.g. [Sleep]--break--[Sleep] is 2 chunks, 1 break)
+                    if (allSleepParts.isNotEmpty()) {
+                        sleepBreakCount = (allSleepParts.size - 1).coerceAtLeast(0)
+                        
+                        val totalSleepWindow = finalSleepEnd - finalSleepStart
+                        val totalOfflineDuration = allSleepParts.sumOf { it.duration }
+                        
+                        sleepPhoneDuration = (totalSleepWindow - totalOfflineDuration).coerceAtLeast(0)
+                    }
                 } else {
                     // Fallback to Defaults if no sleep found
                     finalSleepStart = targetSleepWindowStart
@@ -211,8 +235,8 @@ class DailySummaryProcessor(
                 topApp3Duration = topApp3?.second ?: 0,
                 sleepTimeStart = finalSleepStart,
                 sleepTimeEnd = finalSleepEnd,
-                sleepBreakCount = 0,
-                sleepPhoneDuration = 0,
+                sleepBreakCount = sleepBreakCount,
+                sleepPhoneDuration = sleepPhoneDuration,
                 sleepReadableStart = com.focux.pulse.utilities.TimeUtils.format(finalSleepStart),
                 sleepReadableEnd = com.focux.pulse.utilities.TimeUtils.format(finalSleepEnd)
             )
