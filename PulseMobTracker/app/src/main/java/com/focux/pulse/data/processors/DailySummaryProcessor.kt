@@ -252,32 +252,33 @@ class DailySummaryProcessor(
             // 4. SCENARIO C: HISTORICAL CORRECTION (YESTERDAY)
             // -------------------------------------------------------------
             
-            if (!isPendingPhase && actualSleepSession != null) {
+            if (!isPendingPhase) {
                 val yesterdayCal = Calendar.getInstance().apply { time = currentDateObj; add(Calendar.DAY_OF_YEAR, -1) }
                 val yesterdayDate = sdfDay.format(yesterdayCal.time)
                 
                 val yesterdayStats = analyticsDao.getDailyStats(yesterdayDate)
                 
                 if (yesterdayStats != null) {
-                    // Effective Day for Yesterday: [Yesterday WakeUp -> Today WakeUp]
-                    // Why Today WakeUp? Because "Last App" might be during a 3 AM waking moment (if Sleep is 4 AM).
-                    
+                    // Effective Day for Yesterday: [Yesterday WakeUp -> Today Sleep Start]
+                    // If Yesterday's sleep wasn't calculated, default to 07:00 AM yesterday.
                     val yesterdayStart = if (yesterdayStats.sleepTimeEnd > 0) yesterdayStats.sleepTimeEnd else {
                         yesterdayCal.apply { set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_WAKEUP_HOUR); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0) }.timeInMillis
                     }
                     
-                    // We fetch sessions all the way to "Today's Wake Up". 
-                    // This creates a superset window to allow finding apps in potential night gaps.
+                    // User Request:
+                    // 1. Last App: "Last app used till today sleep end"
+                    //    This captures any late night usage (e.g. 3 AM woke up, check phone, slept 4 AM). 
+                    //    The 3 AM usage belongs to Yesterday's active timeline.
                     val extendedWindowEnd = finalSleepEnd 
+                    
+                    // 2. Offline Streak: "max offline streak till today sleep start"
+                    //    This excludes the sleep session itself.
                     val sleepOnset = finalSleepStart
 
-                    // Fetch full window
+                    // Fetch full window for Last App search
                     val effectiveDaySessions = analyticsDao.getSessionsOverlapping(yesterdayStart, extendedWindowEnd)
                     
                     // 1. Recalculate Last App (Latest session in the full window)
-                    // Note: This inherently excludes the sleep session itself (as it's offline).
-                    // If user woke at 3 AM used app, then slept 4 AM - 7 AM. 
-                    // 4-7 is Sleep. 3 AM App lies in window.
                     val correctedLastApp = effectiveDaySessions
                         .filter { 
                              it.type == PulseEvents.SESSION_APP && 
@@ -286,8 +287,6 @@ class DailySummaryProcessor(
                         .maxByOrNull { it.startTime }
 
                     // 2. Recalculate Offline Streak (Max offline BEFORE Sleep Onset)
-                    // User Rule: "offline streak should not include the next days sleep time"
-                    // So we filter sessions that end BEFORE (or at) sleepOnset.
                     val correctedOfflineStreak = effectiveDaySessions
                         .filter { 
                             it.type == PulseEvents.SESSION_OFFLINE && 
