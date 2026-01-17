@@ -100,6 +100,7 @@ class SessionProcessor(
         }
 
         // Save all sessions and update stats
+        // Save all sessions and update stats
         if (allSessions.isNotEmpty()) {
             // 1. Strict Sort by Start Time
             val sortedSessions = allSessions.sortedBy { it.startTime }
@@ -107,15 +108,22 @@ class SessionProcessor(
             // 1.5 Clean Phantom Sessions (Apps running without Screen On)
             val refinedSessions = cleanPhantomSessions(sortedSessions)
             
-            // 2. Identify "Active" sessions for Gap Calculation
-            // We ignore "Passive" sessions (Notification) when determining offline streaks.
-            // However, GLANCE (Manual Screen On) counts as a break, so we keep it.
-            val activeSessions = refinedSessions.filter { 
-                it.type != PulseEvents.SESSION_NOTIFICATION
+            // 2. INSERT Active/Phantom Sessions FIRST (to generate IDs)
+            analyticsDao.insertSessions(refinedSessions)
+            
+            // 3. OFFLINE SESSION CALCULATION (Sequential Check from DB)
+            val lastOfflineCheckId = analyticsDao.getState("last_offline_check_id")?.toLong() ?: 0L
+            val sessionsToCheck = analyticsDao.getSessionsStartingFromId(lastOfflineCheckId)
+            
+            // Only consider "Active" sessions for gaps (ignore Notifications and existing Offline sessions)
+            val activeSessions = sessionsToCheck.filter { 
+                it.type != PulseEvents.SESSION_NOTIFICATION && 
+                it.type != PulseEvents.SESSION_OFFLINE
             }
             
             val offlineSessions = mutableListOf<AppSession>()
-            
+            var maxProcessedId = lastOfflineCheckId
+
             if (activeSessions.isNotEmpty()) {
                 for (i in 0 until activeSessions.size - 1) {
                     val currentSession = activeSessions[i]
@@ -124,8 +132,6 @@ class SessionProcessor(
                     val gap = nextSession.startTime - currentSession.endTime
                     
                     if (gap >= com.focux.pulse.utilities.PULSE_MIN_OFFLINE_THRESHOLD_MS) {
-                        // Create offline session(s) spanning the entire gap
-                        // This will naturally overlap with any passive sessions in between
                         val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
                         val newOffline = AppSession(
                             packageName = "system",
@@ -140,16 +146,25 @@ class SessionProcessor(
                         offlineSessions.add(newOffline)
                     }
                 }
+                // Update pointer to the last session we successfully closed a gap search for
+                // We point to result of the last check.
+                // Actually, simply pointing to the Last Session of the list is safe, 
+                // because next time we will fetch IT + New Ones, and check gap betwen IT and New[0].
+                val lastSession = activeSessions.last()
+                if (lastSession.id > 0) { // Ensure ID is valid
+                    analyticsDao.updateState(SystemState("last_offline_check_id", lastSession.id.toString()))
+                }
             }
             
-            // 3. Merge Active, Passive, and Offline sessions
-            val finalSessions = (refinedSessions + offlineSessions).sortedBy { it.startTime }
+            // 4. INSERT Offline Sessions
+            if (offlineSessions.isNotEmpty()) {
+                analyticsDao.insertSessions(offlineSessions)
+                Log.d(TAG, "Created ${offlineSessions.size} OFFLINE sessions.")
+            }
 
-            Log.d(TAG, "Created ${finalSessions.size} total sessions (Active: ${activeSessions.size}, Offline: ${offlineSessions.size})")
-            analyticsDao.insertSessions(finalSessions)
-            
-            // Delegate to DailySummaryProcessor (use finalSessions!)
-            // We pass PULSE_IGNORED_APPS so it knows what to exclude from Top Apps / New App Registration
+            // 5. Delegate to DailySummaryProcessor 
+            // We combine refined + offline for the stats update
+            val finalSessions = (refinedSessions + offlineSessions).sortedBy { it.startTime }
             dailyProcessor.updateDailyStats(finalSessions, PULSE_IGNORED_APPS)
         }
     }

@@ -47,6 +47,20 @@ interface AnalyticsDao {
     @Query("SELECT * FROM app_sessions WHERE startTime < :endTimestamp AND endTime > :startTimestamp ORDER BY startTime ASC")
     suspend fun getSessionsOverlapping(startTimestamp: Long, endTimestamp: Long): List<AppSession>
 
+    /**
+     * Retrieves all sessions with ID >= given ID, ordered by Start Time.
+     * Used for sequential Offline Gap calculation.
+     */
+    @Query("SELECT * FROM app_sessions WHERE id >= :startId ORDER BY startTime ASC")
+    suspend fun getSessionsStartingFromId(startId: Long): List<AppSession>
+
+    /**
+     * Retrieves the very last processed session (ordered by end time).
+     * Used to bridge the gap between historical batches and new processing batches.
+     */
+    @Query("SELECT * FROM app_sessions ORDER BY endTime DESC LIMIT 1")
+    suspend fun getLastSession(): AppSession?
+
     // --- Daily Stats ---
 
     /**
