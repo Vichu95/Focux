@@ -33,12 +33,6 @@ val PULSE_IGNORED_APPS: Set<String> = setOf(
 )
 
 /**
- * Sleep detection configuration.
- * A gap >= this threshold during sleep window is considered sleep.
- */
-const val PULSE_SLEEP_THRESHOLD_MS = 3 * 60 * 60 * 1000L  // 3 hours
-
-/**
  * Sleep window: Target Bedtime is 11 PM (23:00) Previous Day.
  * Target Wakup is 7 AM (07:00) Current Day.
  * Used to identify sleep sessions.
