@@ -123,6 +123,60 @@ fun ConfigurationScreen() {
                     )
                 }
                 
+                // Reprocess Data Button
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                val workManager = androidx.work.WorkManager.getInstance(context)
+                                
+                                // 1. Stop background workers
+                                workManager.cancelUniqueWork("DataCollectionWork")
+                                workManager.cancelUniqueWork("ImmediateDataSync")
+                                kotlinx.coroutines.delay(1000)
+                                
+                                val db = PulseDatabase.getDatabase(context)
+                                
+                                // 2. Clear ONLY processed tables (Sessions, Stats)
+                                db.analyticsDao().clearProcessedDataAndReset()
+
+                                // 3. Restart Data Collection (This will now re-process EVERYTHING from Raw Data)
+                                val restartRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>(
+                                    15, java.util.concurrent.TimeUnit.MINUTES
+                                ).build()
+
+                                workManager.enqueueUniquePeriodicWork(
+                                    "DataCollectionWork",
+                                    androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+                                    restartRequest
+                                )
+                                
+                                // Trigger immediate run to start crunching numbers
+                                val oneTimeRequest = androidx.work.OneTimeWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>()
+                                    .build()
+                                workManager.enqueueUniqueWork(
+                                    "ImmediateDataSync",
+                                    androidx.work.ExistingWorkPolicy.REPLACE,
+                                    oneTimeRequest
+                                )
+
+                                statusMessage = "✓ Data cleared! Reprocessing started..."
+                            } catch (e: Exception) {
+                                statusMessage = "✗ Error: ${e.message}"
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PulseAppColorSecondary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Reprocess Data (Keep Raw Logs)",
+                        color = PulseAppColorBackground
+                    )
+                }
+                
                 if (statusMessage.isNotEmpty()) {
                     Text(
                         text = statusMessage,

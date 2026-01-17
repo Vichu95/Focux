@@ -125,4 +125,21 @@ interface AnalyticsDao {
 
     @Query("DELETE FROM sqlite_sequence")
     suspend fun resetAllSequences()
+
+    /**
+     * Clears all PROCESSED data (AppSessions, DailyStats) but KEEPS Raw Data.
+     * Resets processing cursors so everything is re-calculated from scratch.
+     */
+    @Transaction
+    suspend fun clearProcessedDataAndReset() {
+        deleteAllSessions()
+        deleteAllDailyStats()
+        resetSessionSequence()
+        
+        // Reset Processing Cursors
+        updateState(SystemState("last_processed_app_id", "0"))
+        updateState(SystemState("last_processed_screen_id", "0"))
+        updateState(SystemState("last_processed_offline_id", "0"))
+        updateState(SystemState("last_offline_check_id", "0"))
+    }
 }
