@@ -38,9 +38,16 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val sessions = analyticsDao.getSessionsForDay(dateStr)
             
-            // Filter to only APP sessions and convert to TimelineEvent
+            // Get ignored lists
+            val launcherPackages = AppInfoHelper.getLauncherPackages(context)
+            
+            // Filter: APP Session + NOT Ignored + NOT Launcher
             val events = sessions
-                .filter { it.type == PulseEvents.SESSION_APP }
+                .filter { 
+                    it.type == PulseEvents.SESSION_APP &&
+                    it.packageName !in PULSE_IGNORED_APPS &&
+                    it.packageName !in launcherPackages
+                }
                 .sortedBy { it.startTime }
                 .map { session -> 
                     TimelineEvent(
