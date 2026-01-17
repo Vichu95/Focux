@@ -61,6 +61,9 @@ interface AnalyticsDao {
     @Query("SELECT * FROM app_sessions ORDER BY endTime DESC LIMIT 1")
     suspend fun getLastSession(): AppSession?
 
+    @Query("SELECT id FROM app_sessions ORDER BY id DESC LIMIT 1")
+    suspend fun getLastRowId(): Long?
+
     // --- Daily Stats ---
 
     /**

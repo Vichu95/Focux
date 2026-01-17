@@ -100,7 +100,6 @@ class SessionProcessor(
         }
 
         // Save all sessions and update stats
-        // Save all sessions and update stats
         if (allSessions.isNotEmpty()) {
             // 1. Strict Sort by Start Time
             val sortedSessions = allSessions.sortedBy { it.startTime }
@@ -108,26 +107,29 @@ class SessionProcessor(
             // 1.5 Clean Phantom Sessions (Apps running without Screen On)
             val refinedSessions = cleanPhantomSessions(sortedSessions)
             
-            // 2. INSERT Active/Phantom Sessions FIRST (to generate IDs)
-            analyticsDao.insertSessions(refinedSessions)
-            
-            // 3. OFFLINE SESSION CALCULATION (Sequential Check from DB)
+            // 2. OFFLINE CALCULATION (Pre-Insert)
+            // Goal: Find gaps between [DB History] and [New Batch], and within [New Batch].
             val lastOfflineCheckId = analyticsDao.getState("last_offline_check_id")?.toLong() ?: 0L
-            val sessionsToCheck = analyticsDao.getSessionsStartingFromId(lastOfflineCheckId)
+            val historySessions = analyticsDao.getSessionsStartingFromId(lastOfflineCheckId)
             
-            // Only consider "Active" sessions for gaps (ignore Notifications and existing Offline sessions)
-            val activeSessions = sessionsToCheck.filter { 
-                it.type != PulseEvents.SESSION_NOTIFICATION && 
-                it.type != PulseEvents.SESSION_OFFLINE
+            // Filter History for Active Only (Ignore previous offline/notifications)
+            val activeHistory = historySessions.filter { 
+                it.type != PulseEvents.SESSION_NOTIFICATION && it.type != PulseEvents.SESSION_OFFLINE
+            }
+            // Filter New Batch for Active Only
+            val activeNew = refinedSessions.filter { 
+                it.type != PulseEvents.SESSION_NOTIFICATION
             }
             
+            // Combined Check List (History + New)
+            val sessionsToCheck = (activeHistory + activeNew).sortedBy { it.startTime }
+            
             val offlineSessions = mutableListOf<AppSession>()
-            var maxProcessedId = lastOfflineCheckId
-
-            if (activeSessions.isNotEmpty()) {
-                for (i in 0 until activeSessions.size - 1) {
-                    val currentSession = activeSessions[i]
-                    val nextSession = activeSessions[i+1]
+            
+            if (sessionsToCheck.isNotEmpty()) {
+                for (i in 0 until sessionsToCheck.size - 1) {
+                    val currentSession = sessionsToCheck[i]
+                    val nextSession = sessionsToCheck[i+1]
                     
                     val gap = nextSession.startTime - currentSession.endTime
                     
@@ -146,25 +148,26 @@ class SessionProcessor(
                         offlineSessions.add(newOffline)
                     }
                 }
-                // Update pointer to the last session we successfully closed a gap search for
-                // We point to result of the last check.
-                // Actually, simply pointing to the Last Session of the list is safe, 
-                // because next time we will fetch IT + New Ones, and check gap betwen IT and New[0].
-                val lastSession = activeSessions.last()
-                if (lastSession.id > 0) { // Ensure ID is valid
-                    analyticsDao.updateState(SystemState("last_offline_check_id", lastSession.id.toString()))
-                }
             }
             
-            // 4. INSERT Offline Sessions
-            if (offlineSessions.isNotEmpty()) {
-                analyticsDao.insertSessions(offlineSessions)
-                Log.d(TAG, "Created ${offlineSessions.size} OFFLINE sessions.")
+            // 3. COMBINE & SORT & INSERT
+            // We combine the New Active sessions + New Offline sessions.
+            // Sorting by StartTime ensures they are interleaved correctly in the DB (resolving "Chunk" issue).
+            val finalSessions = (refinedSessions + offlineSessions).sortedBy { it.startTime }
+            
+            Log.d(TAG, "Inserting ${finalSessions.size} sessions (Active: ${refinedSessions.size}, New Offline: ${offlineSessions.size})")
+            analyticsDao.insertSessions(finalSessions)
+            
+            // 4. UPDATE POINTER
+            // Now that they are inserted, we need to update the pointer to the LAST row in the DB.
+            // This ensures next time we fetch everything starting from the end of this batch.
+            // We fetch the latest ID from the DB.
+            val newLastId = analyticsDao.getLastRowId() ?: lastOfflineCheckId
+            if (newLastId > lastOfflineCheckId) {
+                 analyticsDao.updateState(SystemState("last_offline_check_id", newLastId.toString()))
             }
 
             // 5. Delegate to DailySummaryProcessor 
-            // We combine refined + offline for the stats update
-            val finalSessions = (refinedSessions + offlineSessions).sortedBy { it.startTime }
             dailyProcessor.updateDailyStats(finalSessions, PULSE_IGNORED_APPS)
         }
     }
