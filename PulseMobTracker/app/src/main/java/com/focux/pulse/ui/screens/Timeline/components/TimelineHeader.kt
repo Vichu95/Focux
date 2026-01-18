@@ -31,8 +31,7 @@ fun TimelineHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxWidth()
-            .height(PulseAppFocusScoreCardHeight), // Matching DateFocusHeader height
+            .height(PulseAppFocusScoreCardHeight), // Matching Summary Header Height (38dp)
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

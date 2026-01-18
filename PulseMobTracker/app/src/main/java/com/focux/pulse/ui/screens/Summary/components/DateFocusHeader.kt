@@ -47,6 +47,8 @@ fun DateFocusHeader(
         // Right: Focus Score (Frame 22)
         Box(
             modifier = Modifier
+                .width(PulseAppFocusScoreButtonWidth)
+                .height(PulseAppFocusScoreButtonHeight)
                 .background(PulseAppColorSurface, RoundedCornerShape(PulseAppCornerRadiusMedium))
                 .padding(horizontal = PulseAppPaddingSmall, vertical = PulseAppGapSmall),
             contentAlignment = Alignment.Center

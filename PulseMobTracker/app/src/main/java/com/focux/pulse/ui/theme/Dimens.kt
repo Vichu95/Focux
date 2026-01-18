@@ -93,10 +93,13 @@ val PulseAppWeeklyTrendTextThreshold = 50.dp
 val PulseAppTimelineHeaderHeight = 46.dp
 val PulseAppTimelineHeaderPaddingVertical = 4.dp
 val PulseAppTimelineDateSelectorWidth = 145.dp
-val PulseAppTimelineFilterButtonWidth = 97.dp
+val PulseAppTimelineFilterButtonWidth = 110.dp
 val PulseAppTimelineFilterButtonHeight = 28.dp
 val PulseAppTimelineFilterIconSize = 20.dp
 val PulseAppTimelineFilterIconWidth = 18.dp
+
+val PulseAppFocusScoreButtonWidth = 110.dp
+val PulseAppFocusScoreButtonHeight = 28.dp
 
 
 
