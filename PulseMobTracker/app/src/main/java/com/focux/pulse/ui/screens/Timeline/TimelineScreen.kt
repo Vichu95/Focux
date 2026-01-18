@@ -17,6 +17,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
@@ -37,6 +38,37 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
     
     val canGoNext = selectedDate.isBefore(today)
     val canGoPrev = earliestDate == null || selectedDate.isAfter(earliestDate)
+    
+    // State for Filter Sheet
+    var showFilterSheet by remember { mutableStateOf(false) }
+    
+    // Filter State
+    val filterState by viewModel.filterState.collectAsState()
+    val availableApps by viewModel.availableApps.collectAsState()
+    
+    if (showFilterSheet) {
+        androidx.compose.material3.ModalBottomSheet(
+            onDismissRequest = { showFilterSheet = false },
+            sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = PulseAppColorBackground
+        ) {
+            com.focux.pulse.ui.screens.Timeline.components.TimelineFilterSheet(
+                onDismiss = { showFilterSheet = false },
+                onApply = { timeRange, categories, apps, query ->
+                    viewModel.applyFilters(timeRange, categories, apps, query)
+                    showFilterSheet = false
+                },
+                onClear = {
+                    viewModel.clearFilters()
+                    // Don't close sheet, just clear UI? Or update VM and refresh UI.
+                    // The sheet tracks its own local state mostly initialized from VM.
+                    // Ideally we should pass current filter state to Sheet.
+                },
+                initialState = filterState, // We need to update generic Sheet to accept this
+                availableApps = availableApps
+            )
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -55,7 +87,7 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
                 onNextClick = { if (canGoNext) selectedDate = selectedDate.plusDays(1) },
                 canGoNext = canGoNext,
                 canGoPrev = canGoPrev,
-                onFilterClick = { /* TODO: Show Filter Menu */ }
+                onFilterClick = { showFilterSheet = true }
             )
             Spacer(modifier = Modifier.height(12.dp))
         }

@@ -1,4 +1,4 @@
-/* Timeline */
+/* Others */
 
 position: relative;
 width: 412px;
@@ -7,768 +7,34 @@ height: 917px;
 background: #191C1C;
 
 
-/* Frame Menu Bar */
+/* Frame Filter Timeline Submenu */
 
 /* Auto layout */
 display: flex;
-flex-direction: row;
-justify-content: space-between;
+flex-direction: column;
+justify-content: center;
 align-items: center;
-padding: 0px 16px 6px;
-gap: 49px;
+padding: 16px;
+gap: 12px;
 
 position: absolute;
 width: 412px;
-height: 70px;
+height: 460px;
 left: 0px;
 bottom: 0px;
 
 
 
-/* Frame 52 */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-padding: 8px 0px;
-gap: 8px;
-
-margin: 0 auto;
-width: 126.67px;
-height: 64px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-align-self: stretch;
-flex-grow: 1;
-
-
-/* iconamoon:screen-full-fill */
-
-width: 24px;
-height: 24px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 14.58%;
-right: 14.58%;
-top: 14.58%;
-bottom: 14.58%;
-
-background: #64B5F6;
-
-
-/* Summary */
-
-width: 89px;
-height: 16px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 12px;
-line-height: 16px;
-/* identical to box height */
-display: flex;
-align-items: center;
-text-align: center;
-
-color: #64B5F6;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Frame 50 */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-padding: 8px 0px;
-gap: 8px;
-
-margin: 0 auto;
-width: 126.67px;
-height: 64px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 1;
-
-
-/* mdi:chart-timeline-variant */
-
-width: 24px;
-height: 24px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 4.17%;
-right: 4.17%;
-top: 25%;
-bottom: 25%;
-
-background: #FFFFFF;
-
-
-/* Timeline */
-
-width: 101px;
-height: 16px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 12px;
-line-height: 16px;
-/* identical to box height */
-display: flex;
-align-items: center;
-text-align: center;
-
-color: #FFFFFF;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Frame 51 */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-padding: 8px 0px;
-gap: 8px;
-
-margin: 0 auto;
-width: 126.67px;
-height: 64px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 2;
-align-self: stretch;
-flex-grow: 1;
-
-
-/* fluent-mdl2:insights */
-
-width: 24px;
-height: 24px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 0%;
-right: 6.25%;
-top: 0%;
-bottom: 0%;
-
-background: #FFFFFF;
-
-
-/* Insights */
-
-width: 101px;
-height: 16px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 12px;
-line-height: 16px;
-/* identical to box height */
-text-align: center;
-
-color: #FFFFFF;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Frame Timeline */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-padding: 12px 0px;
-gap: 1px;
-
-position: absolute;
-width: 412px;
-height: 716px;
-left: calc(50% - 412px/2);
-top: 46px;
-
-
-
-/* Frame Timeline Wake Up */
+/* Frame Top Menu */
 
 /* Auto layout */
 display: flex;
 flex-direction: row;
 justify-content: space-between;
 align-items: center;
-padding: 0px 16px 0px 48px;
-gap: 93px;
-
-width: 412px;
-height: 124px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Frame 15 */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
 padding: 0px;
 
-margin: 0 auto;
-width: 19px;
-height: 124px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Line 1 */
-
-width: 62px;
-height: 0px;
-
-border: 1px dashed #FFFFFF;
-transform: rotate(90deg);
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-align-self: stretch;
-flex-grow: 1;
-
-
-/* Line 2 */
-
-width: 62px;
-height: 0px;
-
-border: 1px dashed #FFFFFF;
-transform: rotate(90deg);
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 1;
-
-
-/* Frame Deep Work Text */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: flex-start;
-padding: 0px 46px;
-gap: 3px;
-
-margin: 0 auto;
-width: 329px;
-height: 124px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 1;
-
-
-/* Frame 18 */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: center;
-align-items: center;
-padding: 0px;
-gap: 6px;
-
-width: 237px;
-height: 49px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* meteor-icons:sun */
-
-width: 48px;
-height: 49px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Group */
-
-position: absolute;
-width: 30px;
-height: 30.62px;
-left: calc(50% - 30px/2 + 0.5px);
-top: calc(50% - 30.62px/2 + 0.51px);
-
-
-
-/* Vector */
-
-position: absolute;
-left: 36.84%;
-right: 34.75%;
-top: 36.84%;
-bottom: 34.75%;
-
-border: 4px solid #64B5F6;
-
-
-/* Vector */
-
-position: absolute;
-left: 19.79%;
-right: 17.71%;
-top: 19.79%;
-bottom: 17.71%;
-
-border: 4px solid #64B5F6;
-
-
-/* 06:00 */
-
-width: 60px;
-height: 26px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 20px;
-line-height: 26px;
-text-align: center;
-
-color: #64B5F6;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* First Usage of Phone */
-
-width: 237px;
-height: 21px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 16px;
-line-height: 21px;
-text-align: center;
-
-color: #64B5F6;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Frame Timeline Application 1 */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: space-between;
-align-items: center;
-padding: 0px 48px;
-gap: 32px;
-
-width: 412px;
-height: 158px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Frame 20 */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-padding: 0px;
-
-margin: 0 auto;
-width: 20px;
-height: 158px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Rectangle 2 */
-
-width: 1px;
-height: 69px;
-
-background: #FFFFFF;
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 1;
-
-
-/* Ellipse 1 */
-
-width: 20px;
-height: 20px;
-
-background: #FFFFFF;
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Rectangle 3 */
-
-width: 1px;
-height: 69px;
-
-background: #FFFFFF;
-
-/* Inside auto layout */
-flex: none;
-order: 2;
-flex-grow: 1;
-
-
-/* Frame 17 */
-
-box-sizing: border-box;
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: flex-start;
-padding: 16px 12px;
-gap: 8px;
-
-margin: 0 auto;
-width: 251px;
-height: 128px;
-
-border: 2px solid #64B5F6;
-border-radius: 12px;
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Instagram */
-
-width: 130px;
-height: 32px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 700;
-font-size: 24px;
-line-height: 32px;
-/* identical to box height */
-
-color: #FFFFFF;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* 06:02 - 06:16 */
-
-width: 227px;
-height: 16px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 12px;
-line-height: 16px;
-/* identical to box height */
-
-color: #FFFFFF;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Frame 16 */
-
-box-sizing: border-box;
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: center;
-align-items: center;
-padding: 6px 12px;
-gap: 10px;
-
-width: 227px;
-height: 32px;
-
-border: 1px solid #64B5F6;
-border-radius: 12px;
-
-/* Inside auto layout */
-flex: none;
-order: 2;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Distracting */
-
-width: 80px;
-height: 16px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 12px;
-line-height: 16px;
-/* identical to box height */
-text-align: center;
-
-color: #64B5F6;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* material-symbols:arrow-drop-down */
-
-width: 20px;
-height: 20px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 29.17%;
-right: 29.17%;
-top: 41.67%;
-bottom: 37.5%;
-
-background: #64B5F6;
-
-
-/* Frame Timeline Deep Work */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: space-between;
-align-items: center;
-padding: 0px 16px 0px 48px;
-gap: 93px;
-
-width: 412px;
-height: 124px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 2;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Frame 15 */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-padding: 0px;
-
-margin: 0 auto;
-width: 19px;
-height: 124px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Line 1 */
-
-width: 62px;
-height: 0px;
-
-border: 1px dashed #FFFFFF;
-transform: rotate(90deg);
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-align-self: stretch;
-flex-grow: 1;
-
-
-/* Line 2 */
-
-width: 62px;
-height: 0px;
-
-border: 1px dashed #FFFFFF;
-transform: rotate(90deg);
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 1;
-
-
-/* Frame Deep Work Text */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: flex-start;
-padding: 0px 46px;
-gap: 3px;
-
-margin: 0 auto;
-width: 329px;
-height: 124px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 1;
-
-
-/* Frame 18 */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: center;
-align-items: center;
-padding: 0px;
-gap: 6px;
-
-width: 237px;
+width: 380px;
 height: 26px;
 
 
@@ -779,595 +45,31 @@ align-self: stretch;
 flex-grow: 0;
 
 
-/* Vector */
-
-width: 26px;
-height: 21px;
-
-background: #64B5F6;
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* 45m */
-
-width: 36px;
-height: 26px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 20px;
-line-height: 26px;
-text-align: center;
-
-color: #64B5F6;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Deep Work */
-
-width: 237px;
-height: 21px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 16px;
-line-height: 21px;
-text-align: center;
-
-color: #64B5F6;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Frame Timeline Application 2 */
+/* Frame Fitler */
 
 /* Auto layout */
 display: flex;
 flex-direction: row;
-justify-content: space-between;
-align-items: center;
-padding: 0px 48px;
-gap: 32px;
-
-width: 412px;
-height: 158px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 3;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Frame 20 */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
 justify-content: center;
 align-items: center;
 padding: 0px;
-
-margin: 0 auto;
-width: 20px;
-height: 158px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Rectangle 2 */
-
-width: 1px;
-height: 69px;
-
-background: #FFFFFF;
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 1;
-
-
-/* Ellipse 1 */
-
-width: 20px;
-height: 20px;
-
-background: #FFFFFF;
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Rectangle 3 */
-
-width: 1px;
-height: 69px;
-
-background: #FFFFFF;
-
-/* Inside auto layout */
-flex: none;
-order: 2;
-flex-grow: 1;
-
-
-/* Frame 17 */
-
-box-sizing: border-box;
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: flex-start;
-padding: 16px 12px;
 gap: 8px;
 
 margin: 0 auto;
-width: 251px;
-height: 128px;
-
-border: 2px solid #64B5F6;
-border-radius: 12px;
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Gmail */
-
-width: 130px;
-height: 32px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 700;
-font-size: 24px;
-line-height: 32px;
-/* identical to box height */
-
-color: #FFFFFF;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* 07:01 - 15:05 */
-
-width: 227px;
-height: 16px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 12px;
-line-height: 16px;
-/* identical to box height */
-
-color: #FFFFFF;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Frame 17 */
-
-box-sizing: border-box;
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: center;
-align-items: center;
-padding: 6px 12px;
-gap: 10px;
-
-width: 227px;
-height: 32px;
-
-border: 1px solid #64B5F6;
-border-radius: 12px;
-
-/* Inside auto layout */
-flex: none;
-order: 2;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Productive */
-
-width: 72px;
-height: 16px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 12px;
-line-height: 16px;
-/* identical to box height */
-text-align: center;
-
-color: #64B5F6;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* material-symbols:arrow-drop-down */
-
-width: 20px;
-height: 20px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 29.17%;
-right: 29.17%;
-top: 41.67%;
-bottom: 37.5%;
-
-background: #64B5F6;
-
-
-/* Frame Timeline Wake Up */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: space-between;
-align-items: center;
-padding: 0px 16px 0px 48px;
-gap: 93px;
-
-width: 412px;
-height: 124px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 4;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Frame 15 */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-padding: 0px;
-
-margin: 0 auto;
-width: 19px;
-height: 124px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Line 1 */
-
-width: 62px;
-height: 0px;
-
-border: 1px dashed #FFFFFF;
-transform: rotate(90deg);
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-align-self: stretch;
-flex-grow: 1;
-
-
-/* Line 2 */
-
-width: 62px;
-height: 0px;
-
-border: 1px dashed #FFFFFF;
-transform: rotate(90deg);
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 1;
-
-
-/* Frame Deep Work Text */
-
-/* Auto layout */
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: flex-start;
-padding: 0px 46px;
-gap: 3px;
-
-margin: 0 auto;
-width: 329px;
-height: 124px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 1;
-
-
-/* Frame 18 */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: center;
-align-items: center;
-padding: 0px;
-gap: 6px;
-
-width: 237px;
-height: 30px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* mdi:weather-night */
-
-width: 30px;
-height: 30px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 8.36%;
-right: 11.46%;
-top: 4.17%;
-bottom: 8.26%;
-
-background: #64B5F6;
-
-
-/* 23:50 */
-
-width: 60px;
+width: 356px;
 height: 26px;
 
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 20px;
-line-height: 26px;
-text-align: center;
-
-color: #64B5F6;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* Last Usage of Phone */
-
-width: 237px;
-height: 21px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 16px;
-line-height: 21px;
-text-align: center;
-
-color: #64B5F6;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-align-self: stretch;
-flex-grow: 0;
-
-
-/* Frame Date Filter */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: space-between;
-align-items: center;
-padding: 4px 16px;
-gap: 87px;
-
-position: absolute;
-width: 412px;
-height: 46px;
-left: 0px;
-top: 0px;
-
-
-
-/* Frame Summary Date */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: center;
-align-items: center;
-padding: 0px;
-gap: 11px;
-
-margin: 0 auto;
-width: 145px;
-height: 38px;
-
 
 /* Inside auto layout */
 flex: none;
 order: 0;
-flex-grow: 0;
-
-
-/* weui:arrow-filled */
-
-width: 18px;
-height: 36px;
-
-transform: rotate(180deg);
-
-/* Inside auto layout */
-flex: none;
-order: 0;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 12.92%;
-right: 25.72%;
-top: 23.47%;
-bottom: 23.5%;
-
-background: #FFFFFF;
-transform: rotate(180deg);
-
-
-/* 14 Dec */
-
-width: 87px;
-height: 32px;
-
-font-family: 'JetBrains Mono';
-font-style: normal;
-font-weight: 400;
-font-size: 24px;
-line-height: 32px;
-/* identical to box height */
-text-align: center;
-
-color: #FFFFFF;
-
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
-
-
-/* weui:arrow-filled */
-
-width: 18px;
-height: 36px;
-
-
-/* Inside auto layout */
-flex: none;
-order: 2;
-flex-grow: 0;
-
-
-/* Vector */
-
-position: absolute;
-left: 25.72%;
-right: 12.92%;
-top: 23.5%;
-bottom: 23.47%;
-
-background: #FFFFFF;
-
-
-/* Frame 22 */
-
-/* Auto layout */
-display: flex;
-flex-direction: row;
-justify-content: center;
-align-items: center;
-padding: 4px 8px;
-gap: 8px;
-
-margin: 0 auto;
-width: 97px;
-height: 28px;
-
-background: #2B4555;
-border-radius: 12px;
-
-/* Inside auto layout */
-flex: none;
-order: 1;
-flex-grow: 0;
+flex-grow: 1;
 
 
 /* mi:filter */
 
-width: 20px;
-height: 20px;
+width: 24px;
+height: 24px;
 
 
 /* Inside auto layout */
@@ -1389,15 +91,326 @@ background: #64B5F6;
 
 /* Filter */
 
-width: 54px;
+width: 324px;
+height: 26px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 700;
+font-size: 20px;
+line-height: 26px;
+display: flex;
+align-items: center;
+
+color: #64B5F6;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 1;
+
+
+/* mingcute:close-fill */
+
+margin: 0 auto;
+width: 24px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Group */
+
+position: absolute;
+left: 17.16%;
+right: 17.23%;
+top: 17.16%;
+bottom: 0.78%;
+
+
+
+/* Vector */
+
+position: absolute;
+left: 50.32%;
+right: 46.2%;
+top: 96.43%;
+bottom: 0.78%;
+
+
+
+/* Vector */
+
+position: absolute;
+left: 17.16%;
+right: 17.23%;
+top: 17.16%;
+bottom: 17.16%;
+
+background: #64B5F6;
+
+
+/* Frame Time Slot Filter */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 4px;
+
+width: 380px;
+height: 69px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Time Slot */
+
+width: 380px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 700;
+font-size: 16px;
+line-height: 21px;
+display: flex;
+align-items: center;
+
+color: #64B5F6;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame Slider */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 0px;
+
+width: 380px;
+height: 20px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Rectangle 5 */
+
+margin: 0 auto;
+width: 113.33px;
+height: 4px;
+
+background: #2B4555;
+border-radius: 4px 0px 0px 4px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 1;
+
+
+/* Ellipse 2 */
+
+margin: 0 auto;
+width: 20px;
+height: 20px;
+
+background: #64B5F6;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Rectangle 6 */
+
+margin: 0 auto;
+width: 113.33px;
+height: 4px;
+
+background: #64B5F6;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 1;
+
+
+/* Ellipse 3 */
+
+margin: 0 auto;
+width: 20px;
+height: 20px;
+
+background: #64B5F6;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Rectangle 7 */
+
+margin: 0 auto;
+width: 113.33px;
+height: 4px;
+
+background: #2B4555;
+border-radius: 0px 4px 4px 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+flex-grow: 1;
+
+
+/* 08:30 - 15:00 */
+
+width: 380px;
 height: 20px;
 
 font-family: 'JetBrains Mono';
 font-style: normal;
-font-weight: 400;
+font-weight: 700;
 font-size: 15px;
 line-height: 20px;
 /* identical to box height */
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame App Category Filter */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 8px;
+
+width: 380px;
+height: 53px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* App Category */
+
+width: 380px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 700;
+font-size: 16px;
+line-height: 21px;
+display: flex;
+align-items: center;
+
+color: #64B5F6;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame App Categories */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 8px;
+
+width: 380px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame 24 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 4px 8px;
+gap: 8px;
+
+width: 121.33px;
+height: 24px;
+
+background: #2B4555;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 1;
+
+
+/* Productive */
+
+width: 72px;
+height: 16px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 12px;
+line-height: 16px;
+/* identical to box height */
+display: flex;
+align-items: center;
 text-align: center;
 
 color: #FFFFFF;
@@ -1405,5 +418,855 @@ color: #FFFFFF;
 
 /* Inside auto layout */
 flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Frame 23 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 4px 8px;
+gap: 8px;
+
+width: 121.33px;
+height: 24px;
+
+background: #64B5F6;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
 order: 1;
+flex-grow: 1;
+
+
+/* Distracting */
+
+width: 80px;
+height: 16px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 12px;
+line-height: 16px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Frame 25 */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 4px 0px;
+gap: 8px;
+
+width: 121.33px;
+height: 24px;
+
+background: #2B4555;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 1;
+
+
+/* Neutral */
+
+width: 51px;
+height: 16px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 12px;
+line-height: 16px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Frame Specific Apps Filter */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 8px;
+
+width: 380px;
+height: 195px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Specific Apps */
+
+width: 380px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 700;
+font-size: 16px;
+line-height: 21px;
+
+color: #64B5F6;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame Search Apps Padding */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 12px;
+gap: 10px;
+
+width: 380px;
+height: 28px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame Search Apps */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 4px 8px;
+gap: 8px;
+
+width: 356px;
+height: 28px;
+
+background: #2B4555;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* healthicons:magnifying-glass */
+
+width: 20px;
+height: 20px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Group */
+
+position: absolute;
+left: 12.5%;
+right: 12.5%;
+top: 12.5%;
+bottom: 12.5%;
+
+
+
+/* Vector */
+
+position: absolute;
+left: 26.85%;
+right: 48.03%;
+top: 22.52%;
+bottom: 69.5%;
+
+background: #FFFFFF;
+
+
+/* Vector */
+
+position: absolute;
+left: 12.5%;
+right: 19.46%;
+top: 12.5%;
+bottom: 19.46%;
+
+background: #FFFFFF;
+
+
+/* Vector */
+
+position: absolute;
+left: 74.85%;
+right: 12.5%;
+top: 74.85%;
+bottom: 12.5%;
+
+background: #FFFFFF;
+
+
+/* Search */
+
+width: 312px;
+height: 20px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 12px;
+line-height: 16px;
+display: flex;
+align-items: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 1;
+
+
+/* Frame Apps List */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: flex-start;
+padding: 0px 12px;
+gap: 8px;
+
+width: 380px;
+height: 130px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame App List Row */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 0px;
+gap: 8px;
+
+width: 356px;
+height: 36px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame App Detail */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 8px;
+
+margin: 0 auto;
+width: 310px;
+height: 36px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* skill-icons:instagram */
+
+width: 24px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Group */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Vector */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+background: radial-gradient(92.18% 99.11% at 26.56% 107.7%, #FFDD55 0%, #FFDD55 10%, #FF543E 50%, #C837AB 100%);
+
+
+/* Vector */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+background: radial-gradient(179.06% 43.44% at -16.75% 7.2%, #3771C8 0%, #3771C8 12.8%, rgba(102, 0, 255, 0) 100%) /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */;
+
+
+/* Vector */
+
+position: absolute;
+left: 10.94%;
+right: 10.94%;
+top: 10.94%;
+bottom: 10.94%;
+
+background: #FFFFFF;
+
+
+/* Instagram Test New App Two Line (5x) */
+
+width: 227px;
+height: 36px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 14px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* bxs:checkbox */
+
+margin: 0 auto;
+width: 24px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Vector */
+
+position: absolute;
+left: 20.83%;
+right: 20.83%;
+top: 20.83%;
+bottom: 20.83%;
+
+background: #64B5F6;
+
+
+/* Frame App List Row */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 0px;
+gap: 8px;
+
+width: 356px;
+height: 54px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame App Detail */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 8px;
+
+margin: 0 auto;
+width: 310px;
+height: 54px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* skill-icons:instagram */
+
+width: 24px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Group */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Vector */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+background: radial-gradient(92.18% 99.11% at 26.56% 107.7%, #FFDD55 0%, #FFDD55 10%, #FF543E 50%, #C837AB 100%);
+
+
+/* Vector */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+background: radial-gradient(179.06% 43.44% at -16.75% 7.2%, #3771C8 0%, #3771C8 12.8%, rgba(102, 0, 255, 0) 100%) /* warning: gradient uses a rotation that is not supported by CSS and may not behave as expected */;
+
+
+/* Vector */
+
+position: absolute;
+left: 10.94%;
+right: 10.94%;
+top: 10.94%;
+bottom: 10.94%;
+
+background: #FFFFFF;
+
+
+/* Another App Long Instagram Test New App (5x) */
+
+width: 227px;
+height: 54px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 14px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* bx:checkbox */
+
+margin: 0 auto;
+width: 24px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Vector */
+
+position: absolute;
+left: 20.83%;
+right: 20.83%;
+top: 20.83%;
+bottom: 20.83%;
+
+background: #64B5F6;
+
+
+/* Frame App List Row */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 0px;
+gap: 8px;
+
+width: 356px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame App Detail */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 8px;
+
+margin: 0 auto;
+width: 310px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* skill-icons:gmail-light */
+
+width: 24px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Group */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+
+
+/* Vector */
+
+position: absolute;
+left: 0%;
+right: 0%;
+top: 0%;
+bottom: 0%;
+
+background: #F4F2ED;
+
+
+/* Vector */
+
+position: absolute;
+left: 10.94%;
+right: 71.31%;
+top: 35.81%;
+bottom: 20.69%;
+
+background: #4285F4;
+
+
+/* Vector */
+
+position: absolute;
+left: 71.31%;
+right: 10.94%;
+top: 35.81%;
+bottom: 20.69%;
+
+background: #34A853;
+
+
+/* Vector */
+
+position: absolute;
+left: 71.31%;
+right: 10.94%;
+top: 20.7%;
+bottom: 50.87%;
+
+background: #FBBC04;
+
+
+/* Vector */
+
+position: absolute;
+left: 28.69%;
+right: 28.69%;
+top: 26.04%;
+bottom: 34.89%;
+
+background: #EA4335;
+
+
+/* Vector */
+
+position: absolute;
+left: 10.94%;
+right: 71.31%;
+top: 20.7%;
+bottom: 50.87%;
+
+background: #C5221F;
+
+
+/* Another App Long Instagram Test New App (5x) */
+
+width: 227px;
+height: 24px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 400;
+font-size: 14px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* bx:checkbox */
+
+margin: 0 auto;
+width: 24px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Vector */
+
+position: absolute;
+left: 20.83%;
+right: 20.83%;
+top: 20.83%;
+bottom: 20.83%;
+
+background: #64B5F6;
+
+
+/* Frame Bottom Menu */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 0px;
+gap: 98px;
+
+width: 380px;
+height: 37px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Frame Clear Filters */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 8px 12px;
+gap: 9px;
+
+margin: 0 auto;
+width: 170px;
+height: 37px;
+
+border: 1px solid #64B5F6;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Clear Filters */
+
+margin: 0 auto;
+width: 125px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 700;
+font-size: 16px;
+line-height: 21px;
+text-align: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Frame Apply */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 8px 12px;
+gap: 9px;
+
+margin: 0 auto;
+width: 170px;
+height: 37px;
+
+background: #64B5F6;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Apply */
+
+margin: 0 auto;
+width: 48px;
+height: 21px;
+
+font-family: 'JetBrains Mono';
+font-style: normal;
+font-weight: 700;
+font-size: 16px;
+line-height: 21px;
+text-align: center;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
 flex-grow: 0;

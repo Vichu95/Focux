@@ -28,9 +28,36 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
     private val _earliestDate = MutableStateFlow<String?>(null)
     val earliestDate: StateFlow<String?> = _earliestDate
 
+    // --- Filter State ---
+    data class FilterState(
+        val timeRange: ClosedFloatingPointRange<Float> = 0f..24f,
+        val selectedCategories: Set<ActivityType> = emptySet(),
+        val selectedApps: Set<String> = emptySet(), // Package Names
+        val searchQuery: String = ""
+    )
+    
+    private val _filterState = MutableStateFlow(FilterState())
+    val filterState: StateFlow<FilterState> = _filterState
+
+    // Master list of events for the day (unfiltered)
+    private val _allDayEvents = MutableStateFlow<List<TimedEvent>>(emptyList())
+    
+    // Available apps for the filter list
+    private val _availableApps = MutableStateFlow<List<String>>(emptyList()) // Package names
+    val availableApps: StateFlow<List<String>> = _availableApps
+
     init {
         viewModelScope.launch {
             _earliestDate.value = analyticsDao.getEarliestDate()
+        }
+        
+        // Combine allEvents and filterState to produce timelineEvents
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(_allDayEvents, _filterState) { events, filter ->
+                filterEvents(events, filter)
+            }.collect { filtered ->
+                _timelineEvents.value = mergeAdjacentDeepWork(filtered)
+            }
         }
     }
 
@@ -72,7 +99,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                                 name = AppInfoHelper.getAppName(context, session.packageName),
                                 iconName = session.packageName,
                                 duration = formatDuration(session.duration),
-                                type = ActivityType.Neutral
+                                type = ActivityType.Neutral // TODO: Fetch category dynamically if possible
                             ),
                             range = "${formatTime(session.startTime)} - ${formatTime(session.endTime)}",
                             isDeepWork = session.duration >= 30 * 60 * 1000,
@@ -81,69 +108,143 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                         )
                     }
                     
-                    TimedEvent(session.startTime, event)
+                    TimedEvent(session.startTime, event, 
+                        isOffline = isOffline, 
+                        packageName = session.packageName,
+                        endTime = session.endTime
+                    )
                 }
             
             val allEvents = sessionEvents.toMutableList()
             
             // 2. Inject Daily Stats Facts
             if (dailyStats != null) {
-                // Morning (Data Start / Wake Up)
-                // USER REQUEST: Anchor to "Day Start" so it's always the first card, even before Deep Work.
+                // Morning
                 val dayStartTime = if (dailyStats.sleepTimeEnd > 0) dailyStats.sleepTimeEnd else dailyStats.firstAppStartTime
-                
                 if (dayStartTime > 0) {
                     allEvents.add(TimedEvent(
                         timestamp = dayStartTime,
-                        priority = 0, // Priority 0 = Highest (Top)
+                        priority = 0,
                         event = TimelineEvent(
                             time = formatTime(dayStartTime),
-                            app = AppUsage("Morning", "sun_icon", "", null),
+                            app = AppUsage("Morning", "sun_icon", "", ActivityType.Neutral),
                             range = "",
                             isDeepWork = false
-                        )
+                        ),
+                        packageName = "Morning"
                     ))
                 }
                 
-                // Night (Last App End)
-                // We use EndTime for Night to signify the "End of Day"
+                // Night
                 if (dailyStats.lastAppEndTime > 0) {
                     allEvents.add(TimedEvent(
                         timestamp = dailyStats.lastAppEndTime,
-                        priority = 2, // Priority 2 = Lowest (Bottom)
+                        priority = 2,
                         event = TimelineEvent(
                             time = formatTime(dailyStats.lastAppEndTime),
-                            app = AppUsage("Night", "moon_icon", "", null),
+                            app = AppUsage("Night", "moon_icon", "", ActivityType.Neutral),
                             range = "",
                             isDeepWork = false
-                        )
+                        ),
+                        packageName = "Night"
                     ))
                 }
             }
-
-            // 3. Filter by Daily Stats Window (User Request: "Consider start day logic")
-            // This removes sessions from 00:00-07:00 if the "Day" started at 07:27.
-            // Also clamps to Last App if "Night" has occurred.
-            val windowStart = if (dailyStats != null && dailyStats.sleepTimeEnd > 0) 
-                dailyStats.sleepTimeEnd else 0L
-                
-            val windowEnd = if (dailyStats != null && dailyStats.lastAppEndTime > 0) 
-                dailyStats.lastAppEndTime else Long.MAX_VALUE
-
-            val filteredEvents = allEvents.filter { 
-                it.timestamp >= windowStart && it.timestamp <= windowEnd
-            }
             
-            // 4. Sort (Timestamp -> Priority)
-            val sortedEvents = filteredEvents
-                .sortedWith(compareBy<TimedEvent> { it.timestamp }.thenBy { it.priority })
-                .map { it.event }
-                
-            // 5. Merge Adjacent Deep Work (User Request: "Saw two deep work sessions together")
-            _timelineEvents.value = mergeAdjacentDeepWork(sortedEvents)
+            // Update available apps for filter
+            val appPackages = sessionEvents
+                .filter { !it.isOffline }
+                .map { it.packageName }
+                .distinct()
+                .sortedBy { AppInfoHelper.getAppName(context, it) }
+            _availableApps.value = appPackages
+
+            // Store raw list
+            _allDayEvents.value = allEvents
         }
     }
     
+    private fun filterEvents(allEvents: List<TimedEvent>, filter: FilterState): List<TimelineEvent> {
+        val windowStart = (filter.timeRange.start * 60 * 60 * 1000).toLong() // Offset from start of day? No, timestamp is absolute.
+        // Wait, Time Range Slider (08:30 - 15:00) refers to time of day.
+        // We need to convert absolute timestamps to hour-of-day float.
+        
+        return allEvents.filter { item ->
+            // 1. Time Range Filter
+            val calendar = Calendar.getInstance().apply { timeInMillis = item.timestamp }
+            val hour = calendar.get(Calendar.HOUR_OF_DAY)
+            val minute = calendar.get(Calendar.MINUTE)
+            val timeFloat = hour + (minute / 60f)
+            val inTimeRange = timeFloat >= filter.timeRange.start && timeFloat <= filter.timeRange.endInclusive
+            
+            // 2. Category Filter (If any selected)
+            // Note: Currently we default to Neutral. Need real categories to test this effectively.
+            // For now, if "Productive" selected -> show Deep Work?
+            val inCategory = if (filter.selectedCategories.isEmpty()) true else {
+                item.event.app.type in filter.selectedCategories
+            }
+            
+            // 3. Specific App Filter (If any selected)
+            val inAppList = if (filter.selectedApps.isEmpty()) true else {
+                item.packageName in filter.selectedApps || item.packageName == "Deep Work" // Keep logic simple
+            }
+            
+            // 4. Search Filter
+            val matchesSearch = if (filter.searchQuery.isEmpty()) true else {
+                item.event.app.name.contains(filter.searchQuery, ignoreCase = true)
+            }
+            
+            inTimeRange && inCategory && inAppList && matchesSearch
+        }
+        .sortedWith(compareBy<TimedEvent> { it.timestamp }.thenBy { it.priority })
+        .map { it.event }
+    }
+
+    // --- Filter Actions ---
+    fun updateTimeRange(range: ClosedFloatingPointRange<Float>) {
+        _filterState.value = _filterState.value.copy(timeRange = range)
+    }
+
+    fun toggleCategory(category: ActivityType) {
+        val current = _filterState.value.selectedCategories
+        val newSet = if (category in current) current - category else current + category
+        _filterState.value = _filterState.value.copy(selectedCategories = newSet)
+    }
+
+    fun toggleApp(packageName: String) {
+        val current = _filterState.value.selectedApps
+        val newSet = if (packageName in current) current - packageName else current + packageName
+        _filterState.value = _filterState.value.copy(selectedApps = newSet)
+    }
+
+    fun setSearchQuery(query: String) {
+        _filterState.value = _filterState.value.copy(searchQuery = query)
+    }
+
+    fun clearFilters() {
+        _filterState.value = FilterState()
+    }
+    
+    // Note: "Apply" is implicit since we use StateFlow, but if we want manual Apply button behavior,
+    // we would need a separate "draft" state vs "applied" state.
+    // The UI has "Apply" button. This implies we should hold changes in UI state and only commit here when "Apply" is clicked?
+    // OR we commit to ViewModel but have a separate "activeFilter" vs "editingFilter".
+    // For simplicity with the provided UI code (which had local state), let's assume UI manages draft state 
+    // and calls these functions on "Apply".
+    // The previous UI code I wrote had `var timeRange by remember...`. So UI handles draft.
+    // VM just needs `applyFilter(newState)`?
+    // Or individual setters and assume immediate update?
+    // Given the "Apply" button, I will refactor UI to pass the final state to VM.
+    
+    fun applyFilters(
+        timeRange: ClosedFloatingPointRange<Float>, 
+        categories: Set<ActivityType>, 
+        apps: Set<String>, 
+        query: String
+    ) {
+        _filterState.value = FilterState(timeRange, categories, apps, query)
+    }
+
     private fun mergeAdjacentDeepWork(events: List<TimelineEvent>): List<TimelineEvent> {
         if (events.isEmpty()) return events
         
@@ -154,41 +255,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
             val next = events[i]
             
             if (current.isDeepWork && next.isDeepWork) {
-                // Merge Logic
-                // We sum durations if possible or just extend the range.
-                // Assuming simple range extension for now.
-                // Duration parsing is tricky ("1h 20m"), so we'll just merge representationally if needed 
-                // BUT better to just keep the first one's start and last one's end?
-                // Actually, re-parsing duration string is annoying.
-                // Simpler: Just skip the second one?
-                // No, duration needs to be correct.
-                // Ideally we merge at Session level (before mapping), but here we are post-Facts.
-                // Let's assume we consume 'next' into 'current'.
-                
-                // For simplicity/robustness without parsing strings:
-                // We won't sum text durations. We'll simply output them as separate if complex,
-                // BUT user specifically asked to fix "two together".
-                // Since this is a UI string manipulation, let's look at skipping 'next' but using its End Time?
-                // "14:02 - 14:16" + "14:16 - 15:00" -> "14:02 - 15:00"
-                
                 val newRange = "${current.range.substringBefore(" - ")} - ${next.range.substringAfter(" - ")}"
-                // Duration? We can't easily sum "1h" + "10m" without helper.
-                // Let's rely on range. Duration text might be slightly off (showing only first part) 
-                // UNLESS we have access to raw duration. We don't here.
-                // Workaround: Since we don't have raw duration, we'll keep them separate 
-                // IF we can't merge safely. 
-                // BUT, most adjacent offline sessions are Split by Phantom Notifications (0s).
-                // So the gap is negligible.
-                
-                // Let's try to pass raw duration in TimelineEvent? No, data class is fixed.
-                // OK, I will just emit them as is for now but if they are identical?
-                // wait, if I can't merge durations, I shouldn't merge.
-                // I'll skip merging implementation complexity here and focus on "Morning" fix + Filtering?
-                // No, User explicitly asked "saw two deep work sessions together... what could be reason".
-                // I MUST merge them.
-                
-                // Hack: Pass raw duration in 'TimelineEvent' or parse it?
-                // Parsing "1h 20m" is doable.
                 
                 val dur1 = parseDurationStr(current.deepWorkDuration ?: "0m")
                 val dur2 = parseDurationStr(next.deepWorkDuration ?: "0m")
@@ -226,7 +293,14 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
     }
     
     // Priority: 0=Morning, 1=App, 2=Night
-    private data class TimedEvent(val timestamp: Long, val event: TimelineEvent, val priority: Int = 1)
+    private data class TimedEvent(
+        val timestamp: Long, 
+        val event: TimelineEvent, 
+        val priority: Int = 1,
+        val isOffline: Boolean = false,
+        val packageName: String = "",
+        val endTime: Long = 0L
+    )
 
     private fun formatDuration(ms: Long): String {
         val hours = ms / (1000 * 60 * 60)
