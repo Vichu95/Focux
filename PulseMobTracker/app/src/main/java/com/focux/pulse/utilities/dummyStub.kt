@@ -1,16 +1,5 @@
 package com.focux.pulse.utilities
 
-// Base Types
-enum class ActivityType { Productive, Neutral, Distracting }
-
-// Shared/Common
-data class AppUsage(
-    val name: String,
-    val iconName: String, // Matches file name without .svg if using R.drawable logic, but here we might just map it manually
-    val duration: String,
-    val type: ActivityType? = null
-)
-
 // Feature: Summary
 data class PhoneActivityData(
     val totalTime: String,
@@ -38,14 +27,6 @@ data class FirstLastAppsData(
     val nightApp: AppUsage
 )
 
-// Feature: Timeline
-data class TimelineEvent(
-    val time: String,
-    val app: AppUsage,
-    val range: String,
-    val isDeepWork: Boolean = false,
-    val deepWorkDuration: String? = null
-)
 
 // Feature: Insights
 data class WeeklyTrendItem(
