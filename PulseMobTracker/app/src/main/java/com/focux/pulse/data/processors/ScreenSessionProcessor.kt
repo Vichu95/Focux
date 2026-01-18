@@ -49,7 +49,7 @@ class ScreenSessionProcessor(
                 // 1. Create Point Session for Notification
                 // "For timing of the notification, just use start time as notification time, and end time as same."
                 val notifSession = AppSession(
-                    packageName = event.packageName,
+                    packageName = event.packageName ?: "notification",
                     startTime = event.timestamp,
                     endTime = event.timestamp,
                     duration = 0,

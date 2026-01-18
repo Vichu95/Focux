@@ -64,6 +64,9 @@ interface AnalyticsDao {
     @Query("SELECT id FROM app_sessions ORDER BY id DESC LIMIT 1")
     suspend fun getLastRowId(): Long?
 
+    @Query("SELECT * FROM raw_data WHERE eventLabel IN ('SCREEN_ON', 'SCREEN_OFF') AND timestamp <= :timestamp ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLastScreenStateEvent(timestamp: Long): RawData?
+
     // --- Daily Stats ---
 
     /**

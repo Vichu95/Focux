@@ -176,7 +176,7 @@ class SessionProcessor(
      * Reclassifies App Sessions that occur without a corresponding Screen Session as NOTIFICATIONS.
      * This prevents background app activity (e.g. Wellbeing, Launcher updates) from breaking offline streaks.
      */
-    private fun cleanPhantomSessions(sessions: List<AppSession>): List<AppSession> {
+    private suspend fun cleanPhantomSessions(sessions: List<AppSession>): List<AppSession> {
         // Identify "Interactive" windows (Screen On + Unlocked or Glanced)
         val interactiveSessions = sessions.filter {
             it.type == PulseEvents.SESSION_GLANCE ||
@@ -184,22 +184,35 @@ class SessionProcessor(
             it.type == PulseEvents.SESSION_UNLOCK_APP
         }
 
-        return sessions.map { session ->
+        val result = mutableListOf<AppSession>()
+        
+        for (session in sessions) {
             if (session.type == PulseEvents.SESSION_APP) {
                 // Check overlap: StartA < EndB && EndA > StartB
                 val hasOverlap = interactiveSessions.any { screen ->
                     session.startTime < screen.endTime && session.endTime > screen.startTime
                 }
                 
-                if (!hasOverlap) {
-                    Log.d(TAG, "Phantom App Detected: ${session.packageName} at ${session.startTimeStr}. Reclassifying as NOTIFICATION.")
-                    session.copy(type = PulseEvents.SESSION_NOTIFICATION)
+                if (hasOverlap) {
+                    result.add(session)
                 } else {
-                    session
+                    // Fallback: Check DB for Screen State at session start
+                    val lastScreenEvent = analyticsDao.getLastScreenStateEvent(session.startTime)
+                    val isScreenOn = lastScreenEvent?.eventLabel == PulseEvents.SCREEN_ON
+                    
+                    if (isScreenOn) {
+                        // Valid Session (part of ongoing screen session not yet in this batch)
+                        result.add(session)
+                    } else {
+                        Log.d(TAG, "Phantom App Detected: ${session.packageName} at ${session.startTimeStr}. Reclassifying as NOTIFICATION.")
+                        result.add(session.copy(type = PulseEvents.SESSION_NOTIFICATION))
+                    }
                 }
             } else {
-                session
+                result.add(session)
             }
         }
+        
+        return result
     }
 }
