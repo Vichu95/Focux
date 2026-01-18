@@ -22,6 +22,11 @@ import com.focux.pulse.ui.theme.*
 import com.focux.pulse.utilities.ActivityType
 import kotlin.math.roundToInt
 
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Velocity
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimelineFilterSheet(
@@ -38,6 +43,21 @@ fun TimelineFilterSheet(
     var searchQuery by remember { mutableStateOf(initialState.searchQuery) }
     var selectedApps by remember { mutableStateOf(initialState.selectedApps) }
     
+    // Prevent accidentally dragging the sheet down when scrolling the list
+    val connection = remember {
+        object : NestedScrollConnection {
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: androidx.compose.ui.input.nestedscroll.NestedScrollSource
+            ): Offset {
+                // Consume all leftover scroll events (overscroll) so the ModalBottomSheet
+                // doesn't receive them and trigger a dismissal drag.
+                return available
+            }
+        }
+    }
+    
     // Filter available apps by search query
     val filteredApps = remember(searchQuery, availableApps) {
         if (searchQuery.isEmpty()) availableApps else availableApps.filter { 
@@ -50,6 +70,7 @@ fun TimelineFilterSheet(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .nestedScroll(connection)
             .background(PulseAppColorBackground)
             .padding(PulseAppPaddingMedium)
             .heightIn(max = 600.dp) 

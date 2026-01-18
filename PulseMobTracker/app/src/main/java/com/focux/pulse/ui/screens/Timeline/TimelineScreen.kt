@@ -49,7 +49,9 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
     if (showFilterSheet) {
         androidx.compose.material3.ModalBottomSheet(
             onDismissRequest = { showFilterSheet = false },
-            sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            sheetState = androidx.compose.material3.rememberModalBottomSheetState(
+                skipPartiallyExpanded = true
+            ),
             containerColor = PulseAppColorBackground
         ) {
             com.focux.pulse.ui.screens.Timeline.components.TimelineFilterSheet(
@@ -59,10 +61,8 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
                     showFilterSheet = false
                 },
                 onClear = {
-                    viewModel.clearFilters()
-                    // Don't close sheet, just clear UI? Or update VM and refresh UI.
-                    // The sheet tracks its own local state mostly initialized from VM.
-                    // Ideally we should pass current filter state to Sheet.
+                    // Do nothing here, sheet handles local UI reset.
+                    // Apply button will commit these changes.
                 },
                 initialState = filterState, // We need to update generic Sheet to accept this
                 availableApps = availableApps
