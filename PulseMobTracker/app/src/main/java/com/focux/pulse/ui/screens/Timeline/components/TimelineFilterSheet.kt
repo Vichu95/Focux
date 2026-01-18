@@ -380,9 +380,10 @@ fun TimelineFilterSheet(
                     // We need to display the icon. Using AndroidView for Drawable
                     androidx.compose.ui.viewinterop.AndroidView(
                         factory = { ctx ->
-                            android.widget.ImageView(ctx).apply {
-                                setImageDrawable(com.focux.pulse.utilities.AppInfoHelper.getAppIcon(ctx, pkg))
-                            }
+                            android.widget.ImageView(ctx)
+                        },
+                        update = { view ->
+                             view.setImageDrawable(com.focux.pulse.utilities.AppInfoHelper.getAppIcon(view.context, pkg))
                         },
                         modifier = Modifier.size(24.dp)
                     )
