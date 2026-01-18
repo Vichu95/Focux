@@ -34,7 +34,8 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
         val selectedCategories: Set<ActivityType> = emptySet(),
         val selectedApps: Set<String> = emptySet(), // Package Names
         val searchQuery: String = "",
-        val isTimeFilterActive: Boolean = false
+        val isTimeFilterActive: Boolean = false,
+        val activePreset: String? = null // e.g. "Whole Day", "Till 12pm", "From 6pm"
     )
     
     // Master list of events for the day (unfiltered)
@@ -195,11 +196,29 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
             
             // IF the filter is NOT actively set by the user, 
             // we should default it to the actual Day Window (Start..End) to show relevant data only.
-            // This addresses "timeline is not showing from start to end, instead whole day".
+            // OR if a SEMANTIC PRESET is active (e.g. "Till 12pm"), we must re-calculate for the new day.
             if (!_filterState.value.isTimeFilterActive) {
                  _filterState.value = _filterState.value.copy(timeRange = startHour..endHour)
+            } else if (_filterState.value.activePreset != null) {
+                // Re-apply preset logic for the NEW day
+                val preset = _filterState.value.activePreset
+                val newRange = when (preset) {
+                    "Whole Day" -> startHour..endHour
+                    "Till 12pm" -> startHour..12f
+                    "12pm to 6pm" -> 12f..18f
+                    "From 6pm" -> 18f..endHour
+                    else -> _filterState.value.timeRange
+                }
+                
+                // Ensure valid bounds
+                val clampedStart = maxOf(startHour, newRange.start)
+                val clampedEnd = minOf(endHour, newRange.endInclusive)
+                
+                if (clampedStart <= clampedEnd) {
+                     _filterState.value = _filterState.value.copy(timeRange = clampedStart..clampedEnd)
+                }
             }
-            // If user has a custom range (isTimeFilterActive = true), we leave it alone (Persistency).
+            // If user has a custom range (isTimeFilterActive = true, activePreset = null), we leave it alone.
         }
     }
     
@@ -268,7 +287,8 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
             selectedCategories = emptySet(),
             selectedApps = emptySet(),
             searchQuery = "",
-            isTimeFilterActive = false
+            isTimeFilterActive = false,
+            activePreset = null
         )
     }
     
@@ -276,10 +296,18 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
         timeRange: ClosedFloatingPointRange<Float>, 
         categories: Set<ActivityType>, 
         apps: Set<String>, 
-        query: String
+        query: String,
+        preset: String?
     ) {
         // User explicitly applied filters, so we mark time filter as active
-        _filterState.value = FilterState(timeRange, categories, apps, query, isTimeFilterActive = true)
+        _filterState.value = FilterState(
+            timeRange = timeRange, 
+            selectedCategories = categories, 
+            selectedApps = apps, 
+            searchQuery = query, 
+            isTimeFilterActive = true,
+            activePreset = preset
+        )
     }
 
     private fun mergeAdjacentDeepWork(events: List<TimelineEvent>): List<TimelineEvent> {

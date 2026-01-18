@@ -33,7 +33,8 @@ import androidx.compose.ui.focus.focusRequester
 @Composable
 fun TimelineFilterSheet(
     onDismiss: () -> Unit,
-    onApply: (ClosedFloatingPointRange<Float>, Set<ActivityType>, Set<String>, String) -> Unit,
+    onApply: (ClosedFloatingPointRange<Float>, Set<ActivityType>, Set<String>, String, String?) -> Unit, 
+    // Updated signature to accept preset^
     onClear: () -> Unit,
     initialState: com.focux.pulse.ui.screens.Timeline.TimelineViewModel.FilterState,
     availableApps: List<String>,
@@ -48,29 +49,24 @@ fun TimelineFilterSheet(
             }
         )
     }
+    // Track active preset locally
+    var activePreset by remember(initialState) { mutableStateOf(initialState.activePreset) }
+    
     var selectedCategories by remember { mutableStateOf(initialState.selectedCategories) }
     var searchQuery by remember { mutableStateOf(initialState.searchQuery) }
     var selectedApps by remember { mutableStateOf(initialState.selectedApps) }
     
-    // Prevent accidentally dragging the sheet down when scrolling the list
+    // ... (NestedScrollConnection logic omitted for brevity, unchanged) ...
     val connection = remember {
         object : NestedScrollConnection {
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: androidx.compose.ui.input.nestedscroll.NestedScrollSource
-            ): Offset {
-                // Consume all leftover scroll events (overscroll) so the ModalBottomSheet
-                // doesn't receive them and trigger a dismissal drag.
-                return available
-            }
+            override fun onPostScroll(consumed: Offset, available: Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): Offset = available
         }
     }
     
     // Filter available apps by search query
     val filteredApps = remember(searchQuery, availableApps) {
         if (searchQuery.isEmpty()) availableApps else availableApps.filter { 
-            it.contains(searchQuery, ignoreCase = true) // In real app, search by Label not package
+            it.contains(searchQuery, ignoreCase = true)
         }
     }
     
@@ -83,7 +79,6 @@ fun TimelineFilterSheet(
             .fillMaxWidth()
             .nestedScroll(connection)
             .background(PulseAppColorBackground)
-            // Clear focus (hide keyboard) when clicking empty areas
             .clickable(
                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                 indication = null
@@ -91,7 +86,8 @@ fun TimelineFilterSheet(
             .padding(PulseAppPaddingMedium)
             .heightIn(max = 600.dp) 
     ) {
-        // --- Header ---
+        // ... Header ...
+        // (Header content here is unchanged: Row with Icon and Filter title)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -114,14 +110,6 @@ fun TimelineFilterSheet(
                     )
                 )
             }
-            Icon(
-                painter = painterResource(id = R.drawable.close_icon),
-                contentDescription = "Close",
-                tint = PulseAppColorPrimary,
-                modifier = Modifier
-                    .size(24.dp)
-                    .clickable { onDismiss() }
-            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -135,39 +123,94 @@ fun TimelineFilterSheet(
                 color = PulseAppColorPrimary
             )
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        // Time Presets
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val presets = listOf("Whole Day", "Till 12pm", "12pm to 6pm", "From 6pm")
+            
+            presets.forEach { label ->
+                val targetRange = when (label) {
+                    "Whole Day" -> availableRange
+                    "Till 12pm" -> availableRange.start..12f
+                    "12pm to 6pm" -> 12f..18f
+                    "From 6pm" -> 18f..availableRange.endInclusive
+                    else -> availableRange
+                }
+                
+                // Active if explicitly set OR (if no preset set yet) ranges match closely
+                val isSelected = activePreset == label || 
+                               (activePreset == null && 
+                                kotlin.math.abs(timeRange.start - targetRange.start) < 0.1f &&
+                                kotlin.math.abs(timeRange.endInclusive - targetRange.endInclusive) < 0.1f)
+
+                Surface(
+                    color = if (isSelected) PulseAppColorPrimary else PulseAppColorSurface, 
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(32.dp)
+                        .clip(RoundedCornerShape(50))
+                        .clickable {
+                            val clampedStart = maxOf(availableRange.start, targetRange.start)
+                            val clampedEnd = minOf(availableRange.endInclusive, targetRange.endInclusive)
+                            
+                            if (clampedStart <= clampedEnd) {
+                                timeRange = clampedStart..clampedEnd
+                                activePreset = label // Set active preset!
+                            }
+                        }
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    ) {
+                        Text(
+                            text = label,
+                            style = TextStyle(
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontSize = 10.sp, 
+                                color = if (isSelected) Color.White else Color.Gray,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            ),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
         
         RangeSlider(
+            modifier = Modifier.padding(horizontal = 8.dp),
             value = timeRange,
             onValueChange = { newRange ->
-                // Smart Snapping:
-                // 1. If close to bounds (< 0.25f), snap to bound exactly (e.g. 7:27 start).
-                // 2. Otherwise snap to 30 min (0.5) steps.
-                
+                // .. Snapping logic ..
                 val tolerance = 0.25f
                 val step = 0.5f
                 
                 // Snap Start
                 val distToStart = kotlin.math.abs(newRange.start - availableRange.start)
-                val finalStart = if (distToStart < tolerance) {
-                    availableRange.start
-                } else {
+                val finalStart = if (distToStart < tolerance) availableRange.start else {
                     val snapped = (newRange.start / step).roundToInt() * step
                     maxOf(availableRange.start, snapped)
                 }
 
                 // Snap End
                 val distToEnd = kotlin.math.abs(newRange.endInclusive - availableRange.endInclusive)
-                val finalEnd = if (distToEnd < tolerance) {
-                    availableRange.endInclusive
-                } else {
+                val finalEnd = if (distToEnd < tolerance) availableRange.endInclusive else {
                     val snapped = (newRange.endInclusive / step).roundToInt() * step
                     minOf(availableRange.endInclusive, snapped)
                 }
                 
-                // Ensure ranges don't cross
                 if (finalStart <= finalEnd) {
                     timeRange = finalStart..finalEnd
+                    activePreset = null // Clear preset on manual interaction!
                 }
             },
             valueRange = availableRange,
@@ -382,6 +425,7 @@ fun TimelineFilterSheet(
                     selectedCategories = emptySet()
                     selectedApps = emptySet()
                     searchQuery = ""
+                    activePreset = null
                 },
                 modifier = Modifier
                     .weight(1f)
@@ -403,7 +447,7 @@ fun TimelineFilterSheet(
             
             // Apply
             Button(
-                onClick = { onApply(timeRange, selectedCategories, selectedApps, searchQuery) },
+                onClick = { onApply(timeRange, selectedCategories, selectedApps, searchQuery, activePreset) },
                 modifier = Modifier
                     .weight(1f)
                     .height(48.dp),

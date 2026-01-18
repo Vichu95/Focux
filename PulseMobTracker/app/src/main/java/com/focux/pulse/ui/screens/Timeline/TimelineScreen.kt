@@ -57,8 +57,8 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
         ) {
             com.focux.pulse.ui.screens.Timeline.components.TimelineFilterSheet(
                 onDismiss = { showFilterSheet = false },
-                onApply = { timeRange, categories, apps, query ->
-                    viewModel.applyFilters(timeRange, categories, apps, query)
+                onApply = { timeRange, categories, apps, query, preset ->
+                    viewModel.applyFilters(timeRange, categories, apps, query, preset)
                     showFilterSheet = false
                 },
                 onClear = {
