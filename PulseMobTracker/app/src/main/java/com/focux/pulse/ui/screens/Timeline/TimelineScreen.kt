@@ -11,9 +11,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.focux.pulse.ui.screens.Summary.components.DateFocusHeader
 import com.focux.pulse.ui.screens.Timeline.components.TimelineItem
+import com.focux.pulse.ui.screens.Timeline.components.TimelineHeader
 import com.focux.pulse.ui.theme.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+
 
 @Composable
 fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
@@ -42,12 +44,13 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
     ) {
         // Date Header
         item {
-            DateFocusHeader(
+            TimelineHeader(
                 date = selectedDate,
                 onPrevClick = { if (canGoPrev) selectedDate = selectedDate.minusDays(1) },
                 onNextClick = { if (canGoNext) selectedDate = selectedDate.plusDays(1) },
                 canGoNext = canGoNext,
-                canGoPrev = canGoPrev
+                canGoPrev = canGoPrev,
+                onFilterClick = { /* TODO: Show Filter Menu */ }
             )
             Spacer(modifier = Modifier.height(12.dp))
         }
@@ -76,4 +79,3 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
         }
     }
 }
-

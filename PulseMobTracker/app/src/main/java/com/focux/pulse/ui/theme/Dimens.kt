@@ -89,5 +89,14 @@ val PulseAppWeeklyTrendMinHeight = 6.dp
 val PulseAppWeeklyTrendMaxHeight = 110.dp
 val PulseAppWeeklyTrendTextThreshold = 50.dp
 
+// Timeline Header
+val PulseAppTimelineHeaderHeight = 46.dp
+val PulseAppTimelineHeaderPaddingVertical = 4.dp
+val PulseAppTimelineDateSelectorWidth = 145.dp
+val PulseAppTimelineFilterButtonWidth = 97.dp
+val PulseAppTimelineFilterButtonHeight = 28.dp
+val PulseAppTimelineFilterIconSize = 20.dp
+val PulseAppTimelineFilterIconWidth = 18.dp
+
 
 
