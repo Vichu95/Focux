@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
 import com.focux.pulse.ui.screens.Configuration.ConfigurationScreen
 import com.focux.pulse.ui.screens.Insights.InsightsScreen
 import com.focux.pulse.ui.screens.Summary.SummaryScreen
@@ -95,12 +96,27 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainAppStructure() {
     var selectedTab by remember { mutableStateOf(0) }
+    val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 4 })
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+
+    // Sync Pager -> Tab
+    androidx.compose.runtime.LaunchedEffect(pagerState.currentPage) {
+        selectedTab = pagerState.currentPage
+    }
+
+    // Sync Tab -> Pager (Click)
+    // handled in BottomNavBar callback
 
     Scaffold(
         bottomBar = {
             BottomNavBar(
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
+                onTabSelected = { index ->
+                    selectedTab = index
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(index)
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -109,11 +125,16 @@ fun MainAppStructure() {
         
         // Wraps the screen content in a Box to apply the Scaffold padding
         androidx.compose.foundation.layout.Box(modifier = contentModifier) {
-            when (selectedTab) {
-                0 -> SummaryScreen()
-                1 -> TimelineScreen()
-                2 -> InsightsScreen()
-                3 -> ConfigurationScreen()
+            androidx.compose.foundation.pager.HorizontalPager(
+                state = pagerState,
+                userScrollEnabled = true 
+            ) { page ->
+                when (page) {
+                    0 -> SummaryScreen()
+                    1 -> TimelineScreen()
+                    2 -> InsightsScreen()
+                    3 -> ConfigurationScreen()
+                }
             }
         }
 
