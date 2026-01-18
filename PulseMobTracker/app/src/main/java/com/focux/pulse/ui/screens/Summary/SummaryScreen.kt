@@ -20,8 +20,8 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun SummaryScreen(viewModel: SummaryViewModel = viewModel()) {
-    // State for Date Navigation - cannot go beyond today
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    // State for Date Navigation - Syncs with App Session
+    val selectedDate by com.focux.pulse.ui.state.SessionDateManager.selectedDate.collectAsState()
     val today = LocalDate.now()
     
     // Format for database query (YYYY-MM-DD)
@@ -59,10 +59,10 @@ fun SummaryScreen(viewModel: SummaryViewModel = viewModel()) {
             DateFocusHeader(
                 date = selectedDate,
                 onPrevClick = { 
-                    if (canGoPrev) selectedDate = selectedDate.minusDays(1) 
+                    if (canGoPrev) com.focux.pulse.ui.state.SessionDateManager.setDate(selectedDate.minusDays(1))
                 },
                 onNextClick = { 
-                    if (canGoNext) selectedDate = selectedDate.plusDays(1) 
+                    if (canGoNext) com.focux.pulse.ui.state.SessionDateManager.setDate(selectedDate.plusDays(1))
                 },
                 canGoNext = canGoNext,
                 canGoPrev = canGoPrev

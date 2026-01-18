@@ -20,7 +20,8 @@ import java.time.format.DateTimeFormatter
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    // State for Date Navigation - Syncs with App Session
+    val selectedDate by com.focux.pulse.ui.state.SessionDateManager.selectedDate.collectAsState()
     val today = LocalDate.now()
     val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
@@ -71,49 +72,52 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
             )
         }
     }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = PulseAppPaddingMedium, 
-            end = PulseAppPaddingMedium, 
-            bottom = PulseAppPaddingMedium,
-            top = 0.dp
-        )
-    ) {
-        // Date Header
-        item {
+    
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Sticky Header - Outside LazyColumn
+        Box(modifier = Modifier.padding(horizontal = PulseAppPaddingMedium)) {
             TimelineHeader(
                 date = selectedDate,
-                onPrevClick = { if (canGoPrev) selectedDate = selectedDate.minusDays(1) },
-                onNextClick = { if (canGoNext) selectedDate = selectedDate.plusDays(1) },
+                onPrevClick = { if (canGoPrev) com.focux.pulse.ui.state.SessionDateManager.setDate(selectedDate.minusDays(1)) },
+                onNextClick = { if (canGoNext) com.focux.pulse.ui.state.SessionDateManager.setDate(selectedDate.plusDays(1)) },
                 canGoNext = canGoNext,
                 canGoPrev = canGoPrev,
                 onFilterClick = { showFilterSheet = true }
             )
-            Spacer(modifier = Modifier.height(12.dp))
         }
+        
+        Spacer(modifier = Modifier.height(12.dp))
 
-        if (timelineEvents.isEmpty()) {
-            item {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No activity for this day",
-                        style = PulseAppFontBody,
-                        color = PulseAppColorSecondary
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = PulseAppPaddingMedium, 
+                end = PulseAppPaddingMedium, 
+                bottom = PulseAppPaddingMedium,
+                top = 0.dp
+            )
+        ) {
+            if (timelineEvents.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No activity for this day",
+                            style = PulseAppFontBody,
+                            color = PulseAppColorSecondary
+                        )
+                    }
+                }
+            } else {
+                itemsIndexed(timelineEvents) { index, event ->
+                    TimelineItem(
+                        event = event,
+                        isFirst = index == 0,
+                        isLast = index == timelineEvents.lastIndex
                     )
                 }
-            }
-        } else {
-            itemsIndexed(timelineEvents) { index, event ->
-                TimelineItem(
-                    event = event,
-                    isFirst = index == 0,
-                    isLast = index == timelineEvents.lastIndex
-                )
             }
         }
     }
