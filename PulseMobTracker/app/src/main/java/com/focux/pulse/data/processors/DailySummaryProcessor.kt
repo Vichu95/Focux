@@ -87,12 +87,18 @@ class DailySummaryProcessor(
                 // - Sleep: Defaults (Target)
                 // - Day Start: Midnight (00:00)
                 
-                finalSleepStart = targetSleepWindowStart
-                finalSleepEnd = targetWakeUpTime
-                
                 // Midnight
                 val midCal = Calendar.getInstance().apply { time = currentDateObj; set(Calendar.HOUR_OF_DAY,0); set(Calendar.MINUTE,0); set(Calendar.SECOND,0) }
                 dayMetricStart = midCal.timeInMillis
+
+                finalSleepStart = targetSleepWindowStart
+                
+                // Fix for Today Live View: 
+                // If Target Wakeup (7 AM) is in the future, fallback to Midnight.
+                // This ensures early usage (e.g. 00:12 AM) is considered "After Wakeup" 
+                // and visible on Yesterday/Today boundary correctly? 
+                // Actually, this makes 00:12 visible on TODAY's timeline.
+                finalSleepEnd = if (targetWakeUpTime > now) dayMetricStart else targetWakeUpTime
 
             } else {
                 // SCENARIO B: FINALIZED (Yesterday or Today after 7 AM)
