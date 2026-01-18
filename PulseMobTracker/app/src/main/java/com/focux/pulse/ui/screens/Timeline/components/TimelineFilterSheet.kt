@@ -37,10 +37,17 @@ fun TimelineFilterSheet(
     onClear: () -> Unit,
     initialState: com.focux.pulse.ui.screens.Timeline.TimelineViewModel.FilterState,
     availableApps: List<String>,
+    availableRange: ClosedFloatingPointRange<Float>,
     modifier: Modifier = Modifier
 ) {
-    // Local State initialized from VM state
-    var timeRange by remember { mutableStateOf(initialState.timeRange) }
+    // Local State initialized from VM state, clamped to available range
+    var timeRange by remember(initialState, availableRange) { 
+        mutableStateOf(
+            (maxOf(initialState.timeRange.start, availableRange.start)..minOf(initialState.timeRange.endInclusive, availableRange.endInclusive)).let {
+                if (it.start > it.endInclusive) availableRange else it
+            }
+        )
+    }
     var selectedCategories by remember { mutableStateOf(initialState.selectedCategories) }
     var searchQuery by remember { mutableStateOf(initialState.searchQuery) }
     var selectedApps by remember { mutableStateOf(initialState.selectedApps) }
@@ -132,8 +139,22 @@ fun TimelineFilterSheet(
         
         RangeSlider(
             value = timeRange,
-            onValueChange = { timeRange = it },
-            valueRange = 0f..24f,
+            onValueChange = { newRange ->
+                // Snap to 30 min (0.5) steps
+                val step = 0.5f
+                val snappedStart = (newRange.start / step).roundToInt() * step
+                val snappedEnd = (newRange.endInclusive / step).roundToInt() * step
+                
+                // Ensure we don't snap outside available range if the user wants max/min
+                val finalStart = maxOf(availableRange.start, snappedStart)
+                val finalEnd = minOf(availableRange.endInclusive, snappedEnd)
+                
+                // Ensure start <= end
+                if (finalStart <= finalEnd) {
+                    timeRange = finalStart..finalEnd
+                }
+            },
+            valueRange = availableRange,
             colors = SliderDefaults.colors(
                 thumbColor = PulseAppColorPrimary,
                 activeTrackColor = PulseAppColorPrimary,
@@ -359,7 +380,7 @@ fun TimelineFilterSheet(
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                         fontSize = 16.sp,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        color = Color.White // Fix: Ensure text is white
+                        color = Color.White
                     )
                 )
             }

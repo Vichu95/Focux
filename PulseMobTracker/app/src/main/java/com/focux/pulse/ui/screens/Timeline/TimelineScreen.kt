@@ -45,6 +45,7 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
     // Filter State
     val filterState by viewModel.filterState.collectAsState()
     val availableApps by viewModel.availableApps.collectAsState()
+    val dayBounds by viewModel.dayBounds.collectAsState()
     
     if (showFilterSheet) {
         androidx.compose.material3.ModalBottomSheet(
@@ -65,7 +66,8 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
                     // Apply button will commit these changes.
                 },
                 initialState = filterState, // We need to update generic Sheet to accept this
-                availableApps = availableApps
+                availableApps = availableApps,
+                availableRange = dayBounds
             )
         }
     }

@@ -61,6 +61,17 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private val _dayBounds = MutableStateFlow(0f..24f)
+    val dayBounds: StateFlow<ClosedFloatingPointRange<Float>> = _dayBounds
+
+    private fun getFloatTime(timestamp: Long): Float {
+        if (timestamp == 0L) return 0f
+        val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val minute = calendar.get(Calendar.MINUTE)
+        return hour + (minute / 60f)
+    }
+
     fun loadDataForDate(dateStr: String) {
         viewModelScope.launch {
             val sessions = analyticsDao.getSessionsForDay(dateStr)
@@ -161,6 +172,24 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
 
             // Store raw list
             _allDayEvents.value = allEvents
+            
+            // Calculate Day Bounds for Filter Slider
+            val startTs = if (dailyStats != null && dailyStats.sleepTimeEnd > 0) 
+                dailyStats.sleepTimeEnd 
+            else if (dailyStats != null && dailyStats.firstAppStartTime > 0) 
+                dailyStats.firstAppStartTime 
+            else 0L
+            
+            val startHour = getFloatTime(startTs)
+            // If startHour is e.g. 23:00 (weird), handle it. If 0, use 0f.
+            // End default 24f. Ideally could be next sleep start if > day start.
+            val endHour = 24f 
+            
+            _dayBounds.value = startHour..endHour
+            
+            // Note: We used to clamp _filterState here. 
+            // Removed to allow filter preference (e.g. 7-9) to persist across days with different start times.
+            // The intersection logic in filterEvents() handles the effective filtering.
         }
     }
     
