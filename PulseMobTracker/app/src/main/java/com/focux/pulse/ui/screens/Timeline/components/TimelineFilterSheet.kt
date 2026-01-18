@@ -197,6 +197,7 @@ fun TimelineFilterSheet(
                     color = if (isSelected) PulseAppColorPrimary else PulseAppColorSurface, 
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
+                        .weight(1f)
                         .height(32.dp)
                         .clip(RoundedCornerShape(50))
                         .clickable {
