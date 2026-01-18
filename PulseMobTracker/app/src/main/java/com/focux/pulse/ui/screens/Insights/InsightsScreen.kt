@@ -19,12 +19,35 @@ fun InsightsScreen(viewModel: InsightsViewModel = viewModel()) {
     val weeklyActivity by viewModel.weeklyActivity.collectAsState()
     val topApps by viewModel.topApps.collectAsState()
     val sessionLength by viewModel.sessionLength.collectAsState()
+    
+    // Header State
+    val currentWeekStart by viewModel.currentWeekStart.collectAsState()
+    val weeklyFocusScore by viewModel.weeklyFocusScore.collectAsState()
+    val deepWorkDuration by viewModel.deepWorkDuration.collectAsState()
+    
+    val today = java.time.LocalDate.now()
+    val endOfWeek = currentWeekStart.plusDays(6)
+    val canGoNext = endOfWeek.isBefore(today)
+    
+    // Date Range Formatter
+    val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.getDefault())
+    val dateRangeStr = "${currentWeekStart.format(formatter)} - ${endOfWeek.format(formatter)}"
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(PulseAppPaddingMedium),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Header
+        item {
+            InsightsHeader(
+                dateRange = dateRangeStr,
+                focusScore = weeklyFocusScore,
+                onPrevClick = { viewModel.prevWeek() },
+                onNextClick = { viewModel.nextWeek() },
+                canGoNext = canGoNext
+            )
+        }
         item {
             WeeklyTrendCard(weeklyTrend.ifEmpty { dummyWeeklyTrend })
         }
@@ -41,7 +64,7 @@ fun InsightsScreen(viewModel: InsightsViewModel = viewModel()) {
             SessionLengthCard(sessionLength ?: dummySessionLength)
         }
         item {
-             DeepWorkInsightCard()
+             DeepWorkInsightCard(deepWorkDuration)
         }
     }
 }

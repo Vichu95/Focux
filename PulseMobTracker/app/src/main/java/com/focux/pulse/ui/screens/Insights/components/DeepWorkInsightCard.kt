@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.focux.pulse.ui.theme.PulseAppColorPrimary
 
 @Composable
-fun DeepWorkInsightCard() {
+fun DeepWorkInsightCard(duration: String) {
     Row(
         modifier = Modifier
             .width(com.focux.pulse.ui.theme.PulseAppCardWidth)
@@ -40,14 +40,20 @@ fun DeepWorkInsightCard() {
     ) {
         androidx.compose.material3.Icon(
             painter = painterResource(id = R.drawable.search_icon),
-            contentDescription = "Search",
+            contentDescription = "Deep Work",
             modifier = Modifier.size(PulseAppIconSizeLarge),
             tint = PulseAppColorPrimary
         )
         Spacer(modifier = Modifier.width(PulseAppPaddingLarge))
-        Text(
-            text = "Deep Work is up to 20% compared to last week.",
-            style = PulseAppFontLabel
-        )
+        Column {
+            Text(
+                text = "Total Deep Work",
+                style = com.focux.pulse.ui.theme.Typography.labelSmall.copy(color = PulseAppColorSecondary)
+            )
+            Text(
+                text = duration,
+                style = PulseAppFontLabel.copy(fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            )
+        }
     }
 }
