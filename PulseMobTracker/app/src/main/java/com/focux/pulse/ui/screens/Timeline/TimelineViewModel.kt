@@ -33,18 +33,21 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
         val timeRange: ClosedFloatingPointRange<Float> = 0f..24f,
         val selectedCategories: Set<ActivityType> = emptySet(),
         val selectedApps: Set<String> = emptySet(), // Package Names
-        val searchQuery: String = ""
+        val searchQuery: String = "",
+        val isTimeFilterActive: Boolean = false
     )
     
-    private val _filterState = MutableStateFlow(FilterState())
-    val filterState: StateFlow<FilterState> = _filterState
-
     // Master list of events for the day (unfiltered)
     private val _allDayEvents = MutableStateFlow<List<TimedEvent>>(emptyList())
     
     // Available apps for the filter list
     private val _availableApps = MutableStateFlow<List<String>>(emptyList()) // Package names
     val availableApps: StateFlow<List<String>> = _availableApps
+
+    private val _filterState = MutableStateFlow(FilterState())
+    val filterState: StateFlow<FilterState> = _filterState
+    
+
 
     init {
         viewModelScope.launch {
@@ -189,7 +192,14 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
             
             // Note: We used to clamp _filterState here. 
             // Removed to allow filter preference (e.g. 7-9) to persist across days with different start times.
-            // The intersection logic in filterEvents() handles the effective filtering.
+            
+            // IF the filter is NOT actively set by the user, 
+            // we should default it to the actual Day Window (Start..End) to show relevant data only.
+            // This addresses "timeline is not showing from start to end, instead whole day".
+            if (!_filterState.value.isTimeFilterActive) {
+                 _filterState.value = _filterState.value.copy(timeRange = startHour..endHour)
+            }
+            // If user has a custom range (isTimeFilterActive = true), we leave it alone (Persistency).
         }
     }
     
@@ -251,19 +261,16 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun clearFilters() {
-        _filterState.value = FilterState()
+        // Reset everything, including the active flag.
+        // Also reset range to current day bounds immediately for better UX.
+        _filterState.value = FilterState(
+            timeRange = _dayBounds.value,
+            selectedCategories = emptySet(),
+            selectedApps = emptySet(),
+            searchQuery = "",
+            isTimeFilterActive = false
+        )
     }
-    
-    // Note: "Apply" is implicit since we use StateFlow, but if we want manual Apply button behavior,
-    // we would need a separate "draft" state vs "applied" state.
-    // The UI has "Apply" button. This implies we should hold changes in UI state and only commit here when "Apply" is clicked?
-    // OR we commit to ViewModel but have a separate "activeFilter" vs "editingFilter".
-    // For simplicity with the provided UI code (which had local state), let's assume UI manages draft state 
-    // and calls these functions on "Apply".
-    // The previous UI code I wrote had `var timeRange by remember...`. So UI handles draft.
-    // VM just needs `applyFilter(newState)`?
-    // Or individual setters and assume immediate update?
-    // Given the "Apply" button, I will refactor UI to pass the final state to VM.
     
     fun applyFilters(
         timeRange: ClosedFloatingPointRange<Float>, 
@@ -271,7 +278,8 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
         apps: Set<String>, 
         query: String
     ) {
-        _filterState.value = FilterState(timeRange, categories, apps, query)
+        // User explicitly applied filters, so we mark time filter as active
+        _filterState.value = FilterState(timeRange, categories, apps, query, isTimeFilterActive = true)
     }
 
     private fun mergeAdjacentDeepWork(events: List<TimelineEvent>): List<TimelineEvent> {

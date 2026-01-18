@@ -140,16 +140,32 @@ fun TimelineFilterSheet(
         RangeSlider(
             value = timeRange,
             onValueChange = { newRange ->
-                // Snap to 30 min (0.5) steps
+                // Smart Snapping:
+                // 1. If close to bounds (< 0.25f), snap to bound exactly (e.g. 7:27 start).
+                // 2. Otherwise snap to 30 min (0.5) steps.
+                
+                val tolerance = 0.25f
                 val step = 0.5f
-                val snappedStart = (newRange.start / step).roundToInt() * step
-                val snappedEnd = (newRange.endInclusive / step).roundToInt() * step
                 
-                // Ensure we don't snap outside available range if the user wants max/min
-                val finalStart = maxOf(availableRange.start, snappedStart)
-                val finalEnd = minOf(availableRange.endInclusive, snappedEnd)
+                // Snap Start
+                val distToStart = kotlin.math.abs(newRange.start - availableRange.start)
+                val finalStart = if (distToStart < tolerance) {
+                    availableRange.start
+                } else {
+                    val snapped = (newRange.start / step).roundToInt() * step
+                    maxOf(availableRange.start, snapped)
+                }
+
+                // Snap End
+                val distToEnd = kotlin.math.abs(newRange.endInclusive - availableRange.endInclusive)
+                val finalEnd = if (distToEnd < tolerance) {
+                    availableRange.endInclusive
+                } else {
+                    val snapped = (newRange.endInclusive / step).roundToInt() * step
+                    minOf(availableRange.endInclusive, snapped)
+                }
                 
-                // Ensure start <= end
+                // Ensure ranges don't cross
                 if (finalStart <= finalEnd) {
                     timeRange = finalStart..finalEnd
                 }
