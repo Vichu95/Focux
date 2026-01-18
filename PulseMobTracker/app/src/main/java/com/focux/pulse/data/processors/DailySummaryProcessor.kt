@@ -148,6 +148,9 @@ class DailySummaryProcessor(
             // 3. FETCH DAY DATA & CALCULATE METRICS
             // -------------------------------------------------------------
             
+            // Wait for DB insertion to settle (Simple fix for Race Condition)
+            kotlinx.coroutines.delay(500)
+
             val allDaySessions = analyticsDao.getSessionsForDay(date)
             // Only count sessions that started AFTER our metric start
             // (e.g. If day started at 8 AM, ignore 7 AM noise)
