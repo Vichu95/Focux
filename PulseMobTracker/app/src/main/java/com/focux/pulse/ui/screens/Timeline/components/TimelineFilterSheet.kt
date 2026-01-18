@@ -23,9 +23,11 @@ import com.focux.pulse.utilities.ActivityType
 import kotlin.math.roundToInt
 
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.focus.focusRequester
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,12 +68,19 @@ fun TimelineFilterSheet(
     }
     
     val context = androidx.compose.ui.platform.LocalContext.current
+    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .nestedScroll(connection)
             .background(PulseAppColorBackground)
+            // Clear focus (hide keyboard) when clicking empty areas
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null
+            ) { focusManager.clearFocus() }
             .padding(PulseAppPaddingMedium)
             .heightIn(max = 600.dp) 
     ) {
@@ -189,6 +198,7 @@ fun TimelineFilterSheet(
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .height(32.dp)
+                        .clip(RoundedCornerShape(50))
                         .clickable {
                             selectedCategories = if (isSelected) selectedCategories - type else selectedCategories + type
                         }
@@ -227,7 +237,12 @@ fun TimelineFilterSheet(
         Surface(
             color = PulseAppColorSurface,
             shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
-            modifier = Modifier.fillMaxWidth().height(40.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
+                // Clicking the container focuses the text field
+                .clickable { focusRequester.requestFocus() }
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -244,6 +259,7 @@ fun TimelineFilterSheet(
                     onValueChange = { searchQuery = it },
                     textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
                     cursorBrush = SolidColor(PulseAppColorPrimary),
+                    modifier = Modifier.focusRequester(focusRequester),
                     decorationBox = { innerTextField ->
                         if (searchQuery.isEmpty()) {
                             Text("Search by name...", color = Color.Gray, fontSize = 14.sp)
