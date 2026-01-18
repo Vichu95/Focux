@@ -78,20 +78,83 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
 
     fun loadDataForDate(dateStr: String) {
         viewModelScope.launch {
-            val sessions = analyticsDao.getSessionsForDay(dateStr)
             val dailyStats = analyticsDao.getDailyStats(dateStr)
             
+            // --- 1. Calculate Day Bounds FIRST (Start & End) ---
+            
+            // A. Start Time (Strict: Wake Up)
+            var derivedStartTs = if (dailyStats != null && dailyStats.sleepTimeEnd > 0) 
+                dailyStats.sleepTimeEnd 
+            else 0L
+            
+            // B. End Time (Max: LastApp vs Bedtime)
+            var derivedEndTs = 0L
+            if (dailyStats != null) {
+                derivedEndTs = maxOf(dailyStats.sleepTimeStart, dailyStats.lastAppEndTime)
+            }
+            
+            // Fallbacks for missing stats will happen after we peek at sessions if needed?
+            // Actually, we need sessions to do the fallback.
+            // Let's fetch sessions first, but don't commit to them being "final" until filtered.
+            
+            val sessionsToday = analyticsDao.getSessionsForDay(dateStr)
+            
+            // Fetch Next Day Sessions (to capture post-midnight "Logical Day" usage)
+            val nextDayDate = try {
+                 java.time.LocalDate.parse(dateStr).plusDays(1)
+            } catch (e: Exception) { null }
+            val nextDateStr = nextDayDate?.toString()
+            val sessionsTomorrow = if (nextDateStr != null) analyticsDao.getSessionsForDay(nextDateStr) else emptyList()
+            
+            val rawSessions = sessionsToday + sessionsTomorrow
+            
+            // Fallback: If DB didn't give us bounds, infer from raw data
+            // (Note: We use Today's min/max as a heuristic if stats are missing completely)
+            if (derivedStartTs == 0L && sessionsToday.isNotEmpty()) {
+                // Heuristic: Ignore "early morning" sessions (e.g. < 4 AM) which likely belong to previous night
+                // unless only early sessions exist.
+                val cutOffHour = 4
+                val sorted = sessionsToday.sortedBy { session: AppSession -> session.startTime }
+                
+                val morningSession = sorted.firstOrNull { session: AppSession ->
+                    val c = java.util.Calendar.getInstance().apply { timeInMillis = session.startTime }
+                    c.get(java.util.Calendar.HOUR_OF_DAY) >= cutOffHour
+                }
+                
+                derivedStartTs = morningSession?.startTime ?: sorted.first().startTime
+            }
+            if (derivedEndTs == 0L) {
+                 val sessionLast = if (sessionsToday.isNotEmpty()) sessionsToday.maxOf { it.endTime } else 0L
+                 derivedEndTs = sessionLast
+            }
+             // If we extended into tomorrow (via Bedtime logic), treat that as valid end.
+            
+            
+            // --- 2. Filter Sessions to "Logical Day" ---
+            // Remove "Previous Night" (Today 00:30 < WakeUp 08:00)
+            // Remove "Next Day Future" (Tomorrow 08:00 > Bedtime 01:00)
+            
+            val validSessions = rawSessions.filter { 
+                // Strict containment in the Logical Day
+                // Note: We use a small buffer margin? No, strict is safer for timeline correctness.
+                // However, we must ensure derivedStartTs is valid.
+                 val startOk = if (derivedStartTs > 0) it.endTime > derivedStartTs else true
+                 val endOk = if (derivedEndTs > 0) it.startTime < derivedEndTs else true
+                 startOk && endOk
+            }
+
             // Get ignored lists
             val launcherPackages = AppInfoHelper.getLauncherPackages(context)
             
-            // 1. Convert App Sessions + Offline Sessions to Wrapper for Sorting
-            val sessionEvents = sessions
+            // 3. Convert to Timeline Events
+            val sessionEvents = validSessions
                 .filter { 
                     (it.type == PulseEvents.SESSION_APP || it.type == PulseEvents.SESSION_OFFLINE) &&
                     it.packageName !in PULSE_IGNORED_APPS &&
                     it.packageName !in launcherPackages
                 }
                 .map { session ->
+                    // ... mapping logic ...
                     val isOffline = session.type == PulseEvents.SESSION_OFFLINE
                     
                     val event = if (isOffline) {
@@ -114,7 +177,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                                 name = AppInfoHelper.getAppName(context, session.packageName),
                                 iconName = session.packageName,
                                 duration = formatDuration(session.duration),
-                                type = ActivityType.Neutral // TODO: Fetch category dynamically if possible
+                                type = ActivityType.Neutral 
                             ),
                             range = "${formatTime(session.startTime)} - ${formatTime(session.endTime)}",
                             isDeepWork = session.duration >= 30 * 60 * 1000,
@@ -181,34 +244,8 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
             // Strategy: Use DailyStats if available (Morning/Sleep facts).
             // Fallback: If missing (e.g. today live), derive from actual sessions range.
             
-            // Calculate Start Hour (Wake Up / Day Start)
-            // User Requirement: Strict adherence to DailyStats.sleepTimeEnd
-            var derivedStartTs = if (dailyStats != null && dailyStats.sleepTimeEnd > 0) 
-                dailyStats.sleepTimeEnd 
-            else 0L
-            
-            // Fallback for Start (Only if DailyStats is missing)
-            if (derivedStartTs == 0L && sessionEvents.isNotEmpty()) {
-                derivedStartTs = sessionEvents.minOf { it.timestamp }
-            }
-            
             val startHour = getFloatTime(derivedStartTs)
-            
-            // Calculate End Hour (End of Timeline)
-            // User Requirement: Use LATEST of "Sleep Start" (Bedtime) or "Last App Used".
-            // This handles cases where one might be later than the other (e.g. ignored info vs calculated sleep).
-            
-            var derivedEndTs = 0L
-            if (dailyStats != null) {
-                derivedEndTs = maxOf(dailyStats.sleepTimeStart, dailyStats.lastAppEndTime)
-            }
-            
-            // Fallback (Only if DailyStats is missing or 0)
-            if (derivedEndTs == 0L) {
-                 // Use max known activity from raw sessions
-                 val sessionLast = if (sessionEvents.isNotEmpty()) sessionEvents.maxOf { it.endTime } else 0L
-                 derivedEndTs = sessionLast
-            }
+            val rawEndHour = getFloatTime(derivedEndTs)
             
             // Safety: Ensure End > Start (basic sanity check only)
              if (derivedEndTs > 0 && derivedEndTs < derivedStartTs) {
@@ -217,7 +254,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                  if (sessionEvents.isNotEmpty()) derivedEndTs = sessionEvents.maxOf { it.endTime }
              }
 
-            val rawEndHour = getFloatTime(derivedEndTs)
+
             // Handle Midnight Crossing:
             // If rawEndHour (e.g. 1.33) < startHour (e.g. 8.5) and derivedEndTs > derivedStartTs,
             // it means we crossed midnight. We represent 01:20 as 25.33f.
