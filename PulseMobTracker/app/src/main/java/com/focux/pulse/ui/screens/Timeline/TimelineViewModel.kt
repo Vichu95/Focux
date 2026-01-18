@@ -180,9 +180,8 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                                 type = ActivityType.Neutral 
                             ),
                             range = "${formatTime(session.startTime)} - ${formatTime(session.endTime)}",
-                            isDeepWork = session.duration >= 30 * 60 * 1000,
-                            deepWorkDuration = if (session.duration >= 30 * 60 * 1000) 
-                                formatDuration(session.duration) else null
+                            isDeepWork = false,
+                            deepWorkDuration = null
                         )
                     }
                     
