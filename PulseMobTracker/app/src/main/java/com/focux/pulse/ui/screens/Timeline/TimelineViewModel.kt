@@ -194,15 +194,20 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
             
             val startHour = getFloatTime(derivedStartTs)
             
-            // Calculate End Hour (Sleep Start / Bedtime)
-            // User Requirement: Strict adherence to DailyStats.sleepTimeStart
-            var derivedEndTs = if (dailyStats != null && dailyStats.sleepTimeStart > 0)
-                dailyStats.sleepTimeStart
-            else 0L
+            // Calculate End Hour (End of Timeline)
+            // User Requirement: Use LATEST of "Sleep Start" (Bedtime) or "Last App Used".
+            // This handles cases where one might be later than the other (e.g. ignored info vs calculated sleep).
             
-            // Fallback for End (Only if DailyStats is missing)
-            if (derivedEndTs == 0L && sessionEvents.isNotEmpty()) {
-                derivedEndTs = sessionEvents.maxOf { it.endTime }
+            var derivedEndTs = 0L
+            if (dailyStats != null) {
+                derivedEndTs = maxOf(dailyStats.sleepTimeStart, dailyStats.lastAppEndTime)
+            }
+            
+            // Fallback (Only if DailyStats is missing or 0)
+            if (derivedEndTs == 0L) {
+                 // Use max known activity from raw sessions
+                 val sessionLast = if (sessionEvents.isNotEmpty()) sessionEvents.maxOf { it.endTime } else 0L
+                 derivedEndTs = sessionLast
             }
             
             // Safety: Ensure End > Start (basic sanity check only)
