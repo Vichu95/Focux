@@ -40,7 +40,12 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(PulseAppPaddingMedium)
+        contentPadding = PaddingValues(
+            start = PulseAppPaddingMedium, 
+            end = PulseAppPaddingMedium, 
+            bottom = PulseAppPaddingMedium,
+            top = 0.dp
+        )
     ) {
         // Date Header
         item {

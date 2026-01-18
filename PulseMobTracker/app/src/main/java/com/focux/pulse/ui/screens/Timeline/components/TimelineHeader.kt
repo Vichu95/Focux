@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,8 +31,8 @@ fun TimelineHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(PulseAppTimelineHeaderHeight)
-            .padding(horizontal = PulseAppPaddingMedium, vertical = PulseAppTimelineHeaderPaddingVertical),
+            .fillMaxWidth()
+            .height(PulseAppFocusScoreCardHeight), // Matching DateFocusHeader height
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -41,8 +42,7 @@ fun TimelineHeader(
             onPrevClick = onPrevClick,
             onNextClick = onNextClick,
             canGoNext = canGoNext,
-            canGoPrev = canGoPrev,
-            modifier = Modifier.width(PulseAppTimelineDateSelectorWidth)
+            canGoPrev = canGoPrev
         )
 
         // Right: Filter Button (Frame 22)
@@ -52,12 +52,13 @@ fun TimelineHeader(
             modifier = Modifier
                 .width(PulseAppTimelineFilterButtonWidth)
                 .height(PulseAppTimelineFilterButtonHeight)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
                 .clickable { onFilterClick() }
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(horizontal = PulseAppPaddingSmall, vertical = 4.dp)
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 // Icon
                 Icon(
