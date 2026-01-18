@@ -12,12 +12,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Modifier // Fix: Added missing import
+import com.focux.pulse.ui.screens.components.DaySelector // Fix: Updated package
 import com.focux.pulse.ui.theme.*
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun DateFocusHeader(
@@ -27,9 +25,7 @@ fun DateFocusHeader(
     canGoNext: Boolean = true,
     canGoPrev: Boolean = true
 ) {
-    // Formatter: "14 Dec"
-    val formatter = DateTimeFormatter.ofPattern("dd MMM")
-    val dateText = date.format(formatter)
+
 
     // Frame Date Focus Score (Width 380px)
     Row(
@@ -40,36 +36,13 @@ fun DateFocusHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Left: Date Nav (Frame Summary Date)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft, 
-                contentDescription = "Prev",
-                tint = if (canGoPrev) PulseAppColorSecondary else PulseAppColorSecondary.copy(alpha = 0.3f),
-                modifier = Modifier
-                    .size(PulseAppIconSizeNavigation)
-                    .clip(CircleShape)
-                    .clickable(enabled = canGoPrev) { onPrevClick() }
-            )
-            Spacer(modifier = Modifier.width(PulseAppGapHeader))
-            Text(
-                text = dateText,
-                style = PulseAppFontHeader,
-                color = PulseAppColorSecondary
-            )
-            Spacer(modifier = Modifier.width(PulseAppGapHeader))
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Next",
-                tint = if (canGoNext) PulseAppColorSecondary else PulseAppColorSecondary.copy(alpha = 0.3f),
-                modifier = Modifier
-                    .size(PulseAppIconSizeNavigation)
-                    .clip(CircleShape)
-                    .clickable(enabled = canGoNext) { onNextClick() }
-            )
-        }
+        DaySelector(
+            date = date,
+            onPrevClick = onPrevClick,
+            onNextClick = onNextClick,
+            canGoNext = canGoNext,
+            canGoPrev = canGoPrev
+        )
         
         // Right: Focus Score (Frame 22)
         Box(

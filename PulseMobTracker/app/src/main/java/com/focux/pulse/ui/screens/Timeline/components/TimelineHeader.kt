@@ -2,9 +2,6 @@ package com.focux.pulse.ui.screens.Timeline.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -14,9 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.focux.pulse.ui.screens.components.DaySelector // Fix: Updated package
 import com.focux.pulse.ui.theme.*
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun TimelineHeader(
@@ -27,8 +24,7 @@ fun TimelineHeader(
     canGoPrev: Boolean,
     onFilterClick: () -> Unit
 ) {
-    val formatter = DateTimeFormatter.ofPattern("dd MMM")
-    val dateText = date.format(formatter)
+
 
     // Frame Date Filter
     Row(
@@ -40,43 +36,14 @@ fun TimelineHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Left: Date Selector (Frame Summary Date)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
+        DaySelector(
+            date = date,
+            onPrevClick = onPrevClick,
+            onNextClick = onNextClick,
+            canGoNext = canGoNext,
+            canGoPrev = canGoPrev,
             modifier = Modifier.width(PulseAppTimelineDateSelectorWidth)
-        ) {
-            // Left Arrow
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = "Prev",
-                tint = PulseAppColorSecondary,
-                modifier = Modifier
-                    .size(width = 18.dp, height = PulseAppIconSizeNavigation) // Spec: 18x36
-                    .clickable(enabled = canGoPrev) { onPrevClick() }
-            )
-
-            // Date Text
-            Text(
-                text = dateText,
-                style = androidx.compose.ui.text.TextStyle(
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                    fontSize = PulseAppFontSizeHeader, // 24.sp
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
-                    color = PulseAppColorSecondary
-                ),
-                modifier = Modifier.padding(horizontal = PulseAppGapHeader)
-            )
-
-            // Right Arrow
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Next",
-                tint = if (canGoNext) PulseAppColorSecondary else PulseAppColorSecondary.copy(alpha = 0.3f),
-                modifier = Modifier
-                    .size(width = 18.dp, height = PulseAppIconSizeNavigation) // Spec: 18x36
-                    .clickable(enabled = canGoNext) { onNextClick() }
-            )
-        }
+        )
 
         // Right: Filter Button (Frame 22)
         androidx.compose.material3.Surface(
