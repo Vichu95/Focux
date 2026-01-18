@@ -226,8 +226,9 @@ fun TimelineFilterSheet(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             fun formatHour(float: Float): String {
-                val h = float.toInt()
-                val m = ((float - h) * 60).toInt()
+                val normalized = float % 24
+                val h = normalized.toInt()
+                val m = ((normalized - h) * 60).roundToInt()
                 return String.format("%02d:%02d", h, m)
             }
             Text(
@@ -421,7 +422,7 @@ fun TimelineFilterSheet(
                 onClick = {
                     onClear()
                     // Reset local state
-                    timeRange = 0f..24f
+                    timeRange = availableRange
                     selectedCategories = emptySet()
                     selectedApps = emptySet()
                     searchQuery = ""

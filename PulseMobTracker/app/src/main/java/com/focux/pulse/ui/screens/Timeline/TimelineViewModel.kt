@@ -178,17 +178,50 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
             _allDayEvents.value = allEvents
             
             // Calculate Day Bounds for Filter Slider
-            val startTs = if (dailyStats != null && dailyStats.sleepTimeEnd > 0) 
+            // Strategy: Use DailyStats if available (Morning/Sleep facts).
+            // Fallback: If missing (e.g. today live), derive from actual sessions range.
+            
+            // Calculate Start Hour (Wake Up / Day Start)
+            // User Requirement: Strict adherence to DailyStats.sleepTimeEnd
+            var derivedStartTs = if (dailyStats != null && dailyStats.sleepTimeEnd > 0) 
                 dailyStats.sleepTimeEnd 
-            else if (dailyStats != null && dailyStats.firstAppStartTime > 0) 
-                dailyStats.firstAppStartTime 
             else 0L
             
-            val startHour = getFloatTime(startTs)
-            // If startHour is e.g. 23:00 (weird), handle it. If 0, use 0f.
-            // End default 24f. Ideally could be next sleep start if > day start.
-            val endHour = 24f 
+            // Fallback for Start (Only if DailyStats is missing)
+            if (derivedStartTs == 0L && sessionEvents.isNotEmpty()) {
+                derivedStartTs = sessionEvents.minOf { it.timestamp }
+            }
             
+            val startHour = getFloatTime(derivedStartTs)
+            
+            // Calculate End Hour (Sleep Start / Bedtime)
+            // User Requirement: Strict adherence to DailyStats.sleepTimeStart
+            var derivedEndTs = if (dailyStats != null && dailyStats.sleepTimeStart > 0)
+                dailyStats.sleepTimeStart
+            else 0L
+            
+            // Fallback for End (Only if DailyStats is missing)
+            if (derivedEndTs == 0L && sessionEvents.isNotEmpty()) {
+                derivedEndTs = sessionEvents.maxOf { it.endTime }
+            }
+            
+            // Safety: Ensure End > Start (basic sanity check only)
+             if (derivedEndTs > 0 && derivedEndTs < derivedStartTs) {
+                 // Even if DB says so, this is physically impossible for a single day view.
+                 // Fallback to max session time to prevent crash/weirdness.
+                 if (sessionEvents.isNotEmpty()) derivedEndTs = sessionEvents.maxOf { it.endTime }
+             }
+
+            val rawEndHour = getFloatTime(derivedEndTs)
+            // Handle Midnight Crossing:
+            // If rawEndHour (e.g. 1.33) < startHour (e.g. 8.5) and derivedEndTs > derivedStartTs,
+            // it means we crossed midnight. We represent 01:20 as 25.33f.
+            val endHour = if (derivedEndTs > 0) {
+                 if (rawEndHour < startHour) rawEndHour + 24f else rawEndHour
+            } else 24f
+            
+
+
             _dayBounds.value = startHour..endHour
             
             // Note: We used to clamp _filterState here. 
@@ -232,8 +265,23 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
             val calendar = Calendar.getInstance().apply { timeInMillis = item.timestamp }
             val hour = calendar.get(Calendar.HOUR_OF_DAY)
             val minute = calendar.get(Calendar.MINUTE)
-            val timeFloat = hour + (minute / 60f)
-            val inTimeRange = timeFloat >= filter.timeRange.start && timeFloat <= filter.timeRange.endInclusive
+            val rawTimeFloat = hour + (minute / 60f)
+            
+            // Handle Midnight Crossing Logic relative to Day Start
+            // If the day starts at 8AM, and we have an event at 1AM, it's 25.0 (Next Day).
+            val dayStart = _dayBounds.value.start
+            
+            // Only apply +24 logic if dayStart is substantially late (e.g. > 4AM) 
+            // to avoid issues if dayStart is 00:00.
+            // Actually, simply: if time < dayStart, it must be the next day (assuming sessions are chronological and belong to this "Logical Day").
+            // Note: allEvents are already filtered to belong to this "Logical Day" by DailySummaryProcessor logic?
+            // DailySummaryProcessor filters by timestamp >= dayMetricStart.
+            // So if dayMetricStart is Yesterday 23:00, then Today 01:00 is definitely > start.
+            // But converted to float: 23.0 vs 1.0. 
+            
+            val effectiveTimeFloat = if (rawTimeFloat < dayStart) rawTimeFloat + 24f else rawTimeFloat
+            
+            val inTimeRange = effectiveTimeFloat >= filter.timeRange.start && effectiveTimeFloat <= filter.timeRange.endInclusive
             
             // 2. Category Filter (If any selected)
             // Note: Currently we default to Neutral. Need real categories to test this effectively.

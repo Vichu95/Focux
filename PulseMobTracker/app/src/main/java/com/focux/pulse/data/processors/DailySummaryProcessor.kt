@@ -209,6 +209,13 @@ class DailySummaryProcessor(
             val topApp2 = appDurations.getOrNull(1)
             val topApp3 = appDurations.getOrNull(2)
             
+            // --- Semantics Update ---
+            // User Request: "Sleep Start" column should semantically mean "End of Active Day" (Bedtime).
+            // For Today (Live): This is the Last App usage time.
+            // For Yesterday (Historical): This is the Bedtime (Sleep Onset).
+            
+            val activeDayEnd = lastApp?.endTime ?: (if (firstApp != null) System.currentTimeMillis() else 0L)
+
             // Save TODAY Stats
             val dailyStats = DailyStats(
                 date = date,
@@ -236,11 +243,12 @@ class DailySummaryProcessor(
                 topApp2Duration = topApp2?.second ?: 0,
                 topApp3Package = topApp3?.first,
                 topApp3Duration = topApp3?.second ?: 0,
-                sleepTimeStart = finalSleepStart,
-                sleepTimeEnd = finalSleepEnd,
+                // For Today, we store "Last App Time" as the Day End.
+                sleepTimeStart = activeDayEnd, 
+                sleepTimeEnd = finalSleepEnd, // Wakeup Time (Day Start) - Correct
                 sleepBreakCount = sleepBreakCount,
                 sleepPhoneDuration = sleepPhoneDuration,
-                sleepReadableStart = com.focux.pulse.utilities.TimeUtils.format(finalSleepStart),
+                sleepReadableStart = com.focux.pulse.utilities.TimeUtils.format(activeDayEnd),
                 sleepReadableEnd = com.focux.pulse.utilities.TimeUtils.format(finalSleepEnd)
             )
             analyticsDao.updateDailyStats(dailyStats)
@@ -305,7 +313,11 @@ class DailySummaryProcessor(
                         
                         offlineStreakDuration = correctedOfflineStreak?.duration ?: yesterdayStats.offlineStreakDuration,
                         offlineStreakStart = correctedOfflineStreak?.startTime ?: yesterdayStats.offlineStreakStart,
-                        offlineStreakEnd = correctedOfflineStreak?.endTime ?: yesterdayStats.offlineStreakEnd
+                        offlineStreakEnd = correctedOfflineStreak?.endTime ?: yesterdayStats.offlineStreakEnd,
+                        
+                        // Semantic Update: Correct Yesterday's "Active Day End" to Actual Bedtime
+                        sleepTimeStart = sleepOnset, 
+                        sleepReadableStart = com.focux.pulse.utilities.TimeUtils.format(sleepOnset)
                     )
                     analyticsDao.updateDailyStats(updatedYesterday)
                 }
