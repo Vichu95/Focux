@@ -84,7 +84,7 @@ fun TimelineFilterSheet(
                 indication = null
             ) { focusManager.clearFocus() }
             .padding(PulseAppPaddingMedium)
-            .heightIn(max = 600.dp) 
+            .heightIn(max = 700.dp) 
     ) {
         // ... Header ...
         // (Header content here is unchanged: Row with Icon and Filter title)
