@@ -45,7 +45,7 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
     
     // Filter State
     val filterState by viewModel.filterState.collectAsState()
-    val availableApps by viewModel.availableApps.collectAsState()
+    val allDayEvents by viewModel.allDayEvents.collectAsState()
     val dayBounds by viewModel.dayBounds.collectAsState()
     
     if (showFilterSheet) {
@@ -67,7 +67,7 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
                     // Apply button will commit these changes.
                 },
                 initialState = filterState, // We need to update generic Sheet to accept this
-                availableApps = availableApps,
+                events = allDayEvents,
                 availableRange = dayBounds
             )
         }

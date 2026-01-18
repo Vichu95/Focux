@@ -40,6 +40,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
     
     // Master list of events for the day (unfiltered)
     private val _allDayEvents = MutableStateFlow<List<TimedEvent>>(emptyList())
+    val allDayEvents: StateFlow<List<TimedEvent>> = _allDayEvents
     
     // Available apps for the filter list
     private val _availableApps = MutableStateFlow<List<String>>(emptyList()) // Package names
@@ -447,7 +448,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
     }
     
     // Priority: 0=Morning, 1=App, 2=Night
-    private data class TimedEvent(
+    data class TimedEvent(
         val timestamp: Long, 
         val event: TimelineEvent, 
         val priority: Int = 1,
