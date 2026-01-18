@@ -148,7 +148,7 @@ fun AppTimelineItem(isFirst: Boolean, isLast: Boolean, event: TimelineEvent) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Frame 20: Solid line column (20px wide)
-        SolidLineColumn(isFirst, isLast)
+        SolidLineColumn(isFirst, isLast, packageName = event.app.iconName)
 
         // Frame 17: App Card (251x128)
         AppTimelineCard(event)
@@ -176,7 +176,9 @@ fun DashedLineColumn(isFirst: Boolean, isLast: Boolean) {
 }
 
 @Composable
-fun SolidLineColumn(isFirst: Boolean, isLast: Boolean) {
+fun SolidLineColumn(isFirst: Boolean, isLast: Boolean, packageName: String? = null) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
     Column(
         modifier = Modifier
             .width(PulseAppTimelineLineColumnWidth)
@@ -196,12 +198,32 @@ fun SolidLineColumn(isFirst: Boolean, isLast: Boolean) {
             Spacer(modifier = Modifier.weight(1f))
         }
 
-        // Node (20x20)
-        Box(
-            modifier = Modifier
-                .size(PulseAppTimelineNodeSize)
-                .background(Color.White, androidx.compose.foundation.shape.CircleShape)
-        )
+        // Node (App Icon or Circle)
+        if (packageName != null) {
+            // Render App Icon
+            androidx.compose.ui.viewinterop.AndroidView(
+                modifier = Modifier
+                    .size(PulseAppTimelineNodeSize)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(Color.White),
+                factory = { ctx ->
+                    android.widget.ImageView(ctx).apply {
+                        scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                    }
+                },
+                update = { imageView ->
+                    val icon = com.focux.pulse.utilities.AppInfoHelper.getAppIcon(context, packageName)
+                    imageView.setImageDrawable(icon)
+                }
+            )
+        } else {
+            // Fallback Circle
+            Box(
+                modifier = Modifier
+                    .size(PulseAppTimelineNodeSize)
+                    .background(Color.White, androidx.compose.foundation.shape.CircleShape)
+            )
+        }
 
         // Lower solid line
         if (!isLast) {
