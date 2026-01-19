@@ -389,13 +389,17 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
         query: String,
         preset: String?
     ) {
-        // User explicitly applied filters, so we mark time filter as active
+        // If filters are effectively "Defaults" (Whole Day + Empty Lists), 
+        // set isTimeFilterActive = false.
+        // This allows the next day load to auto-expand to its full range.
+        val isDefault = categories.isEmpty() && apps.isEmpty() && query.isEmpty() && preset == "Whole Day"
+        
         _filterState.value = FilterState(
             timeRange = timeRange, 
             selectedCategories = categories, 
             selectedApps = apps, 
             searchQuery = query, 
-            isTimeFilterActive = true,
+            isTimeFilterActive = !isDefault,
             activePreset = preset
         )
     }

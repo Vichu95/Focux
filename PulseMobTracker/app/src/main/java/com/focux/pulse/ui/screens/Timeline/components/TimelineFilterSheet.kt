@@ -453,7 +453,7 @@ fun TimelineFilterSheet(
                     selectedCategories = emptySet()
                     selectedApps = emptySet()
                     searchQuery = ""
-                    activePreset = null
+                    activePreset = "Whole Day"
                 },
                 modifier = Modifier.weight(1f).height(48.dp),
                 shape = RoundedCornerShape(12.dp),
