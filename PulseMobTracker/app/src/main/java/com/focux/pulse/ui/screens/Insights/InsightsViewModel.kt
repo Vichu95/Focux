@@ -220,24 +220,17 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 val launchers = AppInfoHelper.getLauncherPackages(context)
                 val ignoredPackages = launchers + setOf("com.android.systemui", "com.google.android.inputmethod.latin") 
 
+                // SINGLE SOURCE OF TRUTH: All App sessions in range, minus ignored apps.
+                val filteredAppSessions = activeSessions.filter { 
+                    it.type == PulseEvents.SESSION_APP && !ignoredPackages.contains(it.packageName) 
+                }
+
+                // 1. Top Apps Calculation
                 val appUsageMap = mutableMapOf<String, Long>()
-                activeSessions
-                    .filter { it.type == PulseEvents.SESSION_APP && !ignoredPackages.contains(it.packageName) }
-                    .forEach { session ->
-                        val pkg = session.packageName
-                        // We only care about the duration WITHIN the window? 
-                        // User: "within this range, find total usage"
-                        // Standard practice: If session is mostly in range, count it.
-                        // Precise approach: Clip session start/end to [activeWeekStart, activeWeekEnd].
-                        
-                        val start = maxOf(session.startTime, activeWeekStart)
-                        val end = minOf(session.startTime + session.duration, activeWeekEnd)
-                        val duration = (end - start).coerceAtLeast(0)
-                        
-                        if (duration > 0) {
-                            appUsageMap[pkg] = (appUsageMap[pkg] ?: 0) + duration
-                        }
-                    }
+                filteredAppSessions.forEach { session ->
+                    val pkg = session.packageName
+                    appUsageMap[pkg] = (appUsageMap[pkg] ?: 0) + session.duration
+                }
 
                 _topApps.value = appUsageMap.toList()
                     .sortedByDescending { it.second }
@@ -255,6 +248,8 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                             duration = formatDuration(duration)
                         )
                     }
+
+                // ... Routine (Unchanged) ...
 
                 // --- Routine (From Daily Summary with Filter) ---
                 // User: "daily sumamry already cnsiders things.. just use from daily sumamry"
@@ -284,17 +279,20 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 )
 
                 // --- Avg Session Length ---
-                val appSessions = weekSessions.filter { it.type == PulseEvents.SESSION_APP }
-                val totalAppCount = appSessions.size
-                // Calculate duration from sessions directly for consistency
-                val totalSessionDuration = appSessions.sumOf { it.duration }
+                // 2. Average Calculation (Using the SAME filtered list)
+                val validAppSessions = filteredAppSessions // Alias for clarity/min-change
+                
+                val totalAppCount = validAppSessions.size
+                val totalSessionDuration = validAppSessions.sumOf { it.duration }
                 
                 val avgSessionDuration = if (totalAppCount > 0) totalSessionDuration / totalAppCount else 0L
 
+                val debugString = "${formatDuration(totalSessionDuration)} / $totalAppCount = ${formatDuration(avgSessionDuration)}"
+
                 _sessionLength.value = SessionLengthData(
-                    overall = formatDuration(avgSessionDuration),
-                    productive = formatDuration(avgSessionDuration), // Placeholder until categorization
-                    distracting = formatDuration(avgSessionDuration) // Placeholder until categorization
+                    overall = debugString,
+                    productive = "0m",
+                    distracting = "0m"
                 )
 
                 // Re-calculating Focus Score total
@@ -354,8 +352,14 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun formatDuration(ms: Long): String {
-        val hours = ms / (1000 * 60 * 60)
-        val minutes = (ms % (1000 * 60 * 60)) / (1000 * 60)
-        return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+        val seconds = ms / 1000
+        val minutes = seconds / 60
+        val hours = minutes / 60
+        
+        return when {
+            hours > 0 -> "${hours}h ${minutes % 60}m"
+            minutes > 0 -> "${minutes}m"
+            else -> "${seconds}s"
+        }
     }
 }

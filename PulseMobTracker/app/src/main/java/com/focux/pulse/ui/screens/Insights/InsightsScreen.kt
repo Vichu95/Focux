@@ -79,7 +79,7 @@ fun InsightsScreen(viewModel: InsightsViewModel = viewModel()) {
                 TopAppsCard(topApps)
             }
             item {
-                SessionLengthCard(sessionLength ?: dummySessionLength)
+                SessionLengthCard(sessionLength ?: SessionLengthData("0m", "0m", "0m"))
             }
             item {
                  DeepWorkInsightCard(deepWorkDuration)
