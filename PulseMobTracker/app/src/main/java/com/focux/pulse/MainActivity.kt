@@ -114,7 +114,7 @@ fun MainAppStructure() {
                 onTabSelected = { index ->
                     selectedTab = index
                     coroutineScope.launch {
-                        pagerState.animateScrollToPage(index)
+                        pagerState.scrollToPage(index)
                     }
                 }
             )
