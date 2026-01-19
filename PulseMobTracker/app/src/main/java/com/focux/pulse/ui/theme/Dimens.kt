@@ -101,5 +101,10 @@ val PulseAppTimelineFilterIconWidth = 18.dp
 val PulseAppFocusScoreButtonWidth = 110.dp
 val PulseAppFocusScoreButtonHeight = 28.dp
 
+// Weekly Header
+val PulseAppWeeklyHeaderHeight = 38.dp
+val PulseAppWeeklyHeaderPaddingTop = 0.dp
+val PulseAppWeeklyDateSelectorWidth = 214.dp
+
 
 

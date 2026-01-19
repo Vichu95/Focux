@@ -43,13 +43,8 @@ fun WeekSelector(
         
         Text(
             text = dateRange,
-            style = androidx.compose.ui.text.TextStyle(
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                fontSize = PulseAppFontSizeHeader,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
-                color = PulseAppColorSecondary,
-                textAlign = TextAlign.Center
-            )
+            style = PulseAppFontHeader,
+            color = PulseAppColorSecondary
         )
         
         Spacer(modifier = Modifier.width(PulseAppGapHeader))

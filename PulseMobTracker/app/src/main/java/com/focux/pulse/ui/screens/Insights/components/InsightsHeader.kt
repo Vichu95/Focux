@@ -35,7 +35,7 @@ fun InsightsHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(PulseAppFocusScoreCardHeight), // 38dp
+            .height(PulseAppWeeklyHeaderHeight), // 38dp
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
