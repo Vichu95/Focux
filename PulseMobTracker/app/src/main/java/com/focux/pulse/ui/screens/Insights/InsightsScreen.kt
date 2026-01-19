@@ -31,11 +31,11 @@ fun InsightsScreen(viewModel: InsightsViewModel = viewModel()) {
     
     // Date Range Formatter
     val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.getDefault())
-    val dateRangeStr = "${currentWeekStart.format(formatter)} - ${endOfWeek.format(formatter)}"
+    val dateRangeStr = "${currentWeekStart.format(formatter)}-${endOfWeek.format(formatter)}"
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(PulseAppPaddingMedium),
+        contentPadding = PaddingValues(horizontal = PulseAppPaddingMedium, vertical = 0.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Header

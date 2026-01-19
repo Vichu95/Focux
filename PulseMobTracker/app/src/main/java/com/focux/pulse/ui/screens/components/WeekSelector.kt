@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import com.focux.pulse.ui.theme.*
 
 @Composable
@@ -43,8 +44,10 @@ fun WeekSelector(
         
         Text(
             text = dateRange,
-            style = PulseAppFontHeader,
-            color = PulseAppColorSecondary
+            style = PulseAppFontHeader.copy(
+                fontSize = 20.sp, 
+                color = PulseAppColorSecondary
+            )
         )
         
         Spacer(modifier = Modifier.width(PulseAppGapHeader))
