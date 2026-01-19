@@ -1,8 +1,11 @@
 package com.focux.pulse.ui.screens.Insights
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -33,13 +36,11 @@ fun InsightsScreen(viewModel: InsightsViewModel = viewModel()) {
     val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.getDefault())
     val dateRangeStr = "${currentWeekStart.format(formatter)}-${endOfWeek.format(formatter)}"
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = PulseAppPaddingMedium, vertical = 0.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Column(
+        modifier = Modifier.fillMaxSize()
     ) {
-        // Header
-        item {
+        // Fixed Header
+        Box(modifier = Modifier.padding(horizontal = PulseAppPaddingMedium)) {
             InsightsHeader(
                 dateRange = dateRangeStr,
                 focusScore = weeklyFocusScore,
@@ -48,23 +49,32 @@ fun InsightsScreen(viewModel: InsightsViewModel = viewModel()) {
                 canGoNext = canGoNext
             )
         }
-        item {
-            WeeklyTrendCard(weeklyTrend.ifEmpty { dummyWeeklyTrend })
-        }
-        item {
-            WeeklyActivityCard(weeklyActivity ?: dummyWeeklyActivity)
-        }
-        item {
-            RoutineCard(dummyRoutine)  // TODO: Calculate from session patterns
-        }
-        item {
-            TopAppsCard(topApps.ifEmpty { dummyTopApps })
-        }
-        item {
-            SessionLengthCard(sessionLength ?: dummySessionLength)
-        }
-        item {
-             DeepWorkInsightCard(deepWorkDuration)
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f),
+            contentPadding = PaddingValues(top = 12.dp, start = PulseAppPaddingMedium, end = PulseAppPaddingMedium, bottom = 0.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                WeeklyTrendCard(weeklyTrend.ifEmpty { dummyWeeklyTrend })
+            }
+            item {
+                WeeklyActivityCard(weeklyActivity ?: dummyWeeklyActivity)
+            }
+            item {
+                RoutineCard(dummyRoutine)  // TODO: Calculate from session patterns
+            }
+            item {
+                TopAppsCard(topApps.ifEmpty { dummyTopApps })
+            }
+            item {
+                SessionLengthCard(sessionLength ?: dummySessionLength)
+            }
+            item {
+                 DeepWorkInsightCard(deepWorkDuration)
+            }
         }
     }
 }

@@ -44,10 +44,8 @@ fun WeekSelector(
         
         Text(
             text = dateRange,
-            style = PulseAppFontHeader.copy(
-                fontSize = 20.sp, 
-                color = PulseAppColorSecondary
-            )
+            style = PulseAppFontHeader,
+            color = PulseAppColorSecondary
         )
         
         Spacer(modifier = Modifier.width(PulseAppGapHeader))

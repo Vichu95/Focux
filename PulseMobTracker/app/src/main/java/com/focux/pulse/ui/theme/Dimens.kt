@@ -76,7 +76,7 @@ val PulseAppTimelineDeepWorkIconWidth = 26.dp
 val PulseAppTimelineDeepWorkIconHeight = 21.dp
 
 // Header & Navigation
-val PulseAppGapHeader = 5.dp
+val PulseAppGapHeader = 2.dp
 val PulseAppIconSizeNavigation = 36.dp
 
 // Timeline Specifics
