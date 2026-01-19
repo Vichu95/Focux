@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.focux.pulse.data.local.entities.*
+import com.focux.pulse.data.local.entities.PulseEvents
 import com.focux.pulse.data.local.PulseDatabase
 import com.focux.pulse.utilities.*
 import com.focux.pulse.utilities.AppInfoHelper
@@ -176,38 +177,66 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 )
 
                 // --- Top Apps (From Raw Sessions within Active Week) ---
-                // User Request: "take the first day, its sleep end... till last day, sleep start"
-                val firstDayStat = weekStatsMap[weekStart.toString()]
-                val lastDayStat = weekStatsMap[if (weekEnd.isAfter(today)) today.toString() else weekEnd.toString()] ?: statsList.lastOrNull()
-                
-                // Safety: If sleepTimeEnd is 0 (missing), default to start of week range
-                val activeWeekStart = firstDayStat?.sleepTimeEnd?.takeIf { it > 0 } 
-                    ?: weekStart.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-                
-                // Safety: If sleepTimeStart is 0 (not slept yet), default to end of week range
-                val activeWeekEnd = lastDayStat?.sleepTimeStart?.takeIf { it > 0 }
-                    ?: (weekEnd.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1)
+                // User Request: "Start of week = the sleep end of the first day"
+                // "End of week = latest of sleep start of last app of the last day"
 
-                // In-Memory Filter (Safe)
-                val activeSessions = weekSessions.filter { session ->
-                    // Session overlaps with [ActiveWeekStart, ActiveWeekEnd]
-                    session.startTime <= activeWeekEnd && (session.startTime + session.duration) >= activeWeekStart
+                val firstDayStat = weekStatsMap[weekStart.toString()]
+                // Determine the last day we have data for (either today or the end of the week)
+                val lastDayDate = if (weekEnd.isAfter(today)) today else weekEnd
+                val lastDayStat = weekStatsMap[lastDayDate.toString()]
+
+                // 1. Calculate Start Time (Wake up of first day)
+                // If sleepTimeEnd is > 0, use it. Else fall back to start of the week day.
+                val activeWeekStart = if (firstDayStat != null && firstDayStat.sleepTimeEnd > 0) {
+                    firstDayStat.sleepTimeEnd
+                } else {
+                    weekStart.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
                 }
+
+                // 2. Calculate End Time (Latest of Sleep Start or Last App Usage)
+                val activeWeekEnd = if (lastDayStat != null) {
+                    val sleepStart = lastDayStat.sleepTimeStart
+                    val lastAppEnd = lastDayStat.lastAppEndTime
+                    
+                    // "latest of sleep start or last app" implies max(sleepStart, lastAppEnd)
+                    // But we must handle 0s (missing data).
+                    val candidateEnd = maxOf(sleepStart, lastAppEnd)
+                    
+                    if (candidateEnd > 0) candidateEnd 
+                    else lastDayDate.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
+                } else {
+                    lastDayDate.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
+                }
+
+                // 3. Fetch Sessions overlapping this range
+                // Note: The variable 'weekSessions' fetched earlier might NOT cover the full range if 'activeWeekEnd' 
+                // extends slightly beyond the strict week boundary (though unlikely for valid sleep times). 
+                // However, 'weekSessions' was fetched with [weekStart, weekEnd + 1 day]. 
+                // Since 'activeWeekStart' >= weekStart and 'activeWeekEnd' <= weekEnd+1day (usually), we can reuse 'weekSessions'
+                // OR refetch to be perfectly safe if the logic implies dynamic bounds.
+                // Refetching is safer to ensure we get exactly what we need.
+                val activeSessions = analyticsDao.getSessionsOverlapping(activeWeekStart, activeWeekEnd)
 
                 val launchers = AppInfoHelper.getLauncherPackages(context)
                 val ignoredPackages = launchers + setOf("com.android.systemui", "com.google.android.inputmethod.latin") 
 
                 val appUsageMap = mutableMapOf<String, Long>()
                 activeSessions
-                    .filter { it.type == "APP" && !ignoredPackages.contains(it.packageName) }
+                    .filter { it.type == PulseEvents.SESSION_APP && !ignoredPackages.contains(it.packageName) }
                     .forEach { session ->
                         val pkg = session.packageName
-                        // Clip duration to the active window for precision? 
-                        // User said "sum up for each package the app session time".
-                        // Use full session duration if it overlaps, or clipped? 
-                        // Simplest/Safest: Use full duration of sessions that started in range or overlap.
-                        // Standard practice: if session starts in range.
-                        appUsageMap[pkg] = (appUsageMap[pkg] ?: 0) + session.duration
+                        // We only care about the duration WITHIN the window? 
+                        // User: "within this range, find total usage"
+                        // Standard practice: If session is mostly in range, count it.
+                        // Precise approach: Clip session start/end to [activeWeekStart, activeWeekEnd].
+                        
+                        val start = maxOf(session.startTime, activeWeekStart)
+                        val end = minOf(session.startTime + session.duration, activeWeekEnd)
+                        val duration = (end - start).coerceAtLeast(0)
+                        
+                        if (duration > 0) {
+                            appUsageMap[pkg] = (appUsageMap[pkg] ?: 0) + duration
+                        }
                     }
 
                 _topApps.value = appUsageMap.toList()
@@ -255,7 +284,7 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 )
 
                 // --- Avg Session Length ---
-                val appSessions = weekSessions.filter { it.type == "APP" }
+                val appSessions = weekSessions.filter { it.type == PulseEvents.SESSION_APP }
                 val totalAppCount = appSessions.size
                 // Calculate duration from sessions directly for consistency
                 val totalSessionDuration = appSessions.sumOf { it.duration }
@@ -278,7 +307,7 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 _weeklyFocusScore.value = totalFocus / daysPassed
                 
                 // --- Deep Work ---
-                val totalOffline = weekSessions.filter { it.type == "SESSION_OFFLINE" }.sumOf { it.duration }
+                val totalOffline = weekSessions.filter { it.type == PulseEvents.SESSION_OFFLINE }.sumOf { it.duration }
                 // Approximate Sleep (Safe sum)
                 val totalSleep = statsList.sumOf { stat ->
                     val sleepDur = stat.sleepTimeEnd - stat.sleepTimeStart

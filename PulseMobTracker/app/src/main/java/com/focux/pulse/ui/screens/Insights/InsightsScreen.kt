@@ -76,7 +76,7 @@ fun InsightsScreen(viewModel: InsightsViewModel = viewModel()) {
                 RoutineCard(routine)
             }
             item {
-                TopAppsCard(topApps.ifEmpty { dummyTopApps })
+                TopAppsCard(topApps)
             }
             item {
                 SessionLengthCard(sessionLength ?: dummySessionLength)
