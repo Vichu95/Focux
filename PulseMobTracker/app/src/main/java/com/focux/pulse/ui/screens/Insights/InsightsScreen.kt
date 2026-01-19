@@ -22,6 +22,7 @@ fun InsightsScreen(viewModel: InsightsViewModel = viewModel()) {
     val weeklyActivity by viewModel.weeklyActivity.collectAsState()
     val topApps by viewModel.topApps.collectAsState()
     val sessionLength by viewModel.sessionLength.collectAsState()
+    val routine by viewModel.routine.collectAsState()
     
     // Header State
     val currentWeekStart by viewModel.currentWeekStart.collectAsState()
@@ -72,7 +73,7 @@ fun InsightsScreen(viewModel: InsightsViewModel = viewModel()) {
                 WeeklyActivityCard(weeklyActivity ?: dummyWeeklyActivity)
             }
             item {
-                RoutineCard(dummyRoutine)  // TODO: Calculate from session patterns
+                RoutineCard(routine)
             }
             item {
                 TopAppsCard(topApps.ifEmpty { dummyTopApps })

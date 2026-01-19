@@ -47,6 +47,15 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
     // Deep Work State
     private val _deepWorkDuration = MutableStateFlow<String>("0m")
     val deepWorkDuration: StateFlow<String> = _deepWorkDuration
+    
+    // Routine State
+    private val _routine = MutableStateFlow<com.focux.pulse.utilities.RoutineData>(
+        com.focux.pulse.utilities.RoutineData(
+             com.focux.pulse.utilities.AppUsage("No Data", "", "", ActivityType.Neutral) to 0,
+             com.focux.pulse.utilities.AppUsage("No Data", "", "", ActivityType.Neutral) to 0
+        )
+    )
+    val routine: StateFlow<com.focux.pulse.utilities.RoutineData> = _routine
 
     // Navigation Limit
     private val _earliestDate = MutableStateFlow<java.time.LocalDate?>(null)
@@ -133,8 +142,13 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
             
             val statsList = weekStatsMap.values.toList()
             
+            // Fetch Raw Sessions for the week (for granular calc)
+            val weekStartMs = weekStart.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val weekEndMs = weekEnd.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1 
+            val weekSessions = analyticsDao.getSessionsOverlapping(weekStartMs, weekEndMs)
+
             if (statsList.isNotEmpty()) {
-                // weeklyTrend needs to return 7 items (Mon-Sun), filling missing with empty
+                // weeklyTrend
                 _weeklyTrend.value = weekDates.map { date ->
                     val stat = weekStatsMap[date.toString()]
                     val totalMs = stat?.totalScreenTime ?: 0L
@@ -143,7 +157,7 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                     WeeklyTrendItem(
                         day = date.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault()),
                         hours = hours,
-                        isSelected = date.toString() == today.toString(), // Highlight today if in view
+                        isSelected = date.toString() == today.toString(),
                         durationText = formatDuration(totalMs)
                     )
                 }
@@ -161,15 +175,42 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                     distracting = formatDuration(distractingTime)
                 )
 
-                // Top Apps (Aggregated)
-                val appTotals = mutableMapOf<String, Long>()
-                statsList.forEach { stat ->
-                    stat.topApp1Package?.let { appTotals[it] = (appTotals[it] ?: 0) + stat.topApp1Duration }
-                    stat.topApp2Package?.let { appTotals[it] = (appTotals[it] ?: 0) + stat.topApp2Duration }
-                    stat.topApp3Package?.let { appTotals[it] = (appTotals[it] ?: 0) + stat.topApp3Duration }
+                // --- Top Apps (From Raw Sessions within Active Week) ---
+                // User Request: "take the first day, its sleep end... till last day, sleep start"
+                val firstDayStat = weekStatsMap[weekStart.toString()]
+                val lastDayStat = weekStatsMap[if (weekEnd.isAfter(today)) today.toString() else weekEnd.toString()] ?: statsList.lastOrNull()
+                
+                // Safety: If sleepTimeEnd is 0 (missing), default to start of week range
+                val activeWeekStart = firstDayStat?.sleepTimeEnd?.takeIf { it > 0 } 
+                    ?: weekStart.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                
+                // Safety: If sleepTimeStart is 0 (not slept yet), default to end of week range
+                val activeWeekEnd = lastDayStat?.sleepTimeStart?.takeIf { it > 0 }
+                    ?: (weekEnd.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1)
+
+                // In-Memory Filter (Safe)
+                val activeSessions = weekSessions.filter { session ->
+                    // Session overlaps with [ActiveWeekStart, ActiveWeekEnd]
+                    session.startTime <= activeWeekEnd && (session.startTime + session.duration) >= activeWeekStart
                 }
 
-                _topApps.value = appTotals.toList()
+                val launchers = AppInfoHelper.getLauncherPackages(context)
+                val ignoredPackages = launchers + setOf("com.android.systemui", "com.google.android.inputmethod.latin") 
+
+                val appUsageMap = mutableMapOf<String, Long>()
+                activeSessions
+                    .filter { it.type == "APP" && !ignoredPackages.contains(it.packageName) }
+                    .forEach { session ->
+                        val pkg = session.packageName
+                        // Clip duration to the active window for precision? 
+                        // User said "sum up for each package the app session time".
+                        // Use full session duration if it overlaps, or clipped? 
+                        // Simplest/Safest: Use full duration of sessions that started in range or overlap.
+                        // Standard practice: if session starts in range.
+                        appUsageMap[pkg] = (appUsageMap[pkg] ?: 0) + session.duration
+                    }
+
+                _topApps.value = appUsageMap.toList()
                     .sortedByDescending { it.second }
                     .take(5)
                     .mapIndexed { index, (pkg, duration) ->
@@ -186,16 +227,45 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                         )
                     }
 
-                // Session Length & Averages
-                // Use 'daysPassed' for divisor
-                val avgScreenTime = totalTime / daysPassed
-                val avgProductive = productiveTime / daysPassed
-                val avgDistracting = distractingTime / daysPassed
+                // --- Routine (From Daily Summary with Filter) ---
+                // User: "daily sumamry already cnsiders things.. just use from daily sumamry"
+                // We fetch first/last from DailyStats but exclude ignored apps (Launchers/System)
+                val morningApps = statsList.mapNotNull { it.firstAppPackage }
+                    .filter { !ignoredPackages.contains(it) }
+                val nightApps = statsList.mapNotNull { it.lastAppPackage }
+                    .filter { !ignoredPackages.contains(it) }
                 
+                val morningMode = morningApps.groupingBy { it }.eachCount().maxByOrNull { it.value }
+                val nightMode = nightApps.groupingBy { it }.eachCount().maxByOrNull { it.value }
+
+                _routine.value = com.focux.pulse.utilities.RoutineData(
+                    morningHabit = if (morningMode != null) com.focux.pulse.utilities.AppUsage(
+                        name = AppInfoHelper.getAppName(context, morningMode.key),
+                        iconName = morningMode.key, 
+                        duration = "",
+                        type = ActivityType.Neutral
+                    ) to morningMode.value else com.focux.pulse.utilities.AppUsage("No Data", "", "", ActivityType.Neutral) to 0,
+                    
+                    nightHabit = if (nightMode != null) com.focux.pulse.utilities.AppUsage(
+                         name = AppInfoHelper.getAppName(context, nightMode.key),
+                         iconName = nightMode.key,
+                         duration = "",
+                         type = ActivityType.Neutral
+                    ) to nightMode.value else com.focux.pulse.utilities.AppUsage("No Data", "", "", ActivityType.Neutral) to 0
+                )
+
+                // --- Avg Session Length ---
+                val appSessions = weekSessions.filter { it.type == "APP" }
+                val totalAppCount = appSessions.size
+                // Calculate duration from sessions directly for consistency
+                val totalSessionDuration = appSessions.sumOf { it.duration }
+                
+                val avgSessionDuration = if (totalAppCount > 0) totalSessionDuration / totalAppCount else 0L
+
                 _sessionLength.value = SessionLengthData(
-                    overall = formatDuration(avgScreenTime),
-                    productive = formatDuration(avgProductive),
-                    distracting = formatDuration(avgDistracting)
+                    overall = formatDuration(avgSessionDuration),
+                    productive = formatDuration(avgSessionDuration), // Placeholder until categorization
+                    distracting = formatDuration(avgSessionDuration) // Placeholder until categorization
                 )
 
                 // Re-calculating Focus Score total
@@ -207,14 +277,18 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 
                 _weeklyFocusScore.value = totalFocus / daysPassed
                 
-                // Deep Work (Offline Duration)
-                // DailyStats lacks offline totals, must query raw sessions for the week range
-                val weekStartMs = weekStart.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-                val weekEndMs = weekEnd.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1 
-                val weekSessions = analyticsDao.getSessionsOverlapping(weekStartMs, weekEndMs)
+                // --- Deep Work ---
                 val totalOffline = weekSessions.filter { it.type == "SESSION_OFFLINE" }.sumOf { it.duration }
+                // Approximate Sleep (Safe sum)
+                val totalSleep = statsList.sumOf { stat ->
+                    val sleepDur = stat.sleepTimeEnd - stat.sleepTimeStart
+                    if (sleepDur in 1..(14 * 3600 * 1000)) sleepDur else 0
+                }
+                val realDeepWork = (totalOffline - totalSleep).coerceAtLeast(0)
+                val totalActiveWeek = realDeepWork + totalTime
+                val deepPercentage = if (totalActiveWeek > 0) ((realDeepWork.toFloat() / totalActiveWeek) * 100).toInt() else 0
                 
-                _deepWorkDuration.value = formatDuration(totalOffline)
+                _deepWorkDuration.value = "${formatDuration(realDeepWork)} ($deepPercentage%)"
                 
             } else {
                 // Empty Week
@@ -230,7 +304,11 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 _topApps.value = emptyList()
                 _sessionLength.value = SessionLengthData("0h", "0h", "0h")
                 _weeklyFocusScore.value = 0
-                _deepWorkDuration.value = "0h 0m"
+                _deepWorkDuration.value = "0h 0m (0%)"
+                _routine.value = com.focux.pulse.utilities.RoutineData(
+                     com.focux.pulse.utilities.AppUsage("No Data", "", "", ActivityType.Neutral) to 0,
+                     com.focux.pulse.utilities.AppUsage("No Data", "", "", ActivityType.Neutral) to 0
+                )
             }
         }
     }
