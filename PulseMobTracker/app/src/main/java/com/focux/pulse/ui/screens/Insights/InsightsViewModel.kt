@@ -48,7 +48,26 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
     private val _deepWorkDuration = MutableStateFlow<String>("0m")
     val deepWorkDuration: StateFlow<String> = _deepWorkDuration
 
+    // Navigation Limit
+    private val _earliestDate = MutableStateFlow<java.time.LocalDate?>(null)
+    val earliestDate: StateFlow<java.time.LocalDate?> = _earliestDate
+
     init {
+        // Fetch earliest date for navigation limits
+        viewModelScope.launch {
+            val dateStr = analyticsDao.getEarliestDate()
+            if (dateStr != null) {
+                try {
+                     _earliestDate.value = java.time.LocalDate.parse(dateStr)
+                } catch (e: Exception) {
+                    // Fallback to today if parsing fails
+                     _earliestDate.value = java.time.LocalDate.now()
+                }
+            } else {
+                 _earliestDate.value = java.time.LocalDate.now()
+            }
+        }
+        
         // Collect week start changes to reload data
         viewModelScope.launch {
             _currentWeekStart.collect { 
@@ -98,11 +117,19 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
             // If week is current: Days up to today (inclusive).
             // If week is future: 0 (or handle as empty).
             
-            val daysPassed = when {
-                weekEnd.isBefore(today) -> 7
-                weekStart.isAfter(today) -> 0
-                else -> java.time.temporal.ChronoUnit.DAYS.between(weekStart, today).toInt() + 1
-            }.coerceIn(1, 7) // Avoid divide by zero, min 1 for safety
+            // 1. Calculate proper divisor (Effective Days)
+            // Start counting from: Max(WeekStart, EarliestDate)
+            // Stop counting at: Min(WeekEnd, Today)
+            
+            val earliest = _earliestDate.value ?: weekStart
+            val effectiveStart = if (weekStart.isBefore(earliest)) earliest else weekStart
+            val effectiveEnd = if (weekEnd.isAfter(today)) today else weekEnd
+            
+            val daysPassed = if (effectiveStart.isAfter(effectiveEnd)) {
+                1 // Should not happen in valid navigation, but safety fallback
+            } else {
+                 (java.time.temporal.ChronoUnit.DAYS.between(effectiveStart, effectiveEnd).toInt() + 1)
+            }.coerceIn(1, 7)
             
             val statsList = weekStatsMap.values.toList()
             

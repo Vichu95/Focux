@@ -75,6 +75,7 @@ interface AnalyticsDao {
     @Query("SELECT MIN(date) FROM daily_stats")
     suspend fun getEarliestDate(): String?
 
+
     /**
      * Retrieves the aggregated stats for a specific day.
      * @param date Format: "YYYY-MM-DD"

@@ -27,10 +27,17 @@ fun InsightsScreen(viewModel: InsightsViewModel = viewModel()) {
     val currentWeekStart by viewModel.currentWeekStart.collectAsState()
     val weeklyFocusScore by viewModel.weeklyFocusScore.collectAsState()
     val deepWorkDuration by viewModel.deepWorkDuration.collectAsState()
+    val earliestDate by viewModel.earliestDate.collectAsState()
     
     val today = java.time.LocalDate.now()
     val endOfWeek = currentWeekStart.plusDays(6)
     val canGoNext = endOfWeek.isBefore(today)
+    
+    // Calculate canGoPrev
+    val canGoPrev = earliestDate?.let { earliest ->
+        val earliestWeekStart = earliest.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+        currentWeekStart.isAfter(earliestWeekStart)
+    } ?: false
     
     // Date Range Formatter
     val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.getDefault())
@@ -46,7 +53,8 @@ fun InsightsScreen(viewModel: InsightsViewModel = viewModel()) {
                 focusScore = weeklyFocusScore,
                 onPrevClick = { viewModel.prevWeek() },
                 onNextClick = { viewModel.nextWeek() },
-                canGoNext = canGoNext
+                canGoNext = canGoNext,
+                canGoPrev = canGoPrev
             )
         }
 
