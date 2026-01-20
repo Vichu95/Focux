@@ -304,18 +304,29 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 
                 _weeklyFocusScore.value = totalFocus / daysPassed
                 
-                // --- Deep Work ---
+                // --- Deep Work & Sleep ---
                 val totalOffline = weekSessions.filter { it.type == PulseEvents.SESSION_OFFLINE }.sumOf { it.duration }
-                // Approximate Sleep (Safe sum)
-                val totalSleep = statsList.sumOf { stat ->
-                    val sleepDur = stat.sleepTimeEnd - stat.sleepTimeStart
-                    if (sleepDur in 1..(14 * 3600 * 1000)) sleepDur else 0
-                }
-                val realDeepWork = (totalOffline - totalSleep).coerceAtLeast(0)
-                val totalActiveWeek = realDeepWork + totalTime
-                val deepPercentage = if (totalActiveWeek > 0) ((realDeepWork.toFloat() / totalActiveWeek) * 100).toInt() else 0
                 
-                _deepWorkDuration.value = "${formatDuration(realDeepWork)} ($deepPercentage%)"
+                // Calculate Total Sleep and Count of days with valid sleep data
+                var totalSleep = 0L
+                var sleepDaysCount = 0
+                
+                statsList.forEach { stat ->
+                    val sleepDur = stat.sleepTimeEnd - stat.sleepTimeStart
+                    // Basic validation: Sleep should be between 0 and 14 hours (safety check)
+                    if (sleepDur in 1..(16 * 3600 * 1000)) {
+                        totalSleep += sleepDur
+                        sleepDaysCount++
+                    }
+                }
+
+                // Deep Work = Offline - Sleep
+                val realDeepWork = (totalOffline - totalSleep).coerceAtLeast(0)
+                
+                // Average Sleep
+                val avgSleep = if (sleepDaysCount > 0) totalSleep / sleepDaysCount else 0L
+                
+                _deepWorkDuration.value = "You remained ${formatDuration(realDeepWork)} offline during the day time last week, and slept ${formatDuration(avgSleep)} average hours each day."
                 
             } else {
                 // Empty Week

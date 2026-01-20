@@ -47,12 +47,12 @@ fun DeepWorkInsightCard(duration: String) {
         Spacer(modifier = Modifier.width(PulseAppPaddingLarge))
         Column {
             Text(
-                text = "Total Deep Work",
-                style = com.focux.pulse.ui.theme.Typography.labelSmall.copy(color = PulseAppColorSecondary)
-            )
-            Text(
                 text = duration,
-                style = PulseAppFontLabel.copy(fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                style = com.focux.pulse.ui.theme.PulseAppFontBody.copy(
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Normal
+                )
             )
         }
     }
