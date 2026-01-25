@@ -40,12 +40,23 @@ fun TopAppsCard(data: List<TopAppItem>) {
 
         Spacer(modifier = Modifier.height(com.focux.pulse.ui.theme.PulseAppPaddingRegular))
 
-        data.forEach { item ->
+        if (data.isEmpty()) {
             Text(
-                text = "${item.rank}. ${item.app.name} (${item.type}) - ${item.duration}",
-                style = com.focux.pulse.ui.theme.PulseAppFontFocus,
+                text = "No Data Available",
+                style = com.focux.pulse.ui.theme.PulseAppFontFocus.copy(
+                    color = PulseAppColorSecondary,
+                    fontSize = 14.sp
+                ),
                 modifier = Modifier.padding(vertical = 4.dp)
             )
+        } else {
+            data.forEach { item ->
+                Text(
+                    text = "${item.rank}. ${item.app.name} (${item.type}) - ${item.duration}",
+                    style = com.focux.pulse.ui.theme.PulseAppFontFocus,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
         }
     }
 }

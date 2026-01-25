@@ -323,10 +323,19 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 // Deep Work = Offline - Sleep
                 val realDeepWork = (totalOffline - totalSleep).coerceAtLeast(0)
                 
+                // Average Offline per day
+                val avgOffline = if (daysPassed > 0) realDeepWork / daysPassed else 0L
+                
+                // Percentage of Day Time
+                // Total Duration = daysPassed * 24h
+                val totalDurationMs = daysPassed * 24 * 3600 * 1000L
+                val totalDayTime = (totalDurationMs - totalSleep).coerceAtLeast(1) // Avoid division by zero
+                val offlinePercentage = ((realDeepWork.toFloat() / totalDayTime) * 100).toInt().coerceIn(0, 100)
+                
                 // Average Sleep
                 val avgSleep = if (sleepDaysCount > 0) totalSleep / sleepDaysCount else 0L
                 
-                _deepWorkDuration.value = "You remained ${formatDuration(realDeepWork)} offline during the day time last week, and slept ${formatDuration(avgSleep)} average hours each day."
+                _deepWorkDuration.value = "You remained ${formatDuration(avgOffline)} ($offlinePercentage%) offline during the day time last week, and slept ${formatDuration(avgSleep)} average hours each day."
                 
             } else {
                 // Empty Week
@@ -342,7 +351,7 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 _topApps.value = emptyList()
                 _sessionLength.value = SessionLengthData("0h", "0h", "0h")
                 _weeklyFocusScore.value = 0
-                _deepWorkDuration.value = "0h 0m (0%)"
+                _deepWorkDuration.value = "No deep work data available for this week."
                 _routine.value = com.focux.pulse.utilities.RoutineData(
                      com.focux.pulse.utilities.AppUsage("No Data", "", "", ActivityType.Neutral) to 0,
                      com.focux.pulse.utilities.AppUsage("No Data", "", "", ActivityType.Neutral) to 0
