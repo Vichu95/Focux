@@ -25,7 +25,7 @@ fun DeepWorkInsightCard(duration: String) {
     Row(
         modifier = Modifier
             .width(com.focux.pulse.ui.theme.PulseAppCardWidth)
-            .height(80.dp)
+            .height(128.dp)
             .background(
                 androidx.compose.ui.graphics.Color.Transparent,
                 androidx.compose.foundation.shape.RoundedCornerShape(com.focux.pulse.ui.theme.PulseAppCornerRadiusMedium)
@@ -41,17 +41,23 @@ fun DeepWorkInsightCard(duration: String) {
         androidx.compose.material3.Icon(
             painter = painterResource(id = R.drawable.search_icon),
             contentDescription = "Deep Work",
-            modifier = Modifier.size(PulseAppIconSizeLarge),
+            modifier = Modifier.size(PulseAppIconSizeLarge), // 48dp
             tint = PulseAppColorPrimary
         )
-        Spacer(modifier = Modifier.width(PulseAppPaddingLarge))
-        Column {
+        Spacer(modifier = Modifier.width(20.dp)) // Gap 20px
+        Column(
+            modifier = Modifier
+                .width(280.dp) // Width 280px from CSS
+                .height(96.dp), // Height 96px from CSS
+            verticalArrangement = Arrangement.Center // Center content vertically within the text container
+        ) {
             Text(
                 text = duration,
                 style = com.focux.pulse.ui.theme.PulseAppFontBody.copy(
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Normal
+                    fontSize = 20.sp,
+                    lineHeight = 24.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
+                    color = androidx.compose.ui.graphics.Color.White
                 )
             )
         }
