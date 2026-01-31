@@ -90,21 +90,26 @@ fun TimelineFactItem(
         Row(
             modifier = Modifier
                 .width(PulseAppTimelineFactContentWidth)
-                .fillMaxHeight(),
-            // Removed horizontal padding for strict left alignment
+                .fillMaxHeight()
+                .padding(start = 12.dp), // Added padding to align Icon with App Text (71px + 12px ~ 84px)
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start
         ) {
-            // Icon
-            Image(
-                painter = painterResource(id = iconRes),
-                contentDescription = secondaryText,
-                modifier = if (iconHeight != null) {
-                    Modifier.size(width = iconSize, height = iconHeight)
-                } else {
-                    Modifier.size(iconSize)
-                }
-            )
+            // Icon Container (Fixed width 48dp to ensure text alignment across different icon sizes)
+            Box(
+                modifier = Modifier.width(48.dp), // CSS Frame 18 width
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = secondaryText,
+                    modifier = if (iconHeight != null) {
+                        Modifier.size(width = iconSize, height = iconHeight)
+                    } else {
+                        Modifier.size(iconSize)
+                    }
+                )
+            }
             
             Spacer(modifier = Modifier.width(8.dp)) // CSS gap: 8px
             
@@ -150,7 +155,7 @@ fun AppTimelineItem(isFirst: Boolean, isLast: Boolean, event: TimelineEvent, isE
             .fillMaxWidth()
             .height(PulseAppTimelineAppItemHeight)
             .padding(start = PulseAppIconSizeLarge, end = PulseAppIconSizeLarge),
-        horizontalArrangement = Arrangement.spacedBy(PulseAppPaddingLarge),
+        horizontalArrangement = Arrangement.spacedBy(4.dp), // Reduced from PulseAppPaddingLarge (32dp) to match CSS gap 4px
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Frame 20: Solid line column (20px wide)
@@ -295,7 +300,9 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
             )
 
             // Row (Frame 59): Time Range + Conditional Pill
+            // Fixed height 20dp to prevent time shift when Pill appears
             Row(
+                modifier = Modifier.height(20.dp), // CSS Frame 59 height
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
             ) {
@@ -366,8 +373,8 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
                         layoutDirection: androidx.compose.ui.unit.LayoutDirection,
                         popupContentSize: androidx.compose.ui.unit.IntSize
                     ): androidx.compose.ui.unit.IntOffset {
-                        // Position popup at bottom of anchor, centered horizontally
-                        val x = anchorBounds.left + (anchorBounds.width - popupContentSize.width) / 2
+                        // Position popup directly below the anchor, aligned left
+                        val x = anchorBounds.left
                         val y = anchorBounds.bottom
                         return androidx.compose.ui.unit.IntOffset(x, y)
                     }
