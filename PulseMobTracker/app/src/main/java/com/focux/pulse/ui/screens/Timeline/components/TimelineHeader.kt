@@ -23,10 +23,11 @@ fun TimelineHeader(
     onNextClick: () -> Unit,
     canGoNext: Boolean,
     canGoPrev: Boolean,
+    isEditMode: Boolean,
+    onEditClick: () -> Unit,
+    onSaveClick: () -> Unit,
     onFilterClick: () -> Unit
 ) {
-
-
     // Frame Date Filter
     Row(
         modifier = Modifier
@@ -45,38 +46,77 @@ fun TimelineHeader(
             canGoPrev = canGoPrev
         )
 
-        // Right: Filter Button (Frame 22)
-        androidx.compose.material3.Surface(
-            color = PulseAppColorSurface, // #2B4555
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium),
-            modifier = Modifier
-                .width(PulseAppTimelineFilterButtonWidth)
-                .height(PulseAppTimelineFilterButtonHeight)
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
-                .clickable { onFilterClick() }
+        // Right: Action Buttons
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            // Button 1: Edit / Close
+            androidx.compose.material3.Surface(
+                color = PulseAppColorSurface, // #2B4555
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium),
+                modifier = Modifier
+                    .width(100.dp) // Adjusted width to fit both
+                    .height(PulseAppTimelineFilterButtonHeight)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
+                    .clickable { onEditClick() }
             ) {
-                // Icon
-                Icon(
-                    painter = painterResource(id = com.focux.pulse.R.drawable.filter_icon),
-                    contentDescription = "Filter",
-                    tint = PulseAppColorPrimary, // #64B5F6
-                    modifier = Modifier.size(PulseAppTimelineFilterIconSize)
-                )
-                Spacer(modifier = Modifier.width(PulseAppPaddingSmall))
-                // Text
-                Text(
-                    text = "Filter",
-                    style = androidx.compose.ui.text.TextStyle(
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                        fontSize = 15.sp, // PulseAppFontSizeFocus is 15.sp
-                        color = PulseAppColorSecondary
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = if (isEditMode) com.focux.pulse.R.drawable.close_icon else com.focux.pulse.R.drawable.edit_icon),
+                        contentDescription = if (isEditMode) "Close" else "Edit",
+                        tint = PulseAppColorPrimary,
+                        modifier = Modifier.size(PulseAppTimelineFilterIconSize)
                     )
-                )
+                    Spacer(modifier = Modifier.width(PulseAppPaddingSmall))
+                    Text(
+                        text = if (isEditMode) "Close" else "Edit",
+                        style = androidx.compose.ui.text.TextStyle(
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontSize = 15.sp,
+                            color = PulseAppColorSecondary
+                        )
+                    )
+                }
+            }
+
+            // Button 2: Filter / Save
+            androidx.compose.material3.Surface(
+                color = PulseAppColorSurface, // #2B4555
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium),
+                modifier = Modifier
+                    .width(100.dp)
+                    .height(PulseAppTimelineFilterButtonHeight)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
+                    .clickable { 
+                        if (isEditMode) onSaveClick() else onFilterClick() 
+                    }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = if (isEditMode) com.focux.pulse.R.drawable.save_icon else com.focux.pulse.R.drawable.filter_icon),
+                        contentDescription = if (isEditMode) "Save" else "Filter",
+                        tint = PulseAppColorPrimary,
+                        modifier = Modifier.size(PulseAppTimelineFilterIconSize)
+                    )
+                    Spacer(modifier = Modifier.width(PulseAppPaddingSmall))
+                    Text(
+                        text = if (isEditMode) "Save" else "Filter",
+                        style = androidx.compose.ui.text.TextStyle(
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontSize = 15.sp,
+                            color = PulseAppColorSecondary
+                        )
+                    )
+                }
             }
         }
     }

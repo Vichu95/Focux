@@ -43,6 +43,9 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
     // State for Filter Sheet
     var showFilterSheet by remember { mutableStateOf(false) }
     
+    // State for Edit Mode
+    var isEditMode by remember { mutableStateOf(false) }
+    
     // Filter State
     val filterState by viewModel.filterState.collectAsState()
     val allDayEvents by viewModel.allDayEvents.collectAsState()
@@ -82,7 +85,13 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
                 onNextClick = { if (canGoNext) com.focux.pulse.ui.state.SessionDateManager.setDate(selectedDate.plusDays(1)) },
                 canGoNext = canGoNext,
                 canGoPrev = canGoPrev,
-                onFilterClick = { showFilterSheet = true }
+                onFilterClick = { showFilterSheet = true },
+                isEditMode = isEditMode,
+                onEditClick = { isEditMode = !isEditMode },
+                onSaveClick = { 
+                    // TODO: Implement save logic for changed categories
+                    isEditMode = false 
+                }
             )
         }
         
@@ -115,7 +124,8 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
                     TimelineItem(
                         event = event,
                         isFirst = index == 0,
-                        isLast = index == timelineEvents.lastIndex
+                        isLast = index == timelineEvents.lastIndex,
+                        isEditMode = isEditMode
                     )
                 }
             }

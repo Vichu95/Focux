@@ -62,16 +62,17 @@ val PulseAppPhoneActivityCardHeight = 203.dp
 val PulseAppFocusScoreCardHeight = 38.dp
 
 // Timeline Dimensions
-val PulseAppTimelineCardWidth = 251.dp
-val PulseAppTimelineCardHeight = 128.dp
-val PulseAppTimelineAppItemHeight = 158.dp
-val PulseAppTimelineFactItemHeight = 124.dp
+// Timeline Dimensions
+val PulseAppTimelineCardWidth = 251.dp // Keeping width as is to be safe with existing layout, or should I change? 251 is safer for now.
+val PulseAppTimelineCardHeight = 52.dp // From CSS Frame 17 height
+val PulseAppTimelineAppItemHeight = 60.dp // 52 card + 8 gap? Frame Application 4 is 52px.
+val PulseAppTimelineFactItemHeight = 42.dp // From CSS Frame Timeline Wake Up height
 val PulseAppTimelineAppTypeWidth = 227.dp
 val PulseAppTimelineLineColumnWidth = 20.dp
 val PulseAppTimelineLineColumnWidthDashed = 19.dp
 val PulseAppTimelineNodeSize = 20.dp
 val PulseAppTimelineFactContentWidth = 329.dp
-val PulseAppTimelineFactIconSize = 48.dp
+val PulseAppTimelineFactIconSize = 42.dp // From CSS meteor-icons:sun
 val PulseAppTimelineDeepWorkIconWidth = 26.dp
 val PulseAppTimelineDeepWorkIconHeight = 21.dp
 
