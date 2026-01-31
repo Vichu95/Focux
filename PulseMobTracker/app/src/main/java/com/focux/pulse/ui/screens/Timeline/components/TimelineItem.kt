@@ -86,14 +86,14 @@ fun TimelineFactItem(
         // Frame 15: Dashed line column (19px wide)
         DashedLineColumn(isFirst, isLast)
 
-        // Frame Deep Work Text / Frame 18: Content (329x124)
+        // Frame Deep Work Text / Frame 18: Content
         Row(
             modifier = Modifier
                 .width(PulseAppTimelineFactContentWidth)
-                .fillMaxHeight()
-                .padding(horizontal = 24.dp), // Adjusted padding
+                .fillMaxHeight(),
+            // Removed horizontal padding for strict left alignment
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start // Left align content
+            horizontalArrangement = Arrangement.Start
         ) {
             // Icon
             Image(
@@ -106,7 +106,7 @@ fun TimelineFactItem(
                 }
             )
             
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(8.dp)) // CSS gap: 8px
             
             // Text Column: Title (Top), Time (Bottom)
             Column(
@@ -117,19 +117,19 @@ fun TimelineFactItem(
                 Text(
                     text = secondaryText,
                     style = Typography.bodyLarge.copy(
-                        fontSize = 16.sp, // CSS: 16px
+                        fontSize = 16.sp,
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                         color = PulseAppColorPrimary
                     )
                 )
                 
-                Spacer(modifier = Modifier.height(3.dp)) // CSS: gap 3px
+                Spacer(modifier = Modifier.height(3.dp))
                 
                 // Primary Text (Time/Duration) - Bottom
                 Text(
                     text = primaryText,
                     style = Typography.bodyLarge.copy(
-                        fontSize = 12.sp, // CSS: 12px
+                        fontSize = 12.sp,
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                         color = PulseAppColorPrimary
                     )
@@ -265,20 +265,16 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
     var selectedType by remember { mutableStateOf(event.app.type ?: ActivityType.Neutral) }
 
     // Frame 17: 251x128 (Dynamic Height now)
+    // CSS Requirement: No border on the card itself
     Box(
         modifier = Modifier
             .width(PulseAppTimelineCardWidth)
-            .heightIn(min = PulseAppTimelineCardHeight) // Allow growth for Edit Mode
+            .heightIn(min = 56.dp) // CSS says Height 56px
             .background(
                 Color.Transparent,
                 androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium)
             )
-            .border(
-                PulseAppBorderWidthThick,
-                PulseAppColorPrimary,
-                androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium)
-            )
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
+            // Removed Border as per user request
     ) {
         // LAYER 1: Standard Card Content
         Column(
@@ -287,7 +283,7 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
                 .padding(vertical = 4.dp, horizontal = 12.dp), // CSS: padding 4px 12px
             verticalArrangement = Arrangement.spacedBy(4.dp) // CSS: gap 4px
         ) {
-            // App Name
+            // App Name (Frame 58)
             Text(
                 text = event.app.name,
                 style = Typography.bodyLarge.copy(
@@ -298,53 +294,61 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
                 )
             )
 
-            // Time Range
-            Text(
-                text = event.range,
-                style = Typography.labelSmall.copy(
-                    fontSize = 12.sp, // CSS: 12px
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                    color = Color.White
+            // Row (Frame 59): Time Range + Conditional Pill
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
+                // Time Range
+                Text(
+                    text = event.range,
+                    style = Typography.labelSmall.copy(
+                        fontSize = 12.sp, // CSS: 12px
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = Color.White
+                    )
                 )
-            )
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Categorization Pill (Click to open drawer) - Only in Edit Mode
-            if (isEditMode) {
-                Box(
-                    modifier = Modifier
-                        .width(227.dp)
-                        .height(32.dp)
-                        .border(
-                            PulseAppBorderWidth,
-                            PulseAppColorPrimary,
-                            androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium)
-                        )
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
-                        .clickable { isSelecting = true }
-                        .padding(horizontal = 12.dp, vertical = PulseAppPaddingTiny),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = selectedType.name,
-                            style = Typography.labelSmall.copy(
-                                fontSize = PulseAppFontSizeSmall,
-                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                color = PulseAppColorPrimary
+                // Conditional Pill (Frame 16) - "To right of time"
+                if (isEditMode) {
+                    Spacer(modifier = Modifier.width(30.dp)) // CSS: gap 30px within Frame 59
+                    
+                    Box(
+                        modifier = Modifier
+                            .width(140.dp) // CSS: 140px
+                            .height(20.dp)  // CSS: 20px
+                            .border(
+                                1.dp, // CSS: 1px solid
+                                PulseAppColorPrimary, // #64B5F6
+                                androidx.compose.foundation.shape.RoundedCornerShape(12.dp) // CSS: border-radius 12px
                             )
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Change Category",
-                            tint = PulseAppColorPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                            .clickable { isSelecting = true }
+                            // CSS: padding 0px
+                            ,
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center, // CSS: justify-content center
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = selectedType.name,
+                                style = Typography.labelSmall.copy(
+                                    fontSize = 12.sp, // CSS: 12px
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    color = PulseAppColorPrimary
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(10.dp)) // CSS: gap 10px
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Change Category",
+                                tint = PulseAppColorPrimary,
+                                modifier = Modifier.size(20.dp) // CSS: 20px
+                            )
+                        }
                     }
                 }
             }
@@ -353,9 +357,6 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
         // LAYER 2: Drawer in Popup for native dismiss behavior
         if (isSelecting && isEditMode) {
             val density = androidx.compose.ui.platform.LocalDensity.current
-            val drawerHeightPx = with(density) { 82.dp.toPx().toInt() }
-            val cardHeightPx = with(density) { PulseAppTimelineCardHeight.toPx().toInt() }
-            val cardWidthPx = with(density) { PulseAppTimelineCardWidth.toPx().toInt() }
             
             androidx.compose.ui.window.Popup(
                 popupPositionProvider = object : androidx.compose.ui.window.PopupPositionProvider {
@@ -367,7 +368,7 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
                     ): androidx.compose.ui.unit.IntOffset {
                         // Position popup at bottom of anchor, centered horizontally
                         val x = anchorBounds.left + (anchorBounds.width - popupContentSize.width) / 2
-                        val y = anchorBounds.bottom - popupContentSize.height
+                        val y = anchorBounds.bottom
                         return androidx.compose.ui.unit.IntOffset(x, y)
                     }
                 },
@@ -376,8 +377,7 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
             ) {
                 Column(
                     modifier = Modifier
-                        .width(PulseAppTimelineAppTypeWidth) // 227dp - matches card content area
-                        .height(82.dp)
+                        .width(140.dp) // Match pill width
                         .background(PulseAppColorBackground)
                         .border(
                             width = PulseAppBorderWidth,
@@ -392,7 +392,7 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f)
+                                .height(30.dp) // Reasonable tap target
                                 .clickable {
                                     selectedType = type
                                     isSelecting = false
@@ -402,15 +402,11 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
                             Text(
                                 text = type.name,
                                 style = Typography.labelSmall.copy(
-                                    fontSize = (PulseAppFontSizeSmall.value + 2).sp,
+                                    fontSize = 12.sp,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                                     color = if (type == selectedType) PulseAppColorPrimary else Color.Gray
                                 )
                             )
-                        }
-                        // Subtle separator
-                        if (type != ActivityType.values().last()) {
-                            Box(modifier = Modifier.fillMaxWidth(0.8f).height(1.dp).background(PulseAppColorPrimary.copy(alpha = 0.1f)))
                         }
                     }
                 }
