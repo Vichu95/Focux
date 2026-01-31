@@ -80,66 +80,78 @@ fun TimelineFactItem(
             .fillMaxWidth()
             .height(PulseAppTimelineFactItemHeight)
             .padding(start = PulseAppIconSizeLarge, end = PulseAppPaddingMedium),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.Start, // Changed to Start
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Frame 15: Dashed line column (19px wide)
-        DashedLineColumn(isFirst, isLast)
-
-        // Frame Deep Work Text / Frame 18: Content
-        Row(
+        // Frame 15 / Icon Column: 20px width (matches App Item Line Column width)
+        // This centers the Fact Icon on the timeline axis
+        // Frame 15 / Icon Column: 20px wide
+        // Replaced Box with Column to ensure dashed lines are interrupted by the icon (not drawn behind it)
+        Column(
             modifier = Modifier
-                .width(PulseAppTimelineFactContentWidth)
-                .fillMaxHeight()
-                .padding(start = 12.dp), // Added padding to align Icon with App Text (71px + 12px ~ 84px)
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
+                .width(20.dp)
+                .fillMaxHeight(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            // Icon Container (Fixed width 48dp to ensure text alignment across different icon sizes)
-            Box(
-                modifier = Modifier.width(48.dp), // CSS Frame 18 width
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = iconRes),
-                    contentDescription = secondaryText,
-                    modifier = if (iconHeight != null) {
-                        Modifier.size(width = iconSize, height = iconHeight)
-                    } else {
-                        Modifier.size(iconSize)
-                    }
-                )
-            }
+            // Upper Dashed Line
+            DashedLineVertical(
+                color = Color.White,
+                modifier = Modifier
+                    .width(1.dp)
+                    .weight(1f)
+            )
             
-            Spacer(modifier = Modifier.width(8.dp)) // CSS gap: 8px
+            // Icon (Sun/Moon/Leaf)
+            Image(
+                painter = painterResource(id = iconRes),
+                contentDescription = secondaryText,
+                modifier = if (iconHeight != null) {
+                    Modifier.size(width = iconSize, height = iconHeight)
+                } else {
+                    Modifier.size(iconSize)
+                }
+            )
+
+            // Lower Dashed Line
+            DashedLineVertical(
+                color = Color.White,
+                modifier = Modifier
+                    .width(1.dp)
+                    .weight(1f)
+            )
+        }
+
+        // Gap between Line/Icon and Text
+        Spacer(modifier = Modifier.width(16.dp)) 
+
+        // Text Column: Title (Top), Time (Bottom)
+        Column(
+            modifier = Modifier.fillMaxHeight(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.Start
+        ) {
+            // Secondary Text (Title) - Top
+            Text(
+                text = secondaryText,
+                style = Typography.bodyLarge.copy(
+                    fontSize = 16.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    color = PulseAppColorPrimary
+                )
+            )
             
-            // Text Column: Title (Top), Time (Bottom)
-            Column(
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.Start
-            ) {
-                // Secondary Text (Title) - Top
-                Text(
-                    text = secondaryText,
-                    style = Typography.bodyLarge.copy(
-                        fontSize = 16.sp,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                        color = PulseAppColorPrimary
-                    )
+            Spacer(modifier = Modifier.height(3.dp))
+            
+            // Primary Text (Time/Duration) - Bottom
+            Text(
+                text = primaryText,
+                style = Typography.bodyLarge.copy(
+                    fontSize = 12.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    color = PulseAppColorPrimary
                 )
-                
-                Spacer(modifier = Modifier.height(3.dp))
-                
-                // Primary Text (Time/Duration) - Bottom
-                Text(
-                    text = primaryText,
-                    style = Typography.bodyLarge.copy(
-                        fontSize = 12.sp,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                        color = PulseAppColorPrimary
-                    )
-                )
-            }
+            )
         }
     }
 }
@@ -322,38 +334,37 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
                     
                     Box(
                         modifier = Modifier
-                            .width(140.dp) // CSS: 140px
-                            .height(20.dp)  // CSS: 20px
+                            .width(200.dp) // Updated to 200dp
+                            .height(20.dp)
                             .border(
-                                1.dp, // CSS: 1px solid
-                                PulseAppColorPrimary, // #64B5F6
-                                androidx.compose.foundation.shape.RoundedCornerShape(12.dp) // CSS: border-radius 12px
+                                1.dp,
+                                PulseAppColorPrimary,
+                                androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
                             )
                             .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                             .clickable { isSelecting = true }
-                            // CSS: padding 0px
                             ,
                         contentAlignment = Alignment.Center
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center, // CSS: justify-content center
+                            horizontalArrangement = Arrangement.Center,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
                                 text = selectedType.name,
                                 style = Typography.labelSmall.copy(
-                                    fontSize = 12.sp, // CSS: 12px
+                                    fontSize = 12.sp,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                                     color = PulseAppColorPrimary
                                 )
                             )
-                            Spacer(modifier = Modifier.width(10.dp)) // CSS: gap 10px
+                            Spacer(modifier = Modifier.width(10.dp))
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = "Change Category",
                                 tint = PulseAppColorPrimary,
-                                modifier = Modifier.size(20.dp) // CSS: 20px
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -373,8 +384,8 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
                         layoutDirection: androidx.compose.ui.unit.LayoutDirection,
                         popupContentSize: androidx.compose.ui.unit.IntSize
                     ): androidx.compose.ui.unit.IntOffset {
-                        // Position popup directly below the anchor, aligned left
-                        val x = anchorBounds.left
+                        // Position popup directly below the anchor, centered horizontally
+                        val x = anchorBounds.left + (anchorBounds.width - popupContentSize.width) / 2
                         val y = anchorBounds.bottom
                         return androidx.compose.ui.unit.IntOffset(x, y)
                     }
@@ -384,7 +395,7 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
             ) {
                 Column(
                     modifier = Modifier
-                        .width(140.dp) // Match pill width
+                        .width(200.dp) // Match pill width 200dp
                         .background(PulseAppColorBackground)
                         .border(
                             width = PulseAppBorderWidth,
