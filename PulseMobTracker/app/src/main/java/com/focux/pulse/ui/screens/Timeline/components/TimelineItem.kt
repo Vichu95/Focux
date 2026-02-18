@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.layout.onGloballyPositioned
 import com.focux.pulse.R
 import com.focux.pulse.utilities.ActivityType
 import com.focux.pulse.utilities.TimelineEvent
@@ -173,8 +174,12 @@ fun AppTimelineItem(isFirst: Boolean, isLast: Boolean, event: TimelineEvent, isE
         // Frame 20: Solid line column (20px wide)
         SolidLineColumn(isFirst, isLast, packageName = event.app.iconName)
 
-        // Frame 17: App Card (251x128)
-        AppTimelineCard(event, isEditMode)
+        // Frame 17: App Card (Flexible Width)
+        AppTimelineCard(
+            event = event,
+            isEditMode = isEditMode,
+            modifier = Modifier.weight(1f) // Fill remaining space
+        )
     }
 }
 
@@ -277,15 +282,16 @@ fun DashedLineVertical(color: Color, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
+fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean, modifier: Modifier = Modifier) {
     var isSelecting by remember { mutableStateOf(false) }
     var selectedType by remember { mutableStateOf(event.app.type ?: ActivityType.Neutral) }
+    
+    // Frame 17: Flexible Width Card (Dynamic Height)
 
-    // Frame 17: 251x128 (Dynamic Height now)
+    // Frame 17: Flexible Width Card (Dynamic Height)
     // CSS Requirement: No border on the card itself
     Box(
-        modifier = Modifier
-            .width(PulseAppTimelineCardWidth)
+        modifier = modifier
             .heightIn(min = 56.dp) // CSS says Height 56px
             .background(
                 Color.Transparent,
@@ -330,11 +336,11 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
 
                 // Conditional Pill (Frame 16) - "To right of time"
                 if (isEditMode) {
-                    Spacer(modifier = Modifier.width(30.dp)) // CSS: gap 30px within Frame 59
+                    Spacer(modifier = Modifier.width(8.dp)) // Reduced gap
                     
                     Box(
                         modifier = Modifier
-                            .width(200.dp) // Updated to 200dp
+                            .width(140.dp) // Fixed width 140dp as requested
                             .height(20.dp)
                             .border(
                                 1.dp,
@@ -348,18 +354,23 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(end = 4.dp) // Slight padding for arrow
                         ) {
                             Text(
                                 text = selectedType.name,
                                 style = Typography.labelSmall.copy(
                                     fontSize = 12.sp,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                    color = PulseAppColorPrimary
-                                )
+                                    color = PulseAppColorPrimary,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                ),
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f) // Text takes available space, pushing arrow to end
                             )
-                            Spacer(modifier = Modifier.width(10.dp))
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = "Change Category",
@@ -374,7 +385,6 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
 
         // LAYER 2: Drawer in Popup for native dismiss behavior
         if (isSelecting && isEditMode) {
-            val density = androidx.compose.ui.platform.LocalDensity.current
             
             androidx.compose.ui.window.Popup(
                 popupPositionProvider = object : androidx.compose.ui.window.PopupPositionProvider {
@@ -384,8 +394,9 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
                         layoutDirection: androidx.compose.ui.unit.LayoutDirection,
                         popupContentSize: androidx.compose.ui.unit.IntSize
                     ): androidx.compose.ui.unit.IntOffset {
-                        // Position popup directly below the anchor, centered horizontally
-                        val x = anchorBounds.left + (anchorBounds.width - popupContentSize.width) / 2
+                        // Position popup directly below the anchor, align left edge
+                        // Since popup width matches button width, this is "right under"
+                        val x = anchorBounds.left
                         val y = anchorBounds.bottom
                         return androidx.compose.ui.unit.IntOffset(x, y)
                     }
@@ -395,7 +406,7 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean) {
             ) {
                 Column(
                     modifier = Modifier
-                        .width(200.dp) // Match pill width 200dp
+                        .width(140.dp) // Match fixed button width 140dp
                         .background(PulseAppColorBackground)
                         .border(
                             width = PulseAppBorderWidth,
