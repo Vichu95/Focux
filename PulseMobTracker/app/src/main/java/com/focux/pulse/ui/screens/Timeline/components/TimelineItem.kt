@@ -341,7 +341,7 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean, modifier: Modifie
                     Box(
                         modifier = Modifier
                             
-                            .width(150.dp) // Adjusted to 150dp
+                            .width(130.dp) // Adjusted to 130dp
                             .height(20.dp)
                             .border(
                                 1.dp,
@@ -403,7 +403,7 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean, modifier: Modifie
                         ) {
                             Column(
                                 modifier = Modifier
-                                    .width(150.dp) // Match button width 150dp
+                                    .width(130.dp) // Match button width 130dp
                                     .background(PulseAppColorBackground)
                                     .border(
                                             width = PulseAppBorderWidth,
