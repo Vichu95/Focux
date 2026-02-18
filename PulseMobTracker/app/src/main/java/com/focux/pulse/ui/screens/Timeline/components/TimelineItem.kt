@@ -340,7 +340,8 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean, modifier: Modifie
                     
                     Box(
                         modifier = Modifier
-                            .width(140.dp) // Fixed width 140dp as requested
+                            
+                            .width(150.dp) // Adjusted to 150dp
                             .height(20.dp)
                             .border(
                                 1.dp,
@@ -378,68 +379,70 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean, modifier: Modifie
                                 modifier = Modifier.size(20.dp)
                             )
                         }
-                    }
-                }
-            }
-        }
 
-        // LAYER 2: Drawer in Popup for native dismiss behavior
-        if (isSelecting && isEditMode) {
-            
-            androidx.compose.ui.window.Popup(
-                popupPositionProvider = object : androidx.compose.ui.window.PopupPositionProvider {
-                    override fun calculatePosition(
-                        anchorBounds: androidx.compose.ui.unit.IntRect,
-                        windowSize: androidx.compose.ui.unit.IntSize,
-                        layoutDirection: androidx.compose.ui.unit.LayoutDirection,
-                        popupContentSize: androidx.compose.ui.unit.IntSize
-                    ): androidx.compose.ui.unit.IntOffset {
-                        // Position popup directly below the anchor, align left edge
-                        // Since popup width matches button width, this is "right under"
-                        val x = anchorBounds.left
-                        val y = anchorBounds.bottom
-                        return androidx.compose.ui.unit.IntOffset(x, y)
-                    }
-                },
-                onDismissRequest = { isSelecting = false },
-                properties = androidx.compose.ui.window.PopupProperties(focusable = true)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .width(140.dp) // Match fixed button width 140dp
-                        .background(PulseAppColorBackground)
-                        .border(
-                            width = PulseAppBorderWidth,
-                            color = PulseAppColorPrimary,
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium)
-                        )
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium)),
-                    verticalArrangement = Arrangement.SpaceEvenly,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    ActivityType.values().forEach { type ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(30.dp) // Reasonable tap target
-                                .clickable {
-                                    selectedType = type
-                                    isSelecting = false
-                                },
-                            contentAlignment = Alignment.Center
+                        // LAYER 2: Drawer in Popup for native dismiss behavior
+                        if (isSelecting && isEditMode) {
+                            
+                            androidx.compose.ui.window.Popup(
+                                popupPositionProvider = object : androidx.compose.ui.window.PopupPositionProvider {
+                                    override fun calculatePosition(
+                                        anchorBounds: androidx.compose.ui.unit.IntRect,
+                                        windowSize: androidx.compose.ui.unit.IntSize,
+                                        layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+                                        popupContentSize: androidx.compose.ui.unit.IntSize
+                                    ): androidx.compose.ui.unit.IntOffset {
+                                        // Position popup directly below the anchor, align left edge
+                                        // Since popup width matches button width, this is "right under"
+                                    val x = anchorBounds.left
+                                    val y = anchorBounds.top // Start at top-left of the button (overlaying it)
+                                    return androidx.compose.ui.unit.IntOffset(x, y)
+                                }
+                            },
+                            onDismissRequest = { isSelecting = false },
+                            properties = androidx.compose.ui.window.PopupProperties(focusable = true)
                         ) {
-                            Text(
-                                text = type.name,
-                                style = Typography.labelSmall.copy(
-                                    fontSize = 12.sp,
-                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                    color = if (type == selectedType) PulseAppColorPrimary else Color.Gray
-                                )
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .width(150.dp) // Match button width 150dp
+                                    .background(PulseAppColorBackground)
+                                    .border(
+                                            width = PulseAppBorderWidth,
+                                            color = PulseAppColorPrimary,
+                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium)
+                                        )
+                                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium)),
+                                    verticalArrangement = Arrangement.SpaceEvenly,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    ActivityType.values().forEach { type ->
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(30.dp) // Reasonable tap target
+                                                .clickable {
+                                                    selectedType = type
+                                                    isSelecting = false
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = type.name,
+                                                style = Typography.labelSmall.copy(
+                                                    fontSize = 12.sp,
+                                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                                    color = if (type == selectedType) PulseAppColorPrimary else Color.Gray
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+
+
     }
 }
