@@ -62,7 +62,7 @@ fun SystemPermissionsSection() {
             
             Text(
                 text = "Required permissions for Focux to operate correctly.",
-                style = PulseAppFontBody,
+                style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall),
                 color = PulseAppColorSecondary
             )
             
@@ -108,7 +108,7 @@ private fun PermissionRow(
             Text(
                 text = title,
                 style = PulseAppFontBody,
-                color = PulseAppColorPrimary
+                color = PulseAppColorSecondary
             )
             
             Text(
@@ -126,7 +126,7 @@ private fun PermissionRow(
         
         Text(
             text = description,
-            style = PulseAppFontLabel,
+            style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall),
             color = PulseAppColorSecondary
         )
         

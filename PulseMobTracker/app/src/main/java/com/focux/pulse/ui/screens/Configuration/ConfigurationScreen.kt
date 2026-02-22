@@ -68,7 +68,7 @@ fun ConfigurationScreen() {
                 
                 Text(
                     text = "Clear all raw data and reset processing indexes. Use this if you encounter data issues after reinstalling.",
-                    style = PulseAppFontBody,
+                    style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall),
                     color = PulseAppColorSecondary
                 )
                 
@@ -187,7 +187,7 @@ fun ConfigurationScreen() {
                 if (statusMessage.isNotEmpty()) {
                     Text(
                         text = statusMessage,
-                        style = PulseAppFontBody,
+                        style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall),
                         color = if (statusMessage.startsWith("✓")) PulseAppColorPrimary else PulseAppColorDistracting
                     )
                 }

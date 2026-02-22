@@ -76,7 +76,8 @@ fun AppCategorySection(
             ) {
                 Text(
                     text = "App Category",
-                    style = PulseAppFontLabel.copy(color = PulseAppColorPrimary)
+                    style = PulseAppFontSubHeader,
+                    color = PulseAppColorPrimary
                 )
 
                 Surface(
