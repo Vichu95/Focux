@@ -196,7 +196,8 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                             deepWorkDuration = formatDuration(session.duration)
                         )
                     } else {
-                        val activityType = when (categoryMap[session.packageName]) {
+                        val activeCategoryStr = session.categoryOverride ?: categoryMap[session.packageName]
+                        val activityType = when (activeCategoryStr) {
                             AppCategory.PRODUCTIVE -> ActivityType.Productive
                             AppCategory.DISTRACTING -> ActivityType.Distracting
                             AppCategory.NEUTRAL -> ActivityType.Neutral
@@ -209,7 +210,9 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                                 name = AppInfoHelper.getAppName(context, session.packageName),
                                 iconName = session.packageName,
                                 duration = formatDuration(session.duration),
-                                type = activityType 
+                                type = activityType,
+                                sessionId = session.id,
+                                categoryOverride = session.categoryOverride
                             ),
                             range = "${formatTime(session.startTime)} - ${formatTime(session.endTime)}",
                             isDeepWork = false,
@@ -433,6 +436,25 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
             isTimeFilterActive = !isDefault,
             activePreset = preset
         )
+    }
+
+    fun updateSessionCategory(sessionId: Long, newCategory: ActivityType) {
+        viewModelScope.launch {
+            val appCategoryStr = when (newCategory) {
+                ActivityType.Productive -> AppCategory.PRODUCTIVE
+                ActivityType.Distracting -> AppCategory.DISTRACTING
+                ActivityType.Neutral -> AppCategory.NEUTRAL
+                ActivityType.Ignored -> AppCategory.IGNORED
+            }
+            analyticsDao.updateSessionCategoryOverride(sessionId, appCategoryStr)
+            
+            // Recalculate stats immediately to reflect changes in UI
+            // Note: In real app, you might want to inject Processor or call WorkManager
+            val processor = com.focux.pulse.data.processors.DailySummaryProcessor(
+                context, analyticsDao, appInfoDao
+            )
+            processor.recalculateAllDailyStats()
+        }
     }
 
     private fun mergeAdjacentDeepWork(events: List<TimelineEvent>): List<TimelineEvent> {

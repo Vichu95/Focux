@@ -31,7 +31,7 @@ import com.focux.pulse.utilities.TimelineEvent
 import com.focux.pulse.ui.theme.*
 
 @Composable
-fun TimelineItem(event: TimelineEvent, isFirst: Boolean, isLast: Boolean, isEditMode: Boolean) {
+fun TimelineItem(event: TimelineEvent, isFirst: Boolean, isLast: Boolean, isEditMode: Boolean, onCategoryChange: ((ActivityType) -> Unit)? = null) {
     when {
         event.app.name == "Morning" -> TimelineFactItem(
             isFirst = isFirst,
@@ -58,7 +58,7 @@ fun TimelineItem(event: TimelineEvent, isFirst: Boolean, isLast: Boolean, isEdit
             primaryText = event.deepWorkDuration ?: "45m",
             secondaryText = "Deep Work"
         )
-        else -> AppTimelineItem(isFirst, isLast, event, isEditMode)
+        else -> AppTimelineItem(isFirst, isLast, event, isEditMode, onCategoryChange)
     }
 }
 
@@ -162,7 +162,7 @@ fun TimelineFactItem(
  * Frame Timeline Application: 412x158, padding: 0px 48px, gap: 32px
  */
 @Composable
-fun AppTimelineItem(isFirst: Boolean, isLast: Boolean, event: TimelineEvent, isEditMode: Boolean) {
+fun AppTimelineItem(isFirst: Boolean, isLast: Boolean, event: TimelineEvent, isEditMode: Boolean, onCategoryChange: ((ActivityType) -> Unit)? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -178,6 +178,7 @@ fun AppTimelineItem(isFirst: Boolean, isLast: Boolean, event: TimelineEvent, isE
         AppTimelineCard(
             event = event,
             isEditMode = isEditMode,
+            onCategoryChange = onCategoryChange,
             modifier = Modifier.weight(1f) // Fill remaining space
         )
     }
@@ -282,7 +283,7 @@ fun DashedLineVertical(color: Color, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean, modifier: Modifier = Modifier) {
+fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean, onCategoryChange: ((ActivityType) -> Unit)? = null, modifier: Modifier = Modifier) {
     var isSelecting by remember { mutableStateOf(false) }
     var selectedType by remember { mutableStateOf(event.app.type ?: ActivityType.Neutral) }
     
@@ -428,6 +429,7 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean, modifier: Modifie
                                                 .clickable {
                                                     selectedType = type
                                                     isSelecting = false
+                                                    onCategoryChange?.invoke(type)
                                                 },
                                             contentAlignment = Alignment.Center
                                         ) {

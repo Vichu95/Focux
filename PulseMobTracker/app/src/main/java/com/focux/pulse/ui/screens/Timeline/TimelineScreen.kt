@@ -89,7 +89,6 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
                 isEditMode = isEditMode,
                 onEditClick = { isEditMode = !isEditMode },
                 onSaveClick = { 
-                    // TODO: Implement save logic for changed categories
                     isEditMode = false 
                 }
             )
@@ -125,7 +124,10 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
                         event = event,
                         isFirst = index == 0,
                         isLast = index == timelineEvents.lastIndex,
-                        isEditMode = isEditMode
+                        isEditMode = isEditMode,
+                        onCategoryChange = { newCategory ->
+                            viewModel.updateSessionCategory(event.app.sessionId, newCategory)
+                        }
                     )
                 }
             }

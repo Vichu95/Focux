@@ -34,5 +34,6 @@ data class AppSession(
     val type: String,
     val date: String,
     val startTimeStr: String = "",
-    val endTimeStr: String = ""
+    val endTimeStr: String = "",
+    val categoryOverride: String? = null
 )

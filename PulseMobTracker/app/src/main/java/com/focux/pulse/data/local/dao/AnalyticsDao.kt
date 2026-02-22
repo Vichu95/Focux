@@ -33,6 +33,12 @@ interface AnalyticsDao {
     // --- App Sessions ---
 
     /**
+     * Updates the category override for a specific session.
+     */
+    @Query("UPDATE app_sessions SET categoryOverride = :category WHERE id = :sessionId")
+    suspend fun updateSessionCategoryOverride(sessionId: Long, category: String)
+
+    /**
      * Batch inserts a list of processed sessions.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
