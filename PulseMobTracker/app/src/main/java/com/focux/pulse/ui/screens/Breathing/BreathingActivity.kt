@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.focux.pulse.service.AppInterceptorService
 import com.focux.pulse.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -44,9 +45,7 @@ class BreathingActivity : ComponentActivity() {
                             val launchIntent = packageManager.getLaunchIntentForPackage(targetPackageName)
                             if (launchIntent != null) {
                                 // Important: We MUST flag this so our service doesn't re-intercept immediately
-                                // This requires keeping state. For Phase 1, we might end in an intercept loop
-                                // unless we temporarily whitelist. We will figure this out in Phase 2.
-                                // For now, just exit BreathingActivity.
+                                AppInterceptorService.allowAppContinuance(targetPackageName, durationMs = 5 * 60 * 1000) // 5 minutes free
                                 startActivity(launchIntent)
                             }
                             finish()

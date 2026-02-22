@@ -107,13 +107,13 @@ private fun PermissionRow(
         ) {
             Text(
                 text = title,
-                style = PulseAppFontBody,
+                style = PulseAppFontSubHeader,
                 color = PulseAppColorSecondary
             )
             
             Text(
                 text = if (isGranted) "Granted" else "Missing",
-                style = PulseAppFontLabel,
+                style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall),
                 color = if (isGranted) PulseAppColorPrimary else PulseAppColorDistracting,
                 modifier = Modifier
                     .background(

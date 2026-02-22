@@ -17,6 +17,16 @@ class AppInterceptorService : AccessibilityService() {
     private var lastInterceptTime: Long = 0
     private val scope = CoroutineScope(Dispatchers.IO)
 
+    companion object {
+        // Map of <PackageName, ExpirationTimeMs>
+        // Apps in this map won't be intercepted until their time expires
+        val temporarilyAllowedApps = mutableMapOf<String, Long>()
+        
+        fun allowAppContinuance(packageName: String, durationMs: Long = 300000) { // Default 5 mins
+            temporarilyAllowedApps[packageName] = System.currentTimeMillis() + durationMs
+        }
+    }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         Log.d("AppInterceptor", "Service connected")
@@ -32,9 +42,15 @@ class AppInterceptorService : AccessibilityService() {
             
             // Prevent self-interception or looping
             if (packageName == "com.focux.pulse" || packageName == "com.android.systemui") return
+            
+            // Cleanup expired whitelist entries occasionally
+            val now = System.currentTimeMillis()
+            temporarilyAllowedApps.entries.removeIf { it.value < now }
+
+            // Check if app is currently whitelisted (user just clicked "Proceed")
+            if (temporarilyAllowedApps.containsKey(packageName)) return
 
             // Debounce: Don't intercept the same app multiple times within a 5-second window
-            val now = System.currentTimeMillis()
             if (packageName != lastInterceptedPackage || (now - lastInterceptTime) > 5000) {
                 lastInterceptedPackage = packageName
                 lastInterceptTime = now
