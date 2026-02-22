@@ -311,12 +311,31 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 var totalSleep = 0L
                 var sleepDaysCount = 0
                 
-                statsList.forEach { stat ->
-                    val sleepDur = stat.sleepTimeEnd - stat.sleepTimeStart
-                    // Basic validation: Sleep should be between 0 and 14 hours (safety check)
-                    if (sleepDur in 1..(16 * 3600 * 1000)) {
-                        totalSleep += sleepDur
-                        sleepDaysCount++
+                for (stat in statsList) {
+                    val yesterdayDateStr = try {
+                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        val d = sdf.parse(stat.date)
+                        val cal = Calendar.getInstance()
+                        cal.time = d!!
+                        cal.add(Calendar.DAY_OF_YEAR, -1)
+                        sdf.format(cal.time)
+                    } catch (e: Exception) { null }
+                    
+                    val yesterdayStat = if (yesterdayDateStr != null) {
+                        weekStatsMap[yesterdayDateStr] ?: analyticsDao.getDailyStats(yesterdayDateStr)
+                    } else null
+                    
+                    // Actual sleep for "Today" is Today's wakeup (sleepTimeEnd) - Yesterday's bedtime (sleepTimeStart)
+                    if (yesterdayStat != null && yesterdayStat.sleepTimeStart > 0 && stat.sleepTimeEnd > 0) {
+                        val totalSleepWindow = stat.sleepTimeEnd - yesterdayStat.sleepTimeStart
+                        // Subtract time user was on phone after bedtime and before wakeup
+                        val realSleep = totalSleepWindow - stat.sleepPhoneDuration
+                        
+                        // Basic validation: Sleep should be between 1 and 16 hours
+                        if (realSleep in 1..(16 * 3600 * 1000L)) {
+                            totalSleep += realSleep
+                            sleepDaysCount++
+                        }
                     }
                 }
 
