@@ -304,15 +304,22 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 
                 val totalAppCount = validAppSessions.size
                 val totalSessionDuration = validAppSessions.sumOf { it.duration }
-                
                 val avgSessionDuration = if (totalAppCount > 0) totalSessionDuration / totalAppCount else 0L
 
-                val debugString = "${formatDuration(totalSessionDuration)} / $totalAppCount = ${formatDuration(avgSessionDuration)}"
+                val productiveSessions = validAppSessions.filter { getType(it.packageName) == ActivityType.Productive }
+                val prodCount = productiveSessions.size
+                val prodTotal = productiveSessions.sumOf { it.duration }
+                val prodAvg = if (prodCount > 0) prodTotal / prodCount else 0L
+
+                val distractingSessions = validAppSessions.filter { getType(it.packageName) == ActivityType.Distracting }
+                val distCount = distractingSessions.size
+                val distTotal = distractingSessions.sumOf { it.duration }
+                val distAvg = if (distCount > 0) distTotal / distCount else 0L
 
                 _sessionLength.value = SessionLengthData(
-                    overall = debugString,
-                    productive = "0m",
-                    distracting = "0m"
+                    overall = formatDuration(avgSessionDuration),
+                    productive = formatDuration(prodAvg),
+                    distracting = formatDuration(distAvg)
                 )
 
                 // Re-calculating Focus Score total
