@@ -46,6 +46,9 @@
 
         <activity android:name=".ui.screens.Breathing.BreathingActivity"
             android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="singleInstance"
             android:theme="@style/Theme.Pulse" />
     </application>
 

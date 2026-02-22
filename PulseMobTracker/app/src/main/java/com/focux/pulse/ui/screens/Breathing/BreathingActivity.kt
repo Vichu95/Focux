@@ -3,19 +3,25 @@ package com.focux.pulse.ui.screens.Breathing
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -23,9 +29,11 @@ import androidx.compose.ui.unit.sp
 import com.focux.pulse.service.AppInterceptorService
 import com.focux.pulse.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.random.Random
 
 class BreathingActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -42,7 +50,7 @@ class BreathingActivity : ComponentActivity() {
             PulseTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = PulseAppColorBackground
+                    color = Color.Black // Dark theme explicitly for this breathing screen to match reference
                 ) {
                     BreathingScreen(
                         targetPackageName = targetPackageName,
@@ -72,7 +80,6 @@ class BreathingActivity : ComponentActivity() {
                             finish()
                         },
                         onExit = {
-                            // Go back home
                             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                                 addCategory(Intent.CATEGORY_HOME)
                                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -87,6 +94,24 @@ class BreathingActivity : ComponentActivity() {
     }
 }
 
+data class Particle(
+    val angle: Float,
+    val radiusRatio: Float,
+    val size: Float,
+    val speed: Float
+)
+
+fun getOrdinal(n: Int): String {
+    val suffix = if (n in 11..13) "th" else when (n % 10) {
+        1 -> "st"
+        2 -> "nd"
+        3 -> "rd"
+        else -> "th"
+    }
+    return "$n$suffix"
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BreathingScreen(
     targetPackageName: String,
@@ -99,178 +124,207 @@ fun BreathingScreen(
     onProceed: () -> Unit,
     onExit: () -> Unit
 ) {
-    // 1. Inhale (duration), 2. Hold (duration), 3. Exhale (duration), 4. Hold (duration)
+    BackHandler(onBack = onExit)
+    
     val phaseDurationMs = breathingDuration * 1000L
     val cycleDurationMs = phaseDurationMs * 4L
-    var isSequenceComplete by remember { mutableStateOf(false) }
-    var currentPhase by remember { mutableStateOf("Inhale...") }
-    var progress by remember { mutableStateOf(0f) }
-
-    // Animation configuration
-    val infiniteTransition = rememberInfiniteTransition(label = "breathing")
     
-    // Animate the circle size
-    val circleScale by infiniteTransition.animateFloat(
-        initialValue = 0.5f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = LinearOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
-
-    // Phase timer
+    var isSequenceComplete by remember { mutableStateOf(false) }
+    var currentPhaseText by remember { mutableStateOf("Inhale...") }
+    var currentPhaseScale by remember { mutableStateOf(0f) } // 0f to 1f representing breathing expansion
+    
+    // We will use the already calculated `currentPhaseScale` to drive the breathing pulse.
+    // For rotation, we just need a constantly increasing value.
+    var rotation by remember { mutableStateOf(0f) }
+    
+    // Looping timer
     LaunchedEffect(Unit) {
         val startTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < cycleDurationMs) {
+        while (true) {
             val elapsed = System.currentTimeMillis() - startTime
-            progress = elapsed.toFloat() / cycleDurationMs
-            
             val phaseInMs = elapsed % cycleDurationMs
-            currentPhase = when {
-                phaseInMs < phaseDurationMs -> "Inhale..."
-                phaseInMs < phaseDurationMs * 2 -> "Hold."
-                phaseInMs < phaseDurationMs * 3 -> "Exhale..."
-                else -> "Hold."
+            
+            // Update rotation continuously. 
+            // 30 seconds for a full rotation (2 * PI) = (2 * PI) / 30000 per ms.
+            rotation = (elapsed % 30000L).toFloat() / 30000f * (2f * Math.PI.toFloat())
+            
+            val secondsLeft = ((phaseDurationMs - (phaseInMs % phaseDurationMs)) / 1000).toInt() + 1
+            
+            when {
+                phaseInMs < phaseDurationMs -> {
+                    // Inhale
+                    currentPhaseText = "Inhale... ${secondsLeft}s"
+                    currentPhaseScale = (phaseInMs.toFloat() / phaseDurationMs)
+                }
+                phaseInMs < phaseDurationMs * 2 -> {
+                    // Hold full
+                    currentPhaseText = "Hold... ${secondsLeft}s"
+                    currentPhaseScale = 1f
+                }
+                phaseInMs < phaseDurationMs * 3 -> {
+                    // Exhale
+                    currentPhaseText = "Exhale... ${secondsLeft}s"
+                    val exElapsed = phaseInMs - phaseDurationMs * 2
+                    currentPhaseScale = 1f - (exElapsed.toFloat() / phaseDurationMs)
+                }
+                else -> {
+                    // Hold empty
+                    currentPhaseText = "Hold... ${secondsLeft}s"
+                    currentPhaseScale = 0f
+                }
             }
-            delay(16) // ~60fps
+            
+            if (elapsed >= cycleDurationMs) {
+                isSequenceComplete = true
+            }
+            
+            delay(16)
         }
-        progress = 1f
-        currentPhase = "Mindful Pause Complete."
-        isSequenceComplete = true
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(PulseAppPaddingLarge),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        
-        val isDailyExceeded = dailyLimitMins != -1 && usedDailyMins >= dailyLimitMins
-        val isOpensExceeded = opensLimit != -1 && usedOpens >= opensLimit
-        
-        val headerText = when {
-            isDailyExceeded -> "Daily Limit Exceeded"
-            isOpensExceeded -> "App Opens Limit Reached"
-            else -> "Mindful Interception"
+    // Particle Setup
+    val particleCount = 180
+    val particles = remember {
+        List(particleCount) {
+            Particle(
+                angle = Random.nextFloat() * 2f * Math.PI.toFloat(),
+                radiusRatio = Random.nextFloat() * 0.7f + 0.3f, // Avoid clump in center
+                size = Random.nextFloat() * 6f + 2f,
+                speed = Random.nextFloat() * 0.5f + 0.1f
+            )
         }
-        
-        val bodyText = when {
-            isDailyExceeded -> "You've exceeded your daily allowance for this app. Take a breath and reconsider."
-            isOpensExceeded -> "You've opened this app too many times today. Take a breath and reconsider."
-            else -> "You are trying to open this app. Take a moment to breathe before proceeding."
-        }
+    }
 
-        Text(
-            text = headerText,
-            style = PulseAppFontHeader,
-            color = if (isDailyExceeded || isOpensExceeded) PulseAppColorDistracting else PulseAppColorPrimary,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Text(
-            text = bodyText,
-            style = PulseAppFontBody,
-            color = PulseAppColorSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (sessionLimitMins != -1) {
-                Text(text = "Session Limit: $sessionLimitMins mins", style = PulseAppFontLabel, color = PulseAppColorSecondary)
-            }
-            if (dailyLimitMins != -1) {
-                val color = if (usedDailyMins >= dailyLimitMins) PulseAppColorDistracting else PulseAppColorSecondary
-                Text(text = "Daily Limit: $usedDailyMins / $dailyLimitMins mins", style = PulseAppFontLabel, color = color)
-            }
-            if (opensLimit != -1) {
-                val color = if (usedOpens >= opensLimit) PulseAppColorDistracting else PulseAppColorSecondary
-                Text(text = "Daily Opens: $usedOpens / $opensLimit times", style = PulseAppFontLabel, color = color)
-            }
-            if (sessionLimitMins == -1 && dailyLimitMins == -1 && opensLimit == -1) {
-                Text(text = "No Explicit Limits set for this category", style = PulseAppFontLabel, color = PulseAppColorSecondary)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        // Breathing Circle
-        Box(
-            contentAlignment = Alignment.Center,
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        Column(
             modifier = Modifier
-                .size(200.dp)
-                .padding(16.dp)
+                .fillMaxSize()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Background circle
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .background(PulseAppColorSurface)
-            )
+            // Push top text down more
+            Spacer(modifier = Modifier.weight(0.8f))
             
-            // Animated breathing circle
+            AnimatedVisibility(
+                visible = isSequenceComplete,
+                enter = fadeIn(animationSpec = tween(1000))
+            ) {
+                Text(
+                    text = "Your focus is breaking.",
+                    style = PulseAppFontHeader.copy(fontSize = 22.sp, fontWeight = FontWeight.SemiBold),
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+            }
+            
+            Spacer(modifier = Modifier.weight(0.5f))
+            
+            // Breathing Particle Sphere
             Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .fillMaxSize(fraction = if(isSequenceComplete) 1f else circleScale)
-                    .clip(CircleShape)
-                    .background(PulseAppColorPrimary.copy(alpha = 0.3f))
-            )
-
+                    .size(300.dp)
+            ) {
+                val primaryColor = PulseAppColorPrimary
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val center = Offset(size.width / 2, size.height / 2)
+                    val maxRadius = size.width / 2
+                    val minRadius = maxRadius * 0.4f
+                    val currentRadius = minRadius + (maxRadius - minRadius) * (0.1f + 0.9f * currentPhaseScale)
+                    
+                    particles.forEach { p ->
+                        val r = currentRadius * p.radiusRatio
+                        val theta = p.angle + rotation * p.speed
+                        val x = center.x + r * cos(theta)
+                        val y = center.y + r * sin(theta)
+                        
+                        // slight pulsing opacity based on scale
+                        val alpha = 0.3f + 0.7f * currentPhaseScale
+                        drawCircle(
+                            color = primaryColor.copy(alpha = alpha),
+                            radius = p.size,
+                            center = Offset(x, y)
+                        )
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Inhale/Exhale text below the animation, smaller
             Text(
-                text = currentPhase,
-                style = PulseAppFontHeader.copy(fontSize = 24.sp, fontWeight = FontWeight.Medium),
-                color = PulseAppColorPrimary,
+                text = currentPhaseText,
+                style = PulseAppFontBody.copy(fontSize = 15.sp, letterSpacing = 0.5.sp),
+                color = Color.LightGray,
                 textAlign = TextAlign.Center
             )
-        }
-        
-        Spacer(modifier = Modifier.height(32.dp))
+            
+            Spacer(modifier = Modifier.weight(1f))
 
-        // Progress Bar (Timer)
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = PulseAppColorPrimary,
-            trackColor = PulseAppColorSurface,
-            strokeCap = StrokeCap.Round
-        )
-
-        Spacer(modifier = Modifier.height(64.dp))
-
-        // Actions
-        if (isSequenceComplete) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth(0.8f)
+            // Fade in info and buttons at the end
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isSequenceComplete,
+                enter = fadeIn(animationSpec = tween(1000))
             ) {
-                Button(
-                    onClick = onExit,
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Exit. I don't need this app right now.", color = PulseAppColorBackground)
-                }
-                
-                OutlinedButton(
-                    onClick = onProceed,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorSecondary)
-                ) {
-                    Text("Proceed intentionally")
+                    // Limits info
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    ) {
+                        if (sessionLimitMins != -1) {
+                            Text("Session Limit: $sessionLimitMins mins", color = Color.Gray, style = PulseAppFontLabel.copy(fontSize = 12.sp))
+                        }
+                        if (dailyLimitMins != -1) {
+                            val color = if (usedDailyMins >= dailyLimitMins) PulseAppColorDistracting else Color.Gray
+                            Text("Daily Limit: $usedDailyMins / $dailyLimitMins mins", color = color, style = PulseAppFontLabel.copy(fontSize = 12.sp))
+                        }
+                        if (opensLimit != -1) {
+                            val color = if (usedOpens >= opensLimit) PulseAppColorDistracting else Color.Gray
+                            Text("Daily Opens: $usedOpens / $opensLimit times", color = color, style = PulseAppFontLabel.copy(fontSize = 12.sp))
+                        }
+                    }
+                    
+                    // Smaller Buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(0.85f), // Don't span full width
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Button(
+                            onClick = onExit,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp), // Smaller height
+                            colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorSurface),
+                            shape = RoundedCornerShape(22.dp), // More rounded
+                            contentPadding = PaddingValues(horizontal = 8.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.LightGray, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Close App", color = Color.LightGray, style = PulseAppFontLabel.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium))
+                        }
+                        
+                        Button(
+                            onClick = onProceed,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary),
+                            shape = RoundedCornerShape(22.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp)
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = "Continue", tint = PulseAppColorBackground, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Continue", color = PulseAppColorBackground, style = PulseAppFontLabel.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold))
+                        }
+                    }
                 }
             }
+            
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
