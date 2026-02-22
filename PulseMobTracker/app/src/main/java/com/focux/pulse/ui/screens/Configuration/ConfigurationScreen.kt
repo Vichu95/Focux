@@ -46,6 +46,9 @@ fun ConfigurationScreen() {
             onCategoryChanged = { pkg, cat -> categoryViewModel.updateCategory(pkg, cat) }
         )
         
+        // ── System Permissions Section ──
+        SystemPermissionsSection()
+        
         // Database Reset Section
         Box(
             modifier = Modifier
