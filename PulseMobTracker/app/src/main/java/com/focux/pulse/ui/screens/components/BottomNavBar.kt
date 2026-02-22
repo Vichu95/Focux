@@ -67,9 +67,9 @@ fun BottomNavBar(
              iconHeight = 48.dp,
              onClick = { onTabSelected(2) }
         )
-        // Config Tab: Using insights icon temporarily
+        // Config Tab
         NavTab(
-             iconRes = R.drawable.insights_icon,  // TODO: Replace with config icon
+             iconRes = R.drawable.settings_icon,
              label = "Config", 
              selected = selectedTab == 3,
              iconWidth = 24.dp,
