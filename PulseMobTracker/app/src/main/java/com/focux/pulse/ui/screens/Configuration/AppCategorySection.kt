@@ -117,32 +117,18 @@ fun AppCategorySection(
 // VIEW MODE — Icon grids grouped by category
 // ─────────────────────────────────────────────────────────────────
 
-/**
- * Data class to hold tooltip positioning info: the icon's screen-relative
- * coordinates and the app name to display.
- */
-private data class TooltipInfo(
-    val appName: String,
-    val iconXPx: Float,     // Icon left edge in window coords
-    val iconYPx: Float,     // Icon top edge in window coords
-    val iconWidthPx: Float,
-    val iconHeightPx: Float
-)
-
 @Composable
 private fun ViewModeContent(state: AppCategoryUiState) {
     val context = LocalContext.current
-    val density = LocalDensity.current
-    val configuration = android.content.res.Resources.getSystem().displayMetrics
 
-    // Shared tooltip state — only one tooltip visible at a time across all grids
-    var tooltipInfo by remember { mutableStateOf<TooltipInfo?>(null) }
+    // Shared state to track which app's tooltip is currently visible
+    var tappedAppPackage by remember { mutableStateOf<String?>(null) }
 
     // Auto-dismiss after 3 seconds
-    LaunchedEffect(tooltipInfo) {
-        if (tooltipInfo != null) {
+    LaunchedEffect(tappedAppPackage) {
+        if (tappedAppPackage != null) {
             kotlinx.coroutines.delay(3000)
-            tooltipInfo = null
+            tappedAppPackage = null
         }
     }
 
@@ -152,7 +138,7 @@ private fun ViewModeContent(state: AppCategoryUiState) {
             .clickable(
                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                 indication = null
-            ) { tooltipInfo = null } // Dismiss on tap outside
+            ) { tappedAppPackage = null } // Dismiss on tap outside
     ) {
         // ── Ignored Apps (system + user) ──
         val launchers = remember(context) { AppInfoHelper.getLauncherPackages(context) }
@@ -194,84 +180,25 @@ private fun ViewModeContent(state: AppCategoryUiState) {
             title = "Productive",
             color = PulseAppColorProductive,
             apps = state.productiveApps,
-            onIconTapped = { info -> tooltipInfo = info }
+            tappedAppPackage = tappedAppPackage,
+            onAppTapped = { pkg -> tappedAppPackage = pkg }
         )
 
         CategoryIconGrid(
             title = "Distracting",
             color = PulseAppColorDistracting,
             apps = state.distractingApps,
-            onIconTapped = { info -> tooltipInfo = info }
+            tappedAppPackage = tappedAppPackage,
+            onAppTapped = { pkg -> tappedAppPackage = pkg }
         )
 
         CategoryIconGrid(
             title = "Neutral",
             color = PulseAppColorNeutral,
             apps = state.neutralApps,
-            onIconTapped = { info -> tooltipInfo = info }
+            tappedAppPackage = tappedAppPackage,
+            onAppTapped = { pkg -> tappedAppPackage = pkg }
         )
-    }
-
-    // ── Dynamic Tooltip Popup ──
-    if (tooltipInfo != null) {
-        val info = tooltipInfo!!
-        val screenWidthPx = configuration.widthPixels.toFloat()
-        val screenHeightPx = configuration.heightPixels.toFloat()
-
-        // Determine best corner: popup goes AWAY from the nearest edge
-        val iconCenterX = info.iconXPx + info.iconWidthPx / 2f
-        val iconCenterY = info.iconYPx + info.iconHeightPx / 2f
-        val isLeftHalf = iconCenterX < screenWidthPx / 2f
-        val isTopHalf = iconCenterY < screenHeightPx / 2f
-
-        // Calculate popup offset in dp
-        val offsetX = with(density) {
-            if (isLeftHalf) {
-                // Show to the right of the icon
-                (info.iconXPx + info.iconWidthPx).toInt().toDp()
-            } else {
-                // Show to the left — we use the icon's left edge minus estimated popup width
-                // Use icon left edge and let the popup Alignment handle it
-                (info.iconXPx - 120.dp.toPx()).toInt().coerceAtLeast(0).toDp()
-            }
-        }
-        val offsetY = with(density) {
-            if (isTopHalf) {
-                // Show below the icon
-                (info.iconYPx + info.iconHeightPx + 4.dp.toPx()).toInt().toDp()
-            } else {
-                // Show above the icon
-                (info.iconYPx - 36.dp.toPx()).toInt().coerceAtLeast(0).toDp()
-            }
-        }
-
-        Popup(
-            alignment = Alignment.TopStart,
-            offset = IntOffset(
-                x = with(density) { offsetX.roundToPx() },
-                y = with(density) { offsetY.roundToPx() }
-            ),
-            onDismissRequest = { tooltipInfo = null }
-        ) {
-            Surface(
-                color = PulseAppColorBackground.copy(alpha = 0.95f),
-                shape = RoundedCornerShape(8.dp),
-                shadowElevation = 8.dp,
-                modifier = Modifier.clickable { tooltipInfo = null }
-            ) {
-                Text(
-                    text = info.appName,
-                    style = TextStyle(
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PulseAppColorPrimary
-                    ),
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                    maxLines = 1
-                )
-            }
-        }
     }
 }
 
@@ -283,11 +210,14 @@ private fun CategoryIconGrid(
     title: String,
     color: Color,
     apps: List<AppInfo>,
-    onIconTapped: (TooltipInfo) -> Unit
+    tappedAppPackage: String?,
+    onAppTapped: (String?) -> Unit
 ) {
     if (apps.isEmpty()) return
 
     val context = LocalContext.current
+    val density = LocalDensity.current
+    val configuration = android.content.res.Resources.getSystem().displayMetrics
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
@@ -323,26 +253,14 @@ private fun CategoryIconGrid(
             rowApps.forEach { app ->
                 val displayName = app.appName.ifEmpty { app.packageName }
                 var iconCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+                
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(8.dp))
                         .onGloballyPositioned { coords -> iconCoords = coords }
-                        .clickable {
-                            iconCoords?.let { coords ->
-                                val pos = coords.localToWindow(Offset.Zero)
-                                onIconTapped(
-                                    TooltipInfo(
-                                        appName = displayName,
-                                        iconXPx = pos.x,
-                                        iconYPx = pos.y,
-                                        iconWidthPx = coords.size.width.toFloat(),
-                                        iconHeightPx = coords.size.height.toFloat()
-                                    )
-                                )
-                            }
-                        }
+                        .clickable { onAppTapped(app.packageName) }
                 ) {
                     androidx.compose.ui.viewinterop.AndroidView(
                         factory = { ctx -> android.widget.ImageView(ctx) },
@@ -351,6 +269,70 @@ private fun CategoryIconGrid(
                         },
                         modifier = Modifier.fillMaxSize()
                     )
+
+                    // ── Dynamic Tooltip Popup anchored natively to this icon ──
+                    if (tappedAppPackage == app.packageName && iconCoords != null) {
+                        val coords = iconCoords!!
+                        val windowPos = coords.localToWindow(Offset.Zero)
+                        
+                        val screenWidthPx = configuration.widthPixels.toFloat()
+                        val screenHeightPx = configuration.heightPixels.toFloat()
+                        
+                        val isLeftHalf = windowPos.x < screenWidthPx / 2f
+                        val isTopHalf = windowPos.y < screenHeightPx / 2f
+                        
+                        val boxWidth = coords.size.width
+                        val boxHeight = coords.size.height
+                        val padPx = with(density) { 4.dp.roundToPx() }
+                        
+                        // Let the popup expand diagonally towards the screen center from the optimal corner
+                        val alignment: Alignment
+                        val offsetX: Int
+                        val offsetY: Int
+                        
+                        if (isLeftHalf && isTopHalf) {
+                            alignment = Alignment.TopStart
+                            offsetX = boxWidth + padPx
+                            offsetY = boxHeight + padPx
+                        } else if (!isLeftHalf && isTopHalf) {
+                            alignment = Alignment.TopEnd
+                            offsetX = -boxWidth - padPx
+                            offsetY = boxHeight + padPx
+                        } else if (isLeftHalf && !isTopHalf) {
+                            alignment = Alignment.BottomStart
+                            offsetX = boxWidth + padPx
+                            offsetY = -boxHeight - padPx
+                        } else {
+                            alignment = Alignment.BottomEnd
+                            offsetX = -boxWidth - padPx
+                            offsetY = -boxHeight - padPx
+                        }
+
+                        Popup(
+                            alignment = alignment,
+                            offset = IntOffset(offsetX, offsetY),
+                            onDismissRequest = { onAppTapped(null) }
+                        ) {
+                            Surface(
+                                color = PulseAppColorBackground.copy(alpha = 0.95f),
+                                shape = RoundedCornerShape(8.dp),
+                                shadowElevation = 8.dp,
+                                modifier = Modifier.clickable { onAppTapped(null) }
+                            ) {
+                                Text(
+                                    text = displayName,
+                                    style = TextStyle(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PulseAppColorPrimary
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
                 }
             }
             // Fill remaining slots with invisible spacers to keep equal sizing
