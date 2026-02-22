@@ -45,6 +45,8 @@ fun ConfigurationScreen() {
         AppCategorySection(
             state = categoryState,
             onToggleEditMode = { categoryViewModel.toggleEditMode() },
+            onSave = { categoryViewModel.saveChanges() },
+            onCancel = { categoryViewModel.cancelChanges() },
             onSearchQueryChanged = { categoryViewModel.setSearchQuery(it) },
             onCategoryChanged = { pkg, cat -> categoryViewModel.updateCategory(pkg, cat) }
         )

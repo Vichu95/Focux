@@ -25,6 +25,7 @@ data class AppCategoryUiState(
 /**
  * ViewModel for the App Category section in Configuration.
  * Observes all apps from the DB and groups them by category.
+ * Changes are staged locally and only committed to the DB on Save.
  */
 class AppCategoryViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -41,19 +42,32 @@ class AppCategoryViewModel(application: Application) : AndroidViewModel(applicat
 
     private val _isEditMode = MutableStateFlow(false)
     private val _searchQuery = MutableStateFlow("")
+    
+    // Pending category changes — only committed on Save
+    private val _pendingChanges = MutableStateFlow<Map<String, String>>(emptyMap())
 
     val uiState: StateFlow<AppCategoryUiState> = combine(
         appInfoDao.getAllAppsFlow(),
         _isEditMode,
-        _searchQuery
-    ) { apps, editMode, query ->
-        val grouped = apps.groupBy { it.category }
+        _searchQuery,
+        _pendingChanges
+    ) { apps, editMode, query, pending ->
+        // Apply pending changes on top of DB state for live preview
+        val patched = apps.map { app ->
+            val pendingCategory = pending[app.packageName]
+            if (pendingCategory != null) {
+                app.copy(category = pendingCategory)
+            } else {
+                app
+            }
+        }
+        val grouped = patched.groupBy { it.category }
         AppCategoryUiState(
             productiveApps = grouped[AppCategory.PRODUCTIVE].orEmpty(),
             distractingApps = grouped[AppCategory.DISTRACTING].orEmpty(),
             neutralApps = grouped[AppCategory.NEUTRAL].orEmpty(),
             ignoredApps = grouped[AppCategory.IGNORED].orEmpty(),
-            allApps = if (query.isBlank()) apps else apps.filter {
+            allApps = if (query.isBlank()) patched else patched.filter {
                 it.appName.contains(query, ignoreCase = true) ||
                 it.packageName.contains(query, ignoreCase = true)
             },
@@ -62,21 +76,40 @@ class AppCategoryViewModel(application: Application) : AndroidViewModel(applicat
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppCategoryUiState())
 
+    /** Toggles edit mode on — does NOT commit or discard changes */
     fun toggleEditMode() {
         _isEditMode.value = !_isEditMode.value
-        if (!_isEditMode.value) _searchQuery.value = "" // Clear search on exit
+        if (!_isEditMode.value) _searchQuery.value = ""
+    }
+
+    /** Stage a category change locally (not yet persisted) */
+    fun updateCategory(packageName: String, newCategory: String) {
+        _pendingChanges.value = _pendingChanges.value + (packageName to newCategory)
+    }
+
+    /** Commit all pending changes to the database */
+    fun saveChanges() {
+        val changes = _pendingChanges.value
+        viewModelScope.launch {
+            changes.forEach { (pkg, cat) ->
+                appInfoDao.updateCategory(pkg, cat)
+            }
+            _pendingChanges.value = emptyMap()
+            // Recalculate daily stats so Top Apps reflect the change
+            dailySummaryProcessor.recalculateAllDailyStats()
+        }
+        _isEditMode.value = false
+        _searchQuery.value = ""
+    }
+
+    /** Discard all pending changes and exit edit mode */
+    fun cancelChanges() {
+        _pendingChanges.value = emptyMap()
+        _isEditMode.value = false
+        _searchQuery.value = ""
     }
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
-    }
-
-    fun updateCategory(packageName: String, newCategory: String) {
-        viewModelScope.launch {
-            appInfoDao.updateCategory(packageName, newCategory)
-            
-            // Recalculate daily stats so Top Apps and productive times reflect this change immediately
-            dailySummaryProcessor.recalculateAllDailyStats()
-        }
     }
 }

@@ -45,6 +45,8 @@ import com.focux.pulse.utilities.PULSE_IGNORED_APPS
 fun AppCategorySection(
     state: AppCategoryUiState,
     onToggleEditMode: () -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
     onSearchQueryChanged: (String) -> Unit,
     onCategoryChanged: (String, String) -> Unit // (packageName, newCategory)
 ) {
@@ -80,9 +82,75 @@ fun AppCategorySection(
                     color = PulseAppColorPrimary
                 )
 
-                if (!state.isEditMode) {
+                if (state.isEditMode) {
+                    // Cancel + Save in the header
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(
+                            color = PulseAppColorSurface,
+                            shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
+                            modifier = Modifier
+                                .height(PulseAppTimelineFilterButtonHeight)
+                                .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
+                                .clickable { onCancel() }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.edit_icon),
+                                    contentDescription = "Cancel",
+                                    tint = PulseAppColorSecondary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Cancel",
+                                    style = TextStyle(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 13.sp,
+                                        color = PulseAppColorSecondary
+                                    )
+                                )
+                            }
+                        }
+
+                        Surface(
+                            color = PulseAppColorPrimary,
+                            shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
+                            modifier = Modifier
+                                .height(PulseAppTimelineFilterButtonHeight)
+                                .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
+                                .clickable { onSave() }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.save_icon),
+                                    contentDescription = "Save",
+                                    tint = PulseAppColorBackground,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Save",
+                                    style = TextStyle(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 13.sp,
+                                        color = PulseAppColorBackground
+                                    )
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Edit button
                     Surface(
-                        color = PulseAppColorSurface, // Matching TimelineHeader
+                        color = PulseAppColorSurface,
                         shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
                         modifier = Modifier
                             .width(100.dp)
@@ -98,7 +166,7 @@ fun AppCategorySection(
                             Icon(
                                 painter = painterResource(id = R.drawable.edit_icon),
                                 contentDescription = "Edit",
-                                tint = PulseAppColorPrimary, // Always primary accent
+                                tint = PulseAppColorPrimary,
                                 modifier = Modifier.size(PulseAppTimelineFilterIconSize)
                             )
                             Spacer(modifier = Modifier.width(PulseAppPaddingSmall))
@@ -106,8 +174,8 @@ fun AppCategorySection(
                                 text = "Edit",
                                 style = TextStyle(
                                     fontFamily = FontFamily.Monospace,
-                                    fontSize = 15.sp, // Match Timeline font size
-                                    color = PulseAppColorSecondary // Using secondary color like Timeline
+                                    fontSize = 15.sp,
+                                    color = PulseAppColorSecondary
                                 )
                             )
                         }
@@ -116,31 +184,6 @@ fun AppCategorySection(
             }
 
             if (state.isEditMode) {
-                // Save and Cancel buttons row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onToggleEditMode,
-                        modifier = Modifier.weight(1f).height(PulseAppTimelineFilterButtonHeight),
-                        shape = RoundedCornerShape(PulseAppCornerRadiusLarge),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorSecondary),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, PulseAppColorSurface)
-                    ) {
-                        Text("Cancel", style = PulseAppFontBody)
-                    }
-
-                    Button(
-                        onClick = onToggleEditMode,
-                        modifier = Modifier.weight(1f).height(PulseAppTimelineFilterButtonHeight),
-                        shape = RoundedCornerShape(PulseAppCornerRadiusLarge),
-                        colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)
-                    ) {
-                        Text("Save", style = PulseAppFontBody, color = PulseAppColorBackground)
-                    }
-                }
-                Spacer(modifier = Modifier.height(4.dp))
                 EditModeContent(
                     state = state,
                     onSearchQueryChanged = onSearchQueryChanged,

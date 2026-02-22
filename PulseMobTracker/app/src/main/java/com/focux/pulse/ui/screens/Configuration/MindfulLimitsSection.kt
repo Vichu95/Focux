@@ -57,52 +57,28 @@ fun MindfulLimitsSection(
             ) {
                 Text("Mindful Limits", style = PulseAppFontSubHeader, color = PulseAppColorPrimary)
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (state.isEditMode) {
-                        Surface(
-                            color = PulseAppColorSurface,
-                            shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
-                            modifier = Modifier
-                                .height(PulseAppTimelineFilterButtonHeight)
-                                .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
-                                .clickable { viewModel.toggleEditMode() } // Ideally we could discard changes here, but skipping for now
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                            ) {
-                                Icon(painter = painterResource(id = android.R.drawable.ic_menu_close_clear_cancel), contentDescription = "Cancel", tint = PulseAppColorDistracting, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Cancel", style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = PulseAppColorSecondary))
-                            }
-                        }
-                    }
-
-                    Surface(
-                        color = PulseAppColorSurface,
-                        shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
-                        modifier = Modifier
-                            .height(PulseAppTimelineFilterButtonHeight)
-                            .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
-                            .clickable { viewModel.toggleEditMode() }
+                // Single button: Edit in view mode, Close in edit mode
+                Surface(
+                    color = PulseAppColorSurface,
+                    shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
+                    modifier = Modifier
+                        .height(PulseAppTimelineFilterButtonHeight)
+                        .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
+                        .clickable { viewModel.toggleEditMode() }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                        ) {
-                            if (state.isEditMode) {
-                                Icon(painter = painterResource(id = android.R.drawable.ic_menu_save), contentDescription = "Save", tint = PulseAppColorPrimary, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                            } else {
-                                Icon(painter = painterResource(id = android.R.drawable.ic_menu_edit), contentDescription = "Edit", tint = PulseAppColorPrimary, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                            }
-                            Text(
-                                text = if (state.isEditMode) "Save" else "Edit",
-                                style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = if (state.isEditMode) PulseAppColorPrimary else PulseAppColorSecondary)
-                            )
+                        if (state.isEditMode) {
+                            Icon(painter = painterResource(id = android.R.drawable.ic_menu_close_clear_cancel), contentDescription = "Close", tint = PulseAppColorSecondary, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Close", style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = PulseAppColorSecondary))
+                        } else {
+                            Icon(painter = painterResource(id = android.R.drawable.ic_menu_edit), contentDescription = "Edit", tint = PulseAppColorPrimary, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Edit", style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = PulseAppColorSecondary))
                         }
                     }
                 }
@@ -357,7 +333,7 @@ private fun MindfulAppTuneSheet(
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)
                 ) {
-                    Text("Confirm", color = PulseAppColorBackground)
+                    Text("Save", color = PulseAppColorBackground)
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))
