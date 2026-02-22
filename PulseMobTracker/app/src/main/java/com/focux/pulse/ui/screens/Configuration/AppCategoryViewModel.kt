@@ -28,7 +28,16 @@ data class AppCategoryUiState(
  */
 class AppCategoryViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val appInfoDao = PulseDatabase.getDatabase(application).appInfoDao()
+    private val database = PulseDatabase.getDatabase(application)
+    private val appInfoDao = database.appInfoDao()
+    private val analyticsDao = database.analyticsDao()
+    
+    // Instantiate processor to recalculate stats on category change
+    private val dailySummaryProcessor = com.focux.pulse.data.processors.DailySummaryProcessor(
+        application.applicationContext,
+        analyticsDao,
+        appInfoDao
+    )
 
     private val _isEditMode = MutableStateFlow(false)
     private val _searchQuery = MutableStateFlow("")
@@ -65,6 +74,9 @@ class AppCategoryViewModel(application: Application) : AndroidViewModel(applicat
     fun updateCategory(packageName: String, newCategory: String) {
         viewModelScope.launch {
             appInfoDao.updateCategory(packageName, newCategory)
+            
+            // Recalculate daily stats so Top Apps and productive times reflect this change immediately
+            dailySummaryProcessor.recalculateAllDailyStats()
         }
     }
 }

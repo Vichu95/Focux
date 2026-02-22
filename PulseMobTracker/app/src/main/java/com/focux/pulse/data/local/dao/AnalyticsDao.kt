@@ -19,6 +19,12 @@ interface AnalyticsDao {
     suspend fun getState(key: String): String?
 
     /**
+     * Reactive flow for a specific state key. Useful for system-wide refresh triggers.
+     */
+    @Query("SELECT value FROM system_state WHERE key = :key")
+    fun getStateFlow(key: String): kotlinx.coroutines.flow.Flow<String?>
+
+    /**
      * Updates or inserts a state key-value pair.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -75,6 +81,11 @@ interface AnalyticsDao {
     @Query("SELECT MIN(date) FROM daily_stats")
     suspend fun getEarliestDate(): String?
 
+    /**
+     * Retrieves all daily stats, ordered mathematically so today is processed first.
+     */
+    @Query("SELECT * FROM daily_stats ORDER BY date DESC")
+    suspend fun getAllDailyStatsDesc(): List<DailyStats>
 
     /**
      * Retrieves the aggregated stats for a specific day.

@@ -10,6 +10,7 @@ import com.focux.pulse.utilities.AppInfoHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -56,7 +57,12 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
     fun loadDataForDate(dateStr: String) {
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
-            analyticsDao.getDailyStatsFlow(dateStr).collect { stats ->
+            combine(
+                analyticsDao.getDailyStatsFlow(dateStr),
+                appInfoDao.getAllAppsFlow()
+            ) { stats, _ ->
+                stats
+            }.collect { stats ->
                 _dailyStats.value = stats
 
                 if (stats != null) {

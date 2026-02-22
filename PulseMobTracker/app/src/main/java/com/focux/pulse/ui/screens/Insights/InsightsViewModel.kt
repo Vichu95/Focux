@@ -10,6 +10,7 @@ import com.focux.pulse.utilities.*
 import com.focux.pulse.utilities.AppInfoHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -79,9 +80,15 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
             }
         }
         
-        // Collect week start changes to reload data
+        // Collect week start, app category changes, and UI refresh triggers to reload data
         viewModelScope.launch {
-            _currentWeekStart.collect { 
+            combine(
+                _currentWeekStart, 
+                appInfoDao.getAllAppsFlow(),
+                analyticsDao.getStateFlow("force_ui_refresh")
+            ) { weekStart, _, _ ->
+                weekStart
+            }.collect { 
                 loadWeeklyData() 
             }
         }

@@ -9,6 +9,8 @@ import com.focux.pulse.utilities.*
 import com.focux.pulse.utilities.AppInfoHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -28,6 +30,8 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
 
     private val _earliestDate = MutableStateFlow<String?>(null)
     val earliestDate: StateFlow<String?> = _earliestDate
+
+    private val _currentDate = MutableStateFlow<String?>(null)
 
     // --- Filter State ---
     data class FilterState(
@@ -57,6 +61,18 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
             _earliestDate.value = analyticsDao.getEarliestDate()
         }
         
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(
+                _currentDate.filterNotNull(), 
+                appInfoDao.getAllAppsFlow(),
+                analyticsDao.getStateFlow("force_ui_refresh")
+            ) { dateStr, _, _ ->
+                dateStr
+            }.collect { dateStr ->
+                processDataForDate(dateStr)
+            }
+        }
+        
         // Combine allEvents and filterState to produce timelineEvents
         viewModelScope.launch {
             kotlinx.coroutines.flow.combine(_allDayEvents, _filterState) { events, filter ->
@@ -79,6 +95,10 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun loadDataForDate(dateStr: String) {
+        _currentDate.value = dateStr
+    }
+
+    private fun processDataForDate(dateStr: String) {
         viewModelScope.launch {
             val dailyStats = analyticsDao.getDailyStats(dateStr)
             

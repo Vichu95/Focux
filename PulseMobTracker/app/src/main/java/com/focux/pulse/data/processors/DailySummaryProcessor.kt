@@ -25,10 +25,88 @@ class DailySummaryProcessor(
 ) {
 
     /**
+     * Recalculates all daily stats from existing sessions lightning-fast.
+     * Rebuilds ONLY category-dependent fields using in-memory structures to guarantee a 0-second UI bounce.
+     */
+    suspend fun recalculateAllDailyStats() {
+        val allDailyStatsList = analyticsDao.getAllDailyStatsDesc()
+        if (allDailyStatsList.isEmpty()) return
+
+        val allApps = appInfoDao.getAllApps()
+        val appCategories = allApps.associate { it.packageName to it.category }
+        val ignoredApps = allApps.filter { it.category == AppCategory.IGNORED }.map { it.packageName }.toSet()
+        val launcherPackages = AppInfoHelper.getLauncherPackages(context)
+        
+        // Fetch all sessions in memory to prevent slow DB lookups in the loop
+        val allSessions = analyticsDao.getSessionsStartingFromId(0L)
+        val sessionsByDay = allSessions.groupBy { it.date }
+
+        for (dailyStat in allDailyStatsList) {
+            val allDaySessions = sessionsByDay[dailyStat.date] ?: continue
+            val appSessions = allDaySessions.filter { 
+                it.type == PulseEvents.SESSION_APP && 
+                it.startTime >= dailyStat.sleepTimeEnd 
+            }
+
+            var calcProductive = 0L
+            var calcDistracting = 0L
+            var calcNeutral = dailyStat.glanceCount * com.focux.pulse.utilities.PULSE_GLANCE_ESTIMATE_MS.toLong()
+
+            appSessions.filter { it.packageName !in launcherPackages }.forEach { session ->
+                when (appCategories[session.packageName]) {
+                    AppCategory.PRODUCTIVE -> calcProductive += session.duration
+                    AppCategory.DISTRACTING -> calcDistracting += session.duration
+                    else -> calcNeutral += session.duration
+                }
+            }
+
+            // --- Top 3 Apps & First/Last ---
+            val validApps = appSessions.filter { it.packageName !in ignoredApps && it.packageName !in launcherPackages }
+            
+            val firstApp = validApps.minByOrNull { it.startTime }
+            val lastApp = validApps.maxByOrNull { it.startTime }
+            
+            val appDurations = validApps
+                .groupBy { it.packageName }
+                .mapValues { (_, sessions) -> sessions.sumOf { it.duration } }
+                .toList()
+                .sortedByDescending { it.second }
+                .take(3)
+                
+            val topApp1 = appDurations.getOrNull(0)
+            val topApp2 = appDurations.getOrNull(1)
+            val topApp3 = appDurations.getOrNull(2)
+
+            val updatedStats = dailyStat.copy(
+                productiveTime = calcProductive,
+                neutralTime = calcNeutral,
+                distractingTime = calcDistracting,
+                firstAppPackage = firstApp?.packageName,
+                firstAppStartTime = firstApp?.startTime ?: 0,
+                firstAppEndTime = firstApp?.endTime ?: 0,
+                lastAppPackage = lastApp?.packageName,
+                lastAppStartTime = lastApp?.startTime ?: 0,
+                lastAppEndTime = lastApp?.endTime ?: 0,
+                topApp1Package = topApp1?.first,
+                topApp1Duration = topApp1?.second ?: 0,
+                topApp2Package = topApp2?.first,
+                topApp2Duration = topApp2?.second ?: 0,
+                topApp3Package = topApp3?.first,
+                topApp3Duration = topApp3?.second ?: 0
+            )
+
+            analyticsDao.updateDailyStats(updatedStats)
+        }
+        
+        // Fire UI refresh trigger now that mass recalculation is strictly complete
+        analyticsDao.updateState(SystemState("force_ui_refresh", System.currentTimeMillis().toString()))
+    }
+
+    /**
      * Updates DailyStats based on new sessions.
      * Calculates: screen time, unlocks, glances, top apps, first/last app.
      */
-    suspend fun updateDailyStats(newSessions: List<AppSession>) {
+    suspend fun updateDailyStats(newSessions: List<AppSession>, isRecalculation: Boolean = false) {
         // Sort keys to process chronologically (Oldest -> Newest)
         // This is crucial so we "Correct" yesterday before processing today? 
         // Actually, "Correction" happens when looking back from Today. So order matters.
@@ -156,7 +234,9 @@ class DailySummaryProcessor(
             // -------------------------------------------------------------
             
             // Wait for DB insertion to settle (Simple fix for Race Condition)
-            kotlinx.coroutines.delay(500)
+            if (!isRecalculation) {
+                kotlinx.coroutines.delay(500)
+            }
 
             val allDaySessions = analyticsDao.getSessionsForDay(date)
             // Only count sessions that started AFTER our metric start
