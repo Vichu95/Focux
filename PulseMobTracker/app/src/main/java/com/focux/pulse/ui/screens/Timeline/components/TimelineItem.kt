@@ -324,13 +324,19 @@ fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean, modifier: Modifie
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
             ) {
+                val timeColor = when (event.app.type) {
+                    ActivityType.Productive -> PulseAppColorProductive
+                    ActivityType.Distracting -> PulseAppColorDistracting
+                    else -> Color.Gray
+                }
+
                 // Time Range
                 Text(
                     text = event.range,
                     style = Typography.labelSmall.copy(
                         fontSize = 12.sp, // CSS: 12px
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                        color = Color.White
+                        color = timeColor
                     )
                 )
 
