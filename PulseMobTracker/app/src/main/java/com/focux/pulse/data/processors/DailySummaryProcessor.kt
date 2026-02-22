@@ -4,6 +4,7 @@ import android.content.Context
 import com.focux.pulse.data.local.dao.AnalyticsDao
 import com.focux.pulse.data.local.dao.AppInfoDao
 import com.focux.pulse.data.local.entities.AppInfo
+import com.focux.pulse.data.local.entities.AppCategory
 import com.focux.pulse.data.local.entities.AppSession
 import com.focux.pulse.data.local.entities.DailyStats
 import com.focux.pulse.data.local.entities.PulseEvents
@@ -27,12 +28,7 @@ class DailySummaryProcessor(
      * Updates DailyStats based on new sessions.
      * Calculates: screen time, unlocks, glances, top apps, first/last app.
      */
-    /**
-     * Updates DailyStats based on new sessions.
-     * Calculates: screen time, unlocks, glances, top apps, first/last app.
-     * @param ignoredApps Set of package names to exclude from Top Apps and First/Last app logic.
-     */
-    suspend fun updateDailyStats(newSessions: List<AppSession>, ignoredApps: Set<String>) {
+    suspend fun updateDailyStats(newSessions: List<AppSession>) {
         // Sort keys to process chronologically (Oldest -> Newest)
         // This is crucial so we "Correct" yesterday before processing today? 
         // Actually, "Correction" happens when looking back from Today. So order matters.
@@ -40,6 +36,11 @@ class DailySummaryProcessor(
 
         // Fetch launchers to exclude from Total Screen Time
         val launcherPackages = AppInfoHelper.getLauncherPackages(context)
+        
+        // Fetch User Categories
+        val allApps = appInfoDao.getAllApps()
+        val appCategories = allApps.associate { it.packageName to it.category }
+        val ignoredApps = allApps.filter { it.category == AppCategory.IGNORED }.map { it.packageName }.toSet()
         
         val sdfDay = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
         val now = System.currentTimeMillis()
@@ -187,7 +188,7 @@ class DailySummaryProcessor(
             val appTime = metricSessions
                 .filter { 
                     it.type == PulseEvents.SESSION_APP && 
-                    it.packageName !in com.focux.pulse.utilities.PULSE_IGNORED_APPS 
+                    it.packageName !in launcherPackages
                 }
                 .sumOf { it.duration }
                 
@@ -222,6 +223,18 @@ class DailySummaryProcessor(
             
             val activeDayEnd = lastApp?.endTime ?: (if (firstApp != null) System.currentTimeMillis() else 0L)
 
+            var calcProductive = 0L
+            var calcDistracting = 0L
+            var calcNeutral = glanceTime // Glances are neutral Time
+
+            appSessions.filter { it.packageName !in launcherPackages }.forEach { session ->
+                when (appCategories[session.packageName]) {
+                    AppCategory.PRODUCTIVE -> calcProductive += session.duration
+                    AppCategory.DISTRACTING -> calcDistracting += session.duration
+                    else -> calcNeutral += session.duration
+                }
+            }
+
             // Save TODAY Stats
             val dailyStats = DailyStats(
                 date = date,
@@ -231,9 +244,9 @@ class DailySummaryProcessor(
                 glanceCount = rawGlanceCount,
                 screenCheckCount = screenCheckCount,
                 focusScore = (100 - totalUnlocks * 2).coerceIn(0, 100),
-                productiveTime = 0,
-                neutralTime = totalScreenTime,
-                distractingTime = 0,
+                productiveTime = calcProductive,
+                neutralTime = calcNeutral,
+                distractingTime = calcDistracting,
                 firstAppPackage = firstApp?.packageName,
                 firstAppStartTime = firstApp?.startTime ?: 0,
                 firstAppEndTime = firstApp?.endTime ?: 0,
@@ -258,7 +271,7 @@ class DailySummaryProcessor(
                 sleepReadableEnd = com.focux.pulse.utilities.TimeUtils.format(finalSleepEnd)
             )
             analyticsDao.updateDailyStats(dailyStats)
-            registerNewApps(appSessions, ignoredApps)
+            registerNewApps(appSessions)
 
 
             // -------------------------------------------------------------
@@ -336,7 +349,7 @@ class DailySummaryProcessor(
     /**
      * Registers new apps discovered in sessions to the AppInfo table.
      */
-    private suspend fun registerNewApps(appSessions: List<AppSession>, ignoredApps: Set<String>) {
+    private suspend fun registerNewApps(appSessions: List<AppSession>) {
         val packages = appSessions
             .map { it.packageName }
             .distinct()

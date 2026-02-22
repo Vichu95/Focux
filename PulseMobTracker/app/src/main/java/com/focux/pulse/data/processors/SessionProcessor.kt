@@ -31,9 +31,8 @@ class SessionProcessor(
     }
 
     private val screenIgnoredApps: Set<String> by lazy {
-        val combined = PULSE_IGNORED_APPS + launcherPackages
-        Log.d(TAG, "Ignored Apps for Screen (inc. Launchers): $combined")
-        combined
+        Log.d(TAG, "Ignored Apps for Screen (Launchers only): $launcherPackages")
+        launcherPackages
     }
 
     // --- SPLIT LOGIC EXPLANATION ---
@@ -168,7 +167,7 @@ class SessionProcessor(
             }
 
             // 5. Delegate to DailySummaryProcessor 
-            dailyProcessor.updateDailyStats(finalSessions, PULSE_IGNORED_APPS)
+            dailyProcessor.updateDailyStats(finalSessions)
         }
     }
 

@@ -1,6 +1,7 @@
 package com.focux.pulse.ui.screens.Configuration
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -52,9 +53,19 @@ fun AppCategorySection(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
-            .background(PulseAppColorSurface)
-            .padding(PulseAppPaddingMedium)
+            .background(
+                Color.Transparent,
+                RoundedCornerShape(PulseAppCornerRadiusMedium)
+            )
+            .border(
+                width = PulseAppBorderWidthThick,
+                color = PulseAppColorPrimary,
+                shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
+            )
+            .padding(
+                horizontal = PulseAppPaddingMedium,
+                vertical = PulseAppPaddingSmall
+            )
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // ── Header Row ──
@@ -65,8 +76,7 @@ fun AppCategorySection(
             ) {
                 Text(
                     text = "App Category",
-                    style = PulseAppFontSubHeader,
-                    color = PulseAppColorPrimary
+                    style = PulseAppFontLabel.copy(color = PulseAppColorPrimary)
                 )
 
                 Surface(
@@ -148,12 +158,7 @@ private fun ViewModeContent(state: AppCategoryUiState) {
         if (systemIgnored.isNotEmpty() || userIgnored.isNotEmpty()) {
             Text(
                 text = "Ignored",
-                style = TextStyle(
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Gray
-                )
+                style = PulseAppFontLabel.copy(color = Color.Gray)
             )
             // System ignored (text-based, as original)
             systemIgnored.forEach { pkg ->
@@ -229,12 +234,7 @@ private fun CategoryIconGrid(
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = "$title (${apps.size})",
-            style = TextStyle(
-                fontFamily = FontFamily.Monospace,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
+            style = PulseAppFontLabel.copy(color = color)
         )
     }
 

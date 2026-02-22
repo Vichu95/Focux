@@ -38,15 +38,6 @@ fun ConfigurationScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
-        Text(
-            text = "Configuration",
-            style = PulseAppFontHeader,
-            color = PulseAppColorPrimary
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-
         // ── App Category Section ──
         AppCategorySection(
             state = categoryState,

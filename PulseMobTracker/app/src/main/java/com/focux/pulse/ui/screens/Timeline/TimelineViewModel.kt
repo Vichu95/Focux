@@ -21,6 +21,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
     private val context = application.applicationContext
     private val database = PulseDatabase.getDatabase(application)
     private val analyticsDao = database.analyticsDao()
+    private val appInfoDao = database.appInfoDao()
 
     private val _timelineEvents = MutableStateFlow<List<TimelineEvent>>(emptyList())
     val timelineEvents: StateFlow<List<TimelineEvent>> = _timelineEvents
@@ -144,14 +145,17 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                  startOk && endOk
             }
 
-            // Get ignored lists
+            // Get ignored lists and user categories
             val launcherPackages = AppInfoHelper.getLauncherPackages(context)
+            val allApps = appInfoDao.getAllApps()
+            val categoryMap = allApps.associate { it.packageName to it.category }
+            val ignoredApps = allApps.filter { it.category == AppCategory.IGNORED }.map { it.packageName }.toSet()
             
             // 3. Convert to Timeline Events
             val sessionEvents = validSessions
                 .filter { 
                     (it.type == PulseEvents.SESSION_APP || it.type == PulseEvents.SESSION_OFFLINE) &&
-                    it.packageName !in PULSE_IGNORED_APPS &&
+                    it.packageName !in ignoredApps &&
                     it.packageName !in launcherPackages
                 }
                 .map { session ->
@@ -172,13 +176,20 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                             deepWorkDuration = formatDuration(session.duration)
                         )
                     } else {
+                        val activityType = when (categoryMap[session.packageName]) {
+                            AppCategory.PRODUCTIVE -> ActivityType.Productive
+                            AppCategory.DISTRACTING -> ActivityType.Distracting
+                            AppCategory.NEUTRAL -> ActivityType.Neutral
+                            else -> ActivityType.Neutral
+                        }
+
                         TimelineEvent(
                             time = formatTime(session.startTime),
                             app = AppUsage(
                                 name = AppInfoHelper.getAppName(context, session.packageName),
                                 iconName = session.packageName,
                                 duration = formatDuration(session.duration),
-                                type = ActivityType.Neutral 
+                                type = activityType 
                             ),
                             range = "${formatTime(session.startTime)} - ${formatTime(session.endTime)}",
                             isDeepWork = false,

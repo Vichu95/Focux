@@ -22,6 +22,7 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
     private val context = application.applicationContext
     private val database = PulseDatabase.getDatabase(application)
     private val analyticsDao = database.analyticsDao()
+    private val appInfoDao = database.appInfoDao()
 
     private val _weeklyTrend = MutableStateFlow<List<WeeklyTrendItem>>(emptyList())
     val weeklyTrend: StateFlow<List<WeeklyTrendItem>> = _weeklyTrend
@@ -148,6 +149,17 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
             val weekEndMs = weekEnd.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1 
             val weekSessions = analyticsDao.getSessionsOverlapping(weekStartMs, weekEndMs)
 
+            val allApps = appInfoDao.getAllApps()
+            val categoryMap = allApps.associate { it.packageName to it.category }
+            val getType = { pkg: String? ->
+                when (categoryMap[pkg]) {
+                    AppCategory.PRODUCTIVE -> ActivityType.Productive
+                    AppCategory.DISTRACTING -> ActivityType.Distracting
+                    else -> ActivityType.Neutral
+                }
+            }
+            val userIgnoredApps = allApps.filter { it.category == AppCategory.IGNORED }.map { it.packageName }.toSet()
+
             if (statsList.isNotEmpty()) {
                 // weeklyTrend
                 _weeklyTrend.value = weekDates.map { date ->
@@ -219,10 +231,11 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
 
                 val launchers = AppInfoHelper.getLauncherPackages(context)
                 val ignoredPackages = launchers + setOf("com.android.systemui", "com.google.android.inputmethod.latin") 
+                val allIgnored = ignoredPackages + userIgnoredApps
 
                 // SINGLE SOURCE OF TRUTH: All App sessions in range, minus ignored apps.
                 val filteredAppSessions = activeSessions.filter { 
-                    it.type == PulseEvents.SESSION_APP && !ignoredPackages.contains(it.packageName) 
+                    it.type == PulseEvents.SESSION_APP && !allIgnored.contains(it.packageName) 
                 }
 
                 // 1. Top Apps Calculation
@@ -242,9 +255,9 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                                 name = AppInfoHelper.getAppName(context, pkg),
                                 iconName = pkg,
                                 duration = formatDuration(duration),
-                                type = ActivityType.Neutral
+                                type = getType(pkg)
                             ),
-                            type = ActivityType.Neutral,
+                            type = getType(pkg),
                             duration = formatDuration(duration)
                         )
                     }
@@ -255,9 +268,9 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                 // User: "daily sumamry already cnsiders things.. just use from daily sumamry"
                 // We fetch first/last from DailyStats but exclude ignored apps (Launchers/System)
                 val morningApps = statsList.mapNotNull { it.firstAppPackage }
-                    .filter { !ignoredPackages.contains(it) }
+                    .filter { !allIgnored.contains(it) }
                 val nightApps = statsList.mapNotNull { it.lastAppPackage }
-                    .filter { !ignoredPackages.contains(it) }
+                    .filter { !allIgnored.contains(it) }
                 
                 val morningMode = morningApps.groupingBy { it }.eachCount().maxByOrNull { it.value }
                 val nightMode = nightApps.groupingBy { it }.eachCount().maxByOrNull { it.value }
@@ -267,14 +280,14 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                         name = AppInfoHelper.getAppName(context, morningMode.key),
                         iconName = morningMode.key, 
                         duration = "",
-                        type = ActivityType.Neutral
+                        type = getType(morningMode.key)
                     ) to morningMode.value else com.focux.pulse.utilities.AppUsage("No Data", "", "", ActivityType.Neutral) to 0,
                     
                     nightHabit = if (nightMode != null) com.focux.pulse.utilities.AppUsage(
                          name = AppInfoHelper.getAppName(context, nightMode.key),
                          iconName = nightMode.key,
                          duration = "",
-                         type = ActivityType.Neutral
+                         type = getType(nightMode.key)
                     ) to nightMode.value else com.focux.pulse.utilities.AppUsage("No Data", "", "", ActivityType.Neutral) to 0
                 )
 

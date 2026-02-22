@@ -22,6 +22,7 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
     private val context = application.applicationContext
     private val database = PulseDatabase.getDatabase(application)
     private val analyticsDao = database.analyticsDao()
+    private val appInfoDao = database.appInfoDao()
 
     private val _dailyStats = MutableStateFlow<DailyStats?>(null)
     val dailyStats: StateFlow<DailyStats?> = _dailyStats
@@ -59,13 +60,24 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
                 _dailyStats.value = stats
 
                 if (stats != null) {
+                    val allApps = appInfoDao.getAllApps()
+                    val categoryMap = allApps.associate { it.packageName to it.category }
+                    
+                    val getType = { pkg: String? ->
+                        when (categoryMap[pkg]) {
+                            AppCategory.PRODUCTIVE -> ActivityType.Productive
+                            AppCategory.DISTRACTING -> ActivityType.Distracting
+                            else -> ActivityType.Neutral
+                        }
+                    }
+
                     // Convert DailyStats to UI models
                     _phoneActivity.value = PhoneActivityData(
                         totalTime = formatDuration(stats.totalScreenTime),
                         productiveTime = formatDuration(stats.productiveTime),
                         neutralTime = formatDuration(stats.neutralTime),
                         distractingTime = formatDuration(stats.distractingTime),
-                        topApps = buildTop3Apps(stats)
+                        topApps = buildTop3Apps(stats, getType)
                     )
 
                     _deviceAccess.value = DeviceAccessData(
@@ -89,14 +101,14 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
                             name = getAppName(stats.firstAppPackage),
                             iconName = stats.firstAppPackage ?: "app_icon",
                             duration = "",
-                            type = ActivityType.Neutral
+                            type = getType(stats.firstAppPackage)
                         ),
                         nightTime = if (stats.lastAppStartTime > 0) formatTime(stats.lastAppStartTime) else "--:--",
                         nightApp = AppUsage(
                             name = getAppName(stats.lastAppPackage),
                             iconName = stats.lastAppPackage ?: "app_icon",
                             duration = "",
-                            type = ActivityType.Neutral
+                            type = getType(stats.lastAppPackage)
                         )
                     )
                 } else {
@@ -118,16 +130,16 @@ class SummaryViewModel(application: Application) : AndroidViewModel(application)
     /**
      * Builds the filtered Top 3 list from DailyStats (pre-calculated and filtered in DB).
      */
-    private fun buildTop3Apps(stats: DailyStats): List<AppUsage> {
+    private fun buildTop3Apps(stats: DailyStats, getType: (String?) -> ActivityType): List<AppUsage> {
         val apps = mutableListOf<AppUsage>()
         if (stats.topApp1Package != null) {
-            apps.add(AppUsage(name = getAppName(stats.topApp1Package), iconName = stats.topApp1Package, duration = formatDuration(stats.topApp1Duration), type = ActivityType.Neutral))
+            apps.add(AppUsage(name = getAppName(stats.topApp1Package), iconName = stats.topApp1Package, duration = formatDuration(stats.topApp1Duration), type = getType(stats.topApp1Package)))
         }
         if (stats.topApp2Package != null) {
-            apps.add(AppUsage(name = getAppName(stats.topApp2Package), iconName = stats.topApp2Package, duration = formatDuration(stats.topApp2Duration), type = ActivityType.Neutral))
+            apps.add(AppUsage(name = getAppName(stats.topApp2Package), iconName = stats.topApp2Package, duration = formatDuration(stats.topApp2Duration), type = getType(stats.topApp2Package)))
         }
         if (stats.topApp3Package != null) {
-            apps.add(AppUsage(name = getAppName(stats.topApp3Package), iconName = stats.topApp3Package, duration = formatDuration(stats.topApp3Duration), type = ActivityType.Neutral))
+            apps.add(AppUsage(name = getAppName(stats.topApp3Package), iconName = stats.topApp3Package, duration = formatDuration(stats.topApp3Duration), type = getType(stats.topApp3Package)))
         }
         return apps
     }
