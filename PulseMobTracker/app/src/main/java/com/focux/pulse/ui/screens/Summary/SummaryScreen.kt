@@ -39,6 +39,9 @@ fun SummaryScreen(viewModel: SummaryViewModel = viewModel()) {
     val firstLastApps by viewModel.firstLastApps.collectAsState()
     val earliestDateStr by viewModel.earliestDate.collectAsState()
     
+    // Add dailyStats to pull the exact DB Focus Score
+    val dailyStats by viewModel.dailyStats.collectAsState()
+    
     // Parse earliest date for navigation limits
     val earliestDate = earliestDateStr?.let { 
         try { LocalDate.parse(it, dateFormatter) } catch (e: Exception) { null }
@@ -58,6 +61,7 @@ fun SummaryScreen(viewModel: SummaryViewModel = viewModel()) {
         item {
             DateFocusHeader(
                 date = selectedDate,
+                focusScore = dailyStats?.focusScore ?: 0,
                 onPrevClick = { 
                     if (canGoPrev) com.focux.pulse.ui.state.SessionDateManager.setDate(selectedDate.minusDays(1))
                 },

@@ -9,7 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.focux.pulse.ui.screens.Summary.components.DateFocusHeader
 import com.focux.pulse.ui.screens.Timeline.components.TimelineItem
 import com.focux.pulse.ui.screens.Timeline.components.TimelineHeader
 import com.focux.pulse.ui.theme.*

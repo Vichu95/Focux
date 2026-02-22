@@ -322,14 +322,10 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                     distracting = formatDuration(distAvg)
                 )
 
-                // Re-calculating Focus Score total
-                val totalFocus = statsList.sumOf { 
-                   if (it.totalScreenTime > 0) 
-                       ((it.productiveTime.toFloat() / it.totalScreenTime.toFloat()) * 100).toInt()
-                   else 0
-                }
+                // Use the Holistic Focus Score calculated by DailySummaryProcessor
+                val totalFocus = statsList.sumOf { it.focusScore }
                 
-                _weeklyFocusScore.value = totalFocus / daysPassed
+                _weeklyFocusScore.value = if (daysPassed > 0) totalFocus / daysPassed else 0
                 
                 // --- Deep Work & Sleep ---
                 val totalOffline = weekSessions.filter { it.type == PulseEvents.SESSION_OFFLINE }.sumOf { it.duration }

@@ -77,8 +77,26 @@ class DailySummaryProcessor(
             val topApp1 = appDurations.getOrNull(0)
             val topApp2 = appDurations.getOrNull(1)
             val topApp3 = appDurations.getOrNull(2)
+            
+            val firstAppCatStr = firstApp?.let {
+                it.categoryOverride ?: appCategories[it.packageName]
+            }
+            val totalUnlocks = dailyStat.unlockAppCount + dailyStat.unlockNoAppCount
+            val newFocusScore = calculateHolisticFocusScore(
+                calcProductive = calcProductive,
+                calcDistracting = calcDistracting,
+                calcNeutral = calcNeutral,
+                totalUnlocks = totalUnlocks,
+                glanceCount = dailyStat.glanceCount,
+                firstAppCategory = firstAppCatStr,
+                offlineStreakDuration = dailyStat.offlineStreakDuration,
+                sleepDurMs = dailyStat.sleepTimeEnd - dailyStat.sleepTimeStart,
+                sleepBreakCount = dailyStat.sleepBreakCount,
+                isPendingPhase = (dailyStat.sleepTimeEnd - dailyStat.sleepTimeStart <= 0L)
+            )
 
             val updatedStats = dailyStat.copy(
+                focusScore = newFocusScore,
                 productiveTime = calcProductive,
                 neutralTime = calcNeutral,
                 distractingTime = calcDistracting,
@@ -317,6 +335,22 @@ class DailySummaryProcessor(
                 }
             }
 
+            val firstAppCatStr = firstApp?.let {
+                it.categoryOverride ?: appCategories[it.packageName]
+            }
+            val newFocusScore = calculateHolisticFocusScore(
+                calcProductive = calcProductive,
+                calcDistracting = calcDistracting,
+                calcNeutral = calcNeutral,
+                totalUnlocks = totalUnlocks,
+                glanceCount = rawGlanceCount,
+                firstAppCategory = firstAppCatStr,
+                offlineStreakDuration = offlineStreakSession?.duration ?: 0L,
+                sleepDurMs = finalSleepEnd - finalSleepStart,
+                sleepBreakCount = sleepBreakCount,
+                isPendingPhase = isPendingPhase
+            )
+
             // Save TODAY Stats
             val dailyStats = DailyStats(
                 date = date,
@@ -325,7 +359,7 @@ class DailySummaryProcessor(
                 unlockAppCount = unlockAppCount,
                 glanceCount = rawGlanceCount,
                 screenCheckCount = screenCheckCount,
-                focusScore = (100 - totalUnlocks * 2).coerceIn(0, 100),
+                focusScore = newFocusScore,
                 productiveTime = calcProductive,
                 neutralTime = calcNeutral,
                 distractingTime = calcDistracting,
@@ -452,5 +486,43 @@ class DailySummaryProcessor(
                appInfoDao.updateAppName(info.packageName, info.appName)
             }
         }
+    }
+
+    /**
+     * Calculates the new 5-Component Holistic Focus Score (0-100)
+     */
+    private fun calculateHolisticFocusScore(
+        calcProductive: Long,
+        calcDistracting: Long,
+        calcNeutral: Long,
+        totalUnlocks: Int,
+        glanceCount: Int,
+        firstAppCategory: String?,
+        offlineStreakDuration: Long,
+        sleepDurMs: Long,
+        sleepBreakCount: Int,
+        isPendingPhase: Boolean
+    ): Int {
+        val pMin = calcProductive / 60000.0
+        val dMin = calcDistracting / 60000.0
+        val nMin = calcNeutral / 60000.0
+        val timeScore = (20.0 + (pMin * 0.2) - (dMin * 0.5) - (nMin * 0.1)).coerceIn(0.0, 40.0)
+
+        val habitScore = (20.0 - (totalUnlocks * 0.1) - (glanceCount * 0.1)).coerceIn(0.0, 20.0)
+
+        val mornScore = if (firstAppCategory == AppCategory.DISTRACTING) 0.0 else 10.0
+
+        val streakMin = offlineStreakDuration / 60000.0
+        val deepScore = ((streakMin / 120.0) * 15.0).coerceIn(0.0, 15.0)
+
+        val sleepScore = if (sleepDurMs <= 0 || isPendingPhase) {
+            15.0
+        } else {
+            val sleepMin = sleepDurMs / 60000.0
+            val baseSleep = if (sleepMin >= 360.0) 15.0 else (15.0 - (360.0 - sleepMin) * 0.05)
+            (baseSleep - (sleepBreakCount * 3.0)).coerceIn(0.0, 15.0)
+        }
+
+        return (timeScore + habitScore + mornScore + deepScore + sleepScore).toInt().coerceIn(0, 100)
     }
 }

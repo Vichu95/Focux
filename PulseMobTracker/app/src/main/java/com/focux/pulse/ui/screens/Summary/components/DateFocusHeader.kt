@@ -20,6 +20,7 @@ import java.time.LocalDate
 @Composable
 fun DateFocusHeader(
     date: LocalDate,
+    focusScore: Int,
     onPrevClick: () -> Unit,
     onNextClick: () -> Unit,
     canGoNext: Boolean = true,
@@ -54,7 +55,7 @@ fun DateFocusHeader(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Focus: 72",
+                text = "Focus: $focusScore",
                 style = PulseAppFontSubHeader,
                 color = PulseAppColorSecondary
             )
