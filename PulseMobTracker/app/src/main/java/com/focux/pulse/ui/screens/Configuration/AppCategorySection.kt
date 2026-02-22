@@ -80,40 +80,67 @@ fun AppCategorySection(
                     color = PulseAppColorPrimary
                 )
 
-                Surface(
-                    color = PulseAppColorSurface, // Matching TimelineHeader
-                    shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
-                    modifier = Modifier
-                        .width(100.dp)
-                        .height(PulseAppTimelineFilterButtonHeight)
-                        .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
-                        .clickable { onToggleEditMode() }
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                if (!state.isEditMode) {
+                    Surface(
+                        color = PulseAppColorSurface, // Matching TimelineHeader
+                        shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(PulseAppTimelineFilterButtonHeight)
+                            .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
+                            .clickable { onToggleEditMode() }
                     ) {
-                        Icon(
-                            painter = painterResource(id = if (state.isEditMode) R.drawable.save_icon else R.drawable.edit_icon), // Using save icon for done state
-                            contentDescription = if (state.isEditMode) "Save" else "Edit",
-                            tint = PulseAppColorPrimary, // Always primary accent
-                            modifier = Modifier.size(PulseAppTimelineFilterIconSize)
-                        )
-                        Spacer(modifier = Modifier.width(PulseAppPaddingSmall))
-                        Text(
-                            text = if (state.isEditMode) "Save" else "Edit",
-                            style = TextStyle(
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 15.sp, // Match Timeline font size
-                                color = PulseAppColorSecondary // Using secondary color like Timeline
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.edit_icon),
+                                contentDescription = "Edit",
+                                tint = PulseAppColorPrimary, // Always primary accent
+                                modifier = Modifier.size(PulseAppTimelineFilterIconSize)
                             )
-                        )
+                            Spacer(modifier = Modifier.width(PulseAppPaddingSmall))
+                            Text(
+                                text = "Edit",
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 15.sp, // Match Timeline font size
+                                    color = PulseAppColorSecondary // Using secondary color like Timeline
+                                )
+                            )
+                        }
                     }
                 }
             }
 
             if (state.isEditMode) {
+                // Save and Cancel buttons row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onToggleEditMode,
+                        modifier = Modifier.weight(1f).height(PulseAppTimelineFilterButtonHeight),
+                        shape = RoundedCornerShape(PulseAppCornerRadiusLarge),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorSecondary),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PulseAppColorSurface)
+                    ) {
+                        Text("Cancel", style = PulseAppFontBody)
+                    }
+
+                    Button(
+                        onClick = onToggleEditMode,
+                        modifier = Modifier.weight(1f).height(PulseAppTimelineFilterButtonHeight),
+                        shape = RoundedCornerShape(PulseAppCornerRadiusLarge),
+                        colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)
+                    ) {
+                        Text("Save", style = PulseAppFontBody, color = PulseAppColorBackground)
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
                 EditModeContent(
                     state = state,
                     onSearchQueryChanged = onSearchQueryChanged,
@@ -161,7 +188,7 @@ private fun ViewModeContent(state: AppCategoryUiState) {
         if (systemIgnored.isNotEmpty() || userIgnored.isNotEmpty()) {
             Text(
                 text = "Ignored",
-                style = PulseAppFontLabel.copy(color = Color.Gray)
+                style = PulseAppFontLabel.copy(color = Color.Gray, fontSize = 12.sp)
             )
             // System ignored (text-based, as original)
             systemIgnored.forEach { pkg ->
@@ -237,7 +264,7 @@ private fun CategoryIconGrid(
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = "$title (${apps.size})",
-            style = PulseAppFontLabel.copy(color = color)
+            style = PulseAppFontLabel.copy(color = color, fontSize = 12.sp, fontWeight = FontWeight.Normal)
         )
     }
 
