@@ -26,4 +26,7 @@ object AppCategory {
     const val PRODUCTIVE = "PRODUCTIVE"
     const val NEUTRAL = "NEUTRAL"
     const val DISTRACTING = "DISTRACTING"
+    const val IGNORED = "IGNORED"
+
+    val ALL = listOf(PRODUCTIVE, NEUTRAL, DISTRACTING, IGNORED)
 }

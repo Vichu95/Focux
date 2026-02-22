@@ -1,7 +1,7 @@
 package com.focux.pulse.utilities
 
 enum class ActivityType {
-    Productive, Distracting, Neutral
+    Productive, Distracting, Neutral, Ignored
 }
 
 data class AppUsage(

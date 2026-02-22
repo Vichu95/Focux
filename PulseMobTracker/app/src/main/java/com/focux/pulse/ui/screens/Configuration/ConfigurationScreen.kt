@@ -2,7 +2,9 @@ package com.focux.pulse.ui.screens.Configuration
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -12,12 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.focux.pulse.data.local.PulseDatabase
 import com.focux.pulse.data.local.entities.SystemState
-import androidx.room.withTransaction
 import com.focux.pulse.ui.theme.*
-import com.focux.pulse.utilities.PULSE_IGNORED_APPS
-import com.focux.pulse.utilities.AppInfoHelper
 import kotlinx.coroutines.launch
 
 @Composable
@@ -25,10 +25,15 @@ fun ConfigurationScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var statusMessage by remember { mutableStateOf("") }
-    
+
+    // App Category ViewModel
+    val categoryViewModel: AppCategoryViewModel = viewModel()
+    val categoryState by categoryViewModel.uiState.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(PulseAppPaddingMedium),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -41,6 +46,14 @@ fun ConfigurationScreen() {
         )
         
         Spacer(modifier = Modifier.height(24.dp))
+
+        // ── App Category Section ──
+        AppCategorySection(
+            state = categoryState,
+            onToggleEditMode = { categoryViewModel.toggleEditMode() },
+            onSearchQueryChanged = { categoryViewModel.setSearchQuery(it) },
+            onCategoryChanged = { pkg, cat -> categoryViewModel.updateCategory(pkg, cat) }
+        )
         
         // Database Reset Section
         Box(
@@ -186,44 +199,6 @@ fun ConfigurationScreen() {
                 }
             }
         }
-        
-        // Ignored Apps Info Section
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
-                .background(PulseAppColorSurface)
-                .padding(PulseAppPaddingMedium)
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Ignored Apps",
-                    style = PulseAppFontSubHeader,
-                    color = PulseAppColorPrimary
-                )
-                
-                Text(
-                    text = "These apps don't trigger UNLOCK_APP detection:",
-                    style = PulseAppFontBody,
-                    color = PulseAppColorSecondary
-                )
-                
-                val launchers = remember(context) { AppInfoHelper.getLauncherPackages(context) }
-                val displayList = remember(launchers) {
-                   PULSE_IGNORED_APPS + launchers
-                }
-
-                displayList.distinct().forEach { pkg ->
-                    val isLauncher = pkg in launchers
-                    Text(
-                        text = "• $pkg${if (isLauncher) " (Launcher)" else ""}",
-                        style = PulseAppFontBody,
-                        color = PulseAppColorSecondary
-                    )
-                }
-            }
-        }
     }
 }
+

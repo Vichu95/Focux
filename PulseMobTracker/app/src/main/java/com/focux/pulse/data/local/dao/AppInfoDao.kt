@@ -2,6 +2,7 @@ package com.focux.pulse.data.local.dao
 
 import androidx.room.*
 import com.focux.pulse.data.local.entities.AppInfo
+import kotlinx.coroutines.flow.Flow
 
 /**
  * DAO for AppInfo - manages app categories.
@@ -19,6 +20,12 @@ interface AppInfoDao {
      */
     @Query("SELECT * FROM app_info ORDER BY appName")
     suspend fun getAllApps(): List<AppInfo>
+
+    /**
+     * Get all apps as a reactive Flow (for UI observation).
+     */
+    @Query("SELECT * FROM app_info ORDER BY appName")
+    fun getAllAppsFlow(): Flow<List<AppInfo>>
 
     /**
      * Insert or update app info.
