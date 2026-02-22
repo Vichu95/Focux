@@ -80,30 +80,32 @@ fun AppCategorySection(
                 )
 
                 Surface(
-                    color = if (state.isEditMode) PulseAppColorPrimary else Color.Transparent,
-                    shape = RoundedCornerShape(50),
+                    color = PulseAppColorSurface, // Matching TimelineHeader
+                    shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
                     modifier = Modifier
-                        .clip(RoundedCornerShape(50))
+                        .width(100.dp)
+                        .height(PulseAppTimelineFilterButtonHeight)
+                        .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
                         .clickable { onToggleEditMode() }
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.edit_icon),
-                            contentDescription = if (state.isEditMode) "Done" else "Edit",
-                            tint = if (state.isEditMode) Color.White else PulseAppColorPrimary,
-                            modifier = Modifier.size(16.dp)
+                            painter = painterResource(id = if (state.isEditMode) R.drawable.save_icon else R.drawable.edit_icon), // Using save icon for done state
+                            contentDescription = if (state.isEditMode) "Save" else "Edit",
+                            tint = PulseAppColorPrimary, // Always primary accent
+                            modifier = Modifier.size(PulseAppTimelineFilterIconSize)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(PulseAppPaddingSmall))
                         Text(
-                            text = if (state.isEditMode) "Done" else "Edit",
+                            text = if (state.isEditMode) "Save" else "Edit",
                             style = TextStyle(
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (state.isEditMode) Color.White else PulseAppColorPrimary
+                                fontSize = 15.sp, // Match Timeline font size
+                                color = PulseAppColorSecondary // Using secondary color like Timeline
                             )
                         )
                     }
@@ -360,7 +362,7 @@ private fun EditModeContent(
 
     // ── Search Bar ──
     Surface(
-        color = PulseAppColorBackground,
+        color = PulseAppColorSurface,
         shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
         modifier = Modifier
             .fillMaxWidth()
@@ -373,10 +375,10 @@ private fun EditModeContent(
             modifier = Modifier.padding(horizontal = 12.dp)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.search_icon),
+                painter = painterResource(id = android.R.drawable.ic_menu_search),
                 contentDescription = "Search",
-                tint = Color.Gray,
-                modifier = Modifier.size(18.dp)
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             BasicTextField(
@@ -385,7 +387,7 @@ private fun EditModeContent(
                 textStyle = TextStyle(
                     color = Color.White,
                     fontSize = 14.sp,
-                    fontFamily = FontFamily.Monospace
+                    fontFamily = FontFamily.Monospace // Keeping monospace consistency
                 ),
                 cursorBrush = SolidColor(PulseAppColorPrimary),
                 modifier = Modifier
@@ -394,7 +396,7 @@ private fun EditModeContent(
                 decorationBox = { innerTextField ->
                     if (state.searchQuery.isEmpty()) {
                         Text(
-                            "Search apps...",
+                            "Search by name...", // Matched hint string
                             color = Color.Gray,
                             fontSize = 14.sp,
                             fontFamily = FontFamily.Monospace
