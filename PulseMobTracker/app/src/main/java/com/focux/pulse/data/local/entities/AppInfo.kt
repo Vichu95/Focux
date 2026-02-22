@@ -16,7 +16,10 @@ import androidx.room.PrimaryKey
 data class AppInfo(
     @PrimaryKey val packageName: String,
     val appName: String = "",  // Resolved app name from PackageManager
-    val category: String = "NEUTRAL"  // PRODUCTIVE, NEUTRAL, DISTRACTING
+    val category: String = "NEUTRAL",  // PRODUCTIVE, NEUTRAL, DISTRACTING
+    val sessionLimitMins: Int? = null,
+    val dailyLimitMins: Int? = null,
+    val dailyOpensLimit: Int? = null
 )
 
 /**

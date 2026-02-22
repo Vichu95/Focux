@@ -61,4 +61,10 @@ interface AppInfoDao {
      */
     @Query("DELETE FROM app_info")
     suspend fun deleteAll()
+
+    /**
+     * Update custom mindful limits for a specific app.
+     */
+    @Query("UPDATE app_info SET sessionLimitMins = :sessionLimitMins, dailyLimitMins = :dailyLimitMins, dailyOpensLimit = :dailyOpensLimit WHERE packageName = :packageName")
+    suspend fun updateAppLimits(packageName: String, sessionLimitMins: Int?, dailyLimitMins: Int?, dailyOpensLimit: Int?)
 }

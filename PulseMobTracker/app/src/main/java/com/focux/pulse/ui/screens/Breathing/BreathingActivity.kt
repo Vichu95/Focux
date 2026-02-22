@@ -30,6 +30,8 @@ class BreathingActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         val targetPackageName = intent.getStringExtra("TARGET_PACKAGE") ?: "Unknown App"
+        val sessionLimitMins = intent.getIntExtra("SESSION_LIMIT_MINS", -1)
+        val breathingDuration = intent.getIntExtra("BREATHING_DURATION", 4)
         
         setContent {
             PulseTheme {
@@ -39,13 +41,16 @@ class BreathingActivity : ComponentActivity() {
                 ) {
                     BreathingScreen(
                         targetPackageName = targetPackageName,
+                        sessionLimitMins = sessionLimitMins,
+                        breathingDuration = breathingDuration,
                         onProceed = {
                             // Proceed to the app by simulating a home press then launching intent
                             // Or simpler: just let them proceed implicitly? We'll launch it.
                             val launchIntent = packageManager.getLaunchIntentForPackage(targetPackageName)
                             if (launchIntent != null) {
                                 // Important: We MUST flag this so our service doesn't re-intercept immediately
-                                AppInterceptorService.allowAppContinuance(targetPackageName, durationMs = 5 * 60 * 1000) // 5 minutes free
+                                val durationMs = if (sessionLimitMins == -1) -1L else sessionLimitMins * 60 * 1000L
+                                AppInterceptorService.allowAppContinuance(targetPackageName, durationMs)
                                 startActivity(launchIntent)
                             }
                             finish()
@@ -69,11 +74,14 @@ class BreathingActivity : ComponentActivity() {
 @Composable
 fun BreathingScreen(
     targetPackageName: String,
+    sessionLimitMins: Int,
+    breathingDuration: Int,
     onProceed: () -> Unit,
     onExit: () -> Unit
 ) {
-    // 1. Inhale (4s), 2. Hold (4s), 3. Exhale (4s), 4. Hold (4s)
-    val cycleDurationMs = 16000L
+    // 1. Inhale (duration), 2. Hold (duration), 3. Exhale (duration), 4. Hold (duration)
+    val phaseDurationMs = breathingDuration * 1000L
+    val cycleDurationMs = phaseDurationMs * 4L
     var isSequenceComplete by remember { mutableStateOf(false) }
     var currentPhase by remember { mutableStateOf("Inhale...") }
     var progress by remember { mutableStateOf(0f) }
@@ -101,9 +109,9 @@ fun BreathingScreen(
             
             val phaseInMs = elapsed % cycleDurationMs
             currentPhase = when {
-                phaseInMs < 4000 -> "Inhale..."
-                phaseInMs < 8000 -> "Hold."
-                phaseInMs < 12000 -> "Exhale..."
+                phaseInMs < phaseDurationMs -> "Inhale..."
+                phaseInMs < phaseDurationMs * 2 -> "Hold."
+                phaseInMs < phaseDurationMs * 3 -> "Exhale..."
                 else -> "Hold."
             }
             delay(16) // ~60fps
@@ -137,8 +145,18 @@ fun BreathingScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        val limitText = if (sessionLimitMins == -1) "No Session Limit" else "Session Limit: $sessionLimitMins mins"
+        Text(
+            text = limitText,
+            style = PulseAppFontLabel,
+            color = PulseAppColorSecondary,
+            textAlign = TextAlign.Center
+        )
 
-        Spacer(modifier = Modifier.height(64.dp))
+        Spacer(modifier = Modifier.height(32.dp))
         
         // Breathing Circle
         Box(

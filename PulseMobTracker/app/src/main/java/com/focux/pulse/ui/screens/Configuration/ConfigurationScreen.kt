@@ -30,6 +30,9 @@ fun ConfigurationScreen() {
     val categoryViewModel: AppCategoryViewModel = viewModel()
     val categoryState by categoryViewModel.uiState.collectAsState()
 
+    // Mindful Limits ViewModel
+    val limitsViewModel: MindfulLimitsViewModel = viewModel()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -45,6 +48,9 @@ fun ConfigurationScreen() {
             onSearchQueryChanged = { categoryViewModel.setSearchQuery(it) },
             onCategoryChanged = { pkg, cat -> categoryViewModel.updateCategory(pkg, cat) }
         )
+        
+        // ── Mindful Limits Section ──
+        MindfulLimitsSection(viewModel = limitsViewModel)
         
         // ── System Permissions Section ──
         SystemPermissionsSection()

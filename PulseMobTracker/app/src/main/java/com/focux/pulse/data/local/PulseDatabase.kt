@@ -13,7 +13,7 @@ import com.focux.pulse.data.local.dao.*
  */
 @Database(
     entities = [RawData::class, SystemState::class, AppSession::class, DailyStats::class, AppInfo::class],
-    version = 15,
+    version = 16,
     exportSchema = false
 )
 abstract class PulseDatabase : RoomDatabase() {
@@ -33,6 +33,14 @@ abstract class PulseDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_15_16 = object : androidx.room.migration.Migration(15, 16) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE app_info ADD COLUMN sessionLimitMins INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE app_info ADD COLUMN dailyLimitMins INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE app_info ADD COLUMN dailyOpensLimit INTEGER DEFAULT NULL")
+            }
+        }
+
         /**
          * Returns the singleton instance of the PulseDatabase.
          * Ensures only one instance of the database exists to prevent race conditions.
@@ -44,7 +52,7 @@ abstract class PulseDatabase : RoomDatabase() {
                     PulseDatabase::class.java,
                     "pulse_user.db"
                 )
-                .addMigrations(MIGRATION_14_15)
+                .addMigrations(MIGRATION_14_15, MIGRATION_15_16)
                 .fallbackToDestructiveMigration() // Useful for dev/onboarding phase to avoid crash on schema change
                 .build()
                 INSTANCE = instance

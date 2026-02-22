@@ -22,8 +22,8 @@ class AppInterceptorService : AccessibilityService() {
         // Apps in this map won't be intercepted until their time expires
         val temporarilyAllowedApps = mutableMapOf<String, Long>()
         
-        fun allowAppContinuance(packageName: String, durationMs: Long = 300000) { // Default 5 mins
-            temporarilyAllowedApps[packageName] = System.currentTimeMillis() + durationMs
+        fun allowAppContinuance(packageName: String, durationMs: Long) {
+            temporarilyAllowedApps[packageName] = if (durationMs == -1L) Long.MAX_VALUE else System.currentTimeMillis() + durationMs
         }
     }
 
@@ -60,10 +60,22 @@ class AppInterceptorService : AccessibilityService() {
                         val db = PulseDatabase.getDatabase(applicationContext)
                         val appInfo = db.appInfoDao().getAppInfo(packageName)
                         
-                        // We only intercept if the user explicitly categorized it as DISTRACTING
-                        if (appInfo?.category == AppCategory.DISTRACTING) {
-                            Log.d("AppInterceptor", "Intercepting Distracting App: $packageName (Event: ${event.eventType})")
-                            launchBreathingScreen(packageName)
+                        val category = appInfo?.category ?: AppCategory.NEUTRAL
+                        val customSession = appInfo?.sessionLimitMins
+                        val globalSessionStr = db.analyticsDao().getState("limit_${category.lowercase()}_session")
+                        
+                        val actualSessionMins = if (customSession != null) customSession
+                            else if (globalSessionStr != null) globalSessionStr.toIntOrNull()
+                            else if (category == AppCategory.DISTRACTING) 5
+                            else null
+
+                        val breathingStr = db.analyticsDao().getState("limit_breathing_duration")
+                        val breathingDuration = breathingStr?.toIntOrNull() ?: 4
+                        
+                        // We intercept if it's DISTRACTING, or if there's any limit explicitly enforced.
+                        if (category == AppCategory.DISTRACTING || actualSessionMins != null) {
+                            Log.d("AppInterceptor", "Intercepting App: $packageName (Category: $category, Limit: $actualSessionMins)")
+                            launchBreathingScreen(packageName, actualSessionMins, breathingDuration)
                         }
                     } catch (e: Exception) {
                         Log.e("AppInterceptor", "Error querying app category", e)
@@ -73,10 +85,12 @@ class AppInterceptorService : AccessibilityService() {
         }
     }
 
-    private fun launchBreathingScreen(targetPackage: String) {
+    private fun launchBreathingScreen(targetPackage: String, sessionLimitMins: Int?, breathingDuration: Int) {
         val intent = Intent(this, BreathingActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("TARGET_PACKAGE", targetPackage)
+            putExtra("SESSION_LIMIT_MINS", sessionLimitMins ?: -1)
+            putExtra("BREATHING_DURATION", breathingDuration)
         }
         startActivity(intent)
     }
