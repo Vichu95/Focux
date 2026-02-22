@@ -53,8 +53,8 @@ class DailySummaryProcessor(
             var calcNeutral = dailyStat.glanceCount * com.focux.pulse.utilities.PULSE_GLANCE_ESTIMATE_MS.toLong()
 
             appSessions.filter { it.packageName !in launcherPackages }.forEach { session ->
-                val activeCategory = session.categoryOverride ?: appCategories[session.packageName]
-                when (activeCategory) {
+                val activeCategoryStr = session.categoryOverride ?: appCategories[session.packageName]
+                when (activeCategoryStr) {
                     AppCategory.PRODUCTIVE -> calcProductive += session.duration
                     AppCategory.DISTRACTING -> calcDistracting += session.duration
                     else -> calcNeutral += session.duration
@@ -309,7 +309,8 @@ class DailySummaryProcessor(
             var calcNeutral = glanceTime // Glances are neutral Time
 
             appSessions.filter { it.packageName !in launcherPackages }.forEach { session ->
-                when (appCategories[session.packageName]) {
+                val activeCategoryStr = session.categoryOverride ?: appCategories[session.packageName]
+                when (activeCategoryStr) {
                     AppCategory.PRODUCTIVE -> calcProductive += session.duration
                     AppCategory.DISTRACTING -> calcDistracting += session.duration
                     else -> calcNeutral += session.duration
