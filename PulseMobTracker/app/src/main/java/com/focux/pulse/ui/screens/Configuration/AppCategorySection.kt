@@ -5,9 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
@@ -17,16 +14,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
 import com.focux.pulse.R
 import com.focux.pulse.data.local.entities.AppCategory
 import com.focux.pulse.data.local.entities.AppInfo
@@ -113,73 +116,174 @@ fun AppCategorySection(
 // ─────────────────────────────────────────────────────────────────
 // VIEW MODE — Icon grids grouped by category
 // ─────────────────────────────────────────────────────────────────
+
+/**
+ * Data class to hold tooltip positioning info: the icon's screen-relative
+ * coordinates and the app name to display.
+ */
+private data class TooltipInfo(
+    val appName: String,
+    val iconXPx: Float,     // Icon left edge in window coords
+    val iconYPx: Float,     // Icon top edge in window coords
+    val iconWidthPx: Float,
+    val iconHeightPx: Float
+)
+
 @Composable
 private fun ViewModeContent(state: AppCategoryUiState) {
     val context = LocalContext.current
+    val density = LocalDensity.current
+    val configuration = android.content.res.Resources.getSystem().displayMetrics
 
-    // ── Ignored Apps (system + user) ──
-    val launchers = remember(context) { AppInfoHelper.getLauncherPackages(context) }
-    val systemIgnored = remember(launchers) { (PULSE_IGNORED_APPS + launchers).distinct() }
-    val userIgnored = state.ignoredApps
+    // Shared tooltip state — only one tooltip visible at a time across all grids
+    var tooltipInfo by remember { mutableStateOf<TooltipInfo?>(null) }
 
-    if (systemIgnored.isNotEmpty() || userIgnored.isNotEmpty()) {
-        Text(
-            text = "Ignored",
-            style = TextStyle(
-                fontFamily = FontFamily.Monospace,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray
-            )
-        )
-        // System ignored (text-based, as original)
-        systemIgnored.forEach { pkg ->
-            val isLauncher = pkg in launchers
-            Text(
-                text = "• $pkg${if (isLauncher) " (Launcher)" else " (System)"}",
-                style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Gray)
-            )
+    // Auto-dismiss after 3 seconds
+    LaunchedEffect(tooltipInfo) {
+        if (tooltipInfo != null) {
+            kotlinx.coroutines.delay(3000)
+            tooltipInfo = null
         }
-        // User ignored (with icons)
-        if (userIgnored.isNotEmpty()) {
-            userIgnored.forEach { app ->
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null
+            ) { tooltipInfo = null } // Dismiss on tap outside
+    ) {
+        // ── Ignored Apps (system + user) ──
+        val launchers = remember(context) { AppInfoHelper.getLauncherPackages(context) }
+        val systemIgnored = remember(launchers) { (PULSE_IGNORED_APPS + launchers).distinct() }
+        val userIgnored = state.ignoredApps
+
+        if (systemIgnored.isNotEmpty() || userIgnored.isNotEmpty()) {
+            Text(
+                text = "Ignored",
+                style = TextStyle(
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray
+                )
+            )
+            // System ignored (text-based, as original)
+            systemIgnored.forEach { pkg ->
+                val isLauncher = pkg in launchers
                 Text(
-                    text = "• ${app.appName}",
+                    text = "• $pkg${if (isLauncher) " (Launcher)" else " (System)"}",
                     style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Gray)
                 )
             }
+            // User ignored (with icons)
+            if (userIgnored.isNotEmpty()) {
+                userIgnored.forEach { app ->
+                    Text(
+                        text = "• ${app.appName}",
+                        style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Gray)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
         }
-        Spacer(modifier = Modifier.height(8.dp))
+
+        // ── Category Grids ──
+        CategoryIconGrid(
+            title = "Productive",
+            color = PulseAppColorProductive,
+            apps = state.productiveApps,
+            onIconTapped = { info -> tooltipInfo = info }
+        )
+
+        CategoryIconGrid(
+            title = "Distracting",
+            color = PulseAppColorDistracting,
+            apps = state.distractingApps,
+            onIconTapped = { info -> tooltipInfo = info }
+        )
+
+        CategoryIconGrid(
+            title = "Neutral",
+            color = PulseAppColorNeutral,
+            apps = state.neutralApps,
+            onIconTapped = { info -> tooltipInfo = info }
+        )
     }
 
-    // ── Category Grids ──
-    CategoryIconGrid(
-        title = "Productive",
-        color = PulseAppColorProductive,
-        apps = state.productiveApps
-    )
+    // ── Dynamic Tooltip Popup ──
+    if (tooltipInfo != null) {
+        val info = tooltipInfo!!
+        val screenWidthPx = configuration.widthPixels.toFloat()
+        val screenHeightPx = configuration.heightPixels.toFloat()
 
-    CategoryIconGrid(
-        title = "Distracting",
-        color = PulseAppColorDistracting,
-        apps = state.distractingApps
-    )
+        // Determine best corner: popup goes AWAY from the nearest edge
+        val iconCenterX = info.iconXPx + info.iconWidthPx / 2f
+        val iconCenterY = info.iconYPx + info.iconHeightPx / 2f
+        val isLeftHalf = iconCenterX < screenWidthPx / 2f
+        val isTopHalf = iconCenterY < screenHeightPx / 2f
 
-    CategoryIconGrid(
-        title = "Neutral",
-        color = PulseAppColorNeutral,
-        apps = state.neutralApps
-    )
+        // Calculate popup offset in dp
+        val offsetX = with(density) {
+            if (isLeftHalf) {
+                // Show to the right of the icon
+                (info.iconXPx + info.iconWidthPx).toInt().toDp()
+            } else {
+                // Show to the left — we use the icon's left edge minus estimated popup width
+                // Use icon left edge and let the popup Alignment handle it
+                (info.iconXPx - 120.dp.toPx()).toInt().coerceAtLeast(0).toDp()
+            }
+        }
+        val offsetY = with(density) {
+            if (isTopHalf) {
+                // Show below the icon
+                (info.iconYPx + info.iconHeightPx + 4.dp.toPx()).toInt().toDp()
+            } else {
+                // Show above the icon
+                (info.iconYPx - 36.dp.toPx()).toInt().coerceAtLeast(0).toDp()
+            }
+        }
+
+        Popup(
+            alignment = Alignment.TopStart,
+            offset = IntOffset(
+                x = with(density) { offsetX.roundToPx() },
+                y = with(density) { offsetY.roundToPx() }
+            ),
+            onDismissRequest = { tooltipInfo = null }
+        ) {
+            Surface(
+                color = PulseAppColorBackground.copy(alpha = 0.95f),
+                shape = RoundedCornerShape(8.dp),
+                shadowElevation = 8.dp,
+                modifier = Modifier.clickable { tooltipInfo = null }
+            ) {
+                Text(
+                    text = info.appName,
+                    style = TextStyle(
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PulseAppColorPrimary
+                    ),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    maxLines = 1
+                )
+            }
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Category Icon Grid — subtitle + rows of app icons
+// Category Icon Grid — subtitle + rows of tappable app icons (8 per row)
 // ─────────────────────────────────────────────────────────────────
 @Composable
 private fun CategoryIconGrid(
     title: String,
     color: Color,
-    apps: List<AppInfo>
+    apps: List<AppInfo>,
+    onIconTapped: (TooltipInfo) -> Unit
 ) {
     if (apps.isEmpty()) return
 
@@ -206,21 +310,53 @@ private fun CategoryIconGrid(
 
     Spacer(modifier = Modifier.height(4.dp))
 
-    // FlowRow-style layout: 10 icons per row using chunked
-    val rows = apps.chunked(10)
+    // 8 icons per row, equally sized
+    val iconsPerRow = 8
+    val rows = apps.chunked(iconsPerRow)
     rows.forEach { rowApps ->
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(vertical = 2.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp)
         ) {
             rowApps.forEach { app ->
-                androidx.compose.ui.viewinterop.AndroidView(
-                    factory = { ctx -> android.widget.ImageView(ctx) },
-                    update = { view ->
-                        view.setImageDrawable(AppInfoHelper.getAppIcon(view.context, app.packageName))
-                    },
-                    modifier = Modifier.size(PulseAppIconSizeMedium)
-                )
+                val displayName = app.appName.ifEmpty { app.packageName }
+                var iconCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .onGloballyPositioned { coords -> iconCoords = coords }
+                        .clickable {
+                            iconCoords?.let { coords ->
+                                val pos = coords.localToWindow(Offset.Zero)
+                                onIconTapped(
+                                    TooltipInfo(
+                                        appName = displayName,
+                                        iconXPx = pos.x,
+                                        iconYPx = pos.y,
+                                        iconWidthPx = coords.size.width.toFloat(),
+                                        iconHeightPx = coords.size.height.toFloat()
+                                    )
+                                )
+                            }
+                        }
+                ) {
+                    androidx.compose.ui.viewinterop.AndroidView(
+                        factory = { ctx -> android.widget.ImageView(ctx) },
+                        update = { view ->
+                            view.setImageDrawable(AppInfoHelper.getAppIcon(view.context, app.packageName))
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+            // Fill remaining slots with invisible spacers to keep equal sizing
+            val remaining = iconsPerRow - rowApps.size
+            repeat(remaining) {
+                Spacer(modifier = Modifier.weight(1f).aspectRatio(1f))
             }
         }
     }
