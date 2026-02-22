@@ -31,6 +31,11 @@ class BreathingActivity : ComponentActivity() {
         
         val targetPackageName = intent.getStringExtra("TARGET_PACKAGE") ?: "Unknown App"
         val sessionLimitMins = intent.getIntExtra("SESSION_LIMIT_MINS", -1)
+        val dailyLimitMins = intent.getIntExtra("DAILY_LIMIT_MINS", -1)
+        val usedDailyMins = intent.getIntExtra("USED_DAILY_MINS", 0)
+        val opensLimit = intent.getIntExtra("OPENS_LIMIT", -1)
+        val usedOpens = intent.getIntExtra("USED_OPENS", 0)
+        
         val breathingDuration = intent.getIntExtra("BREATHING_DURATION", 4)
         
         setContent {
@@ -42,14 +47,25 @@ class BreathingActivity : ComponentActivity() {
                     BreathingScreen(
                         targetPackageName = targetPackageName,
                         sessionLimitMins = sessionLimitMins,
+                        dailyLimitMins = dailyLimitMins,
+                        usedDailyMins = usedDailyMins,
+                        opensLimit = opensLimit,
+                        usedOpens = usedOpens,
                         breathingDuration = breathingDuration,
                         onProceed = {
-                            // Proceed to the app by simulating a home press then launching intent
-                            // Or simpler: just let them proceed implicitly? We'll launch it.
                             val launchIntent = packageManager.getLaunchIntentForPackage(targetPackageName)
                             if (launchIntent != null) {
-                                // Important: We MUST flag this so our service doesn't re-intercept immediately
-                                val durationMs = if (sessionLimitMins == -1) -1L else sessionLimitMins * 60 * 1000L
+                                val isDailyExceeded = dailyLimitMins != -1 && usedDailyMins >= dailyLimitMins
+                                val isOpensExceeded = opensLimit != -1 && usedOpens >= opensLimit
+                                
+                                val defaultBypassMs = 5 * 60 * 1000L
+                                val durationMs = if (sessionLimitMins != -1) {
+                                    sessionLimitMins * 60 * 1000L
+                                } else if (isDailyExceeded || isOpensExceeded) {
+                                    defaultBypassMs
+                                } else {
+                                    -1L
+                                }
                                 AppInterceptorService.allowAppContinuance(targetPackageName, durationMs)
                                 startActivity(launchIntent)
                             }
@@ -75,6 +91,10 @@ class BreathingActivity : ComponentActivity() {
 fun BreathingScreen(
     targetPackageName: String,
     sessionLimitMins: Int,
+    dailyLimitMins: Int,
+    usedDailyMins: Int,
+    opensLimit: Int,
+    usedOpens: Int,
     breathingDuration: Int,
     onProceed: () -> Unit,
     onExit: () -> Unit
@@ -129,17 +149,32 @@ fun BreathingScreen(
         verticalArrangement = Arrangement.Center
     ) {
         
+        val isDailyExceeded = dailyLimitMins != -1 && usedDailyMins >= dailyLimitMins
+        val isOpensExceeded = opensLimit != -1 && usedOpens >= opensLimit
+        
+        val headerText = when {
+            isDailyExceeded -> "Daily Limit Exceeded"
+            isOpensExceeded -> "App Opens Limit Reached"
+            else -> "Mindful Interception"
+        }
+        
+        val bodyText = when {
+            isDailyExceeded -> "You've exceeded your daily allowance for this app. Take a breath and reconsider."
+            isOpensExceeded -> "You've opened this app too many times today. Take a breath and reconsider."
+            else -> "You are trying to open this app. Take a moment to breathe before proceeding."
+        }
+
         Text(
-            text = "Mindful Interception",
+            text = headerText,
             style = PulseAppFontHeader,
-            color = PulseAppColorPrimary,
+            color = if (isDailyExceeded || isOpensExceeded) PulseAppColorDistracting else PulseAppColorPrimary,
             textAlign = TextAlign.Center
         )
         
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = "You are trying to open this app. Take a moment to breathe before proceeding.",
+            text = bodyText,
             style = PulseAppFontBody,
             color = PulseAppColorSecondary,
             textAlign = TextAlign.Center,
@@ -148,13 +183,22 @@ fun BreathingScreen(
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        val limitText = if (sessionLimitMins == -1) "No Session Limit" else "Session Limit: $sessionLimitMins mins"
-        Text(
-            text = limitText,
-            style = PulseAppFontLabel,
-            color = PulseAppColorSecondary,
-            textAlign = TextAlign.Center
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (sessionLimitMins != -1) {
+                Text(text = "Session Limit: $sessionLimitMins mins", style = PulseAppFontLabel, color = PulseAppColorSecondary)
+            }
+            if (dailyLimitMins != -1) {
+                val color = if (usedDailyMins >= dailyLimitMins) PulseAppColorDistracting else PulseAppColorSecondary
+                Text(text = "Daily Limit: $usedDailyMins / $dailyLimitMins mins", style = PulseAppFontLabel, color = color)
+            }
+            if (opensLimit != -1) {
+                val color = if (usedOpens >= opensLimit) PulseAppColorDistracting else PulseAppColorSecondary
+                Text(text = "Daily Opens: $usedOpens / $opensLimit times", style = PulseAppFontLabel, color = color)
+            }
+            if (sessionLimitMins == -1 && dailyLimitMins == -1 && opensLimit == -1) {
+                Text(text = "No Explicit Limits set for this category", style = PulseAppFontLabel, color = PulseAppColorSecondary)
+            }
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
         

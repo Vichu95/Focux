@@ -100,6 +100,12 @@ interface AnalyticsDao {
     @Query("SELECT * FROM daily_stats WHERE date = :date")
     suspend fun getDailyStats(date: String): DailyStats?
 
+    @Query("SELECT COALESCE(SUM(duration) / 60000, 0) FROM app_sessions WHERE packageName = :packageName AND date = :date")
+    suspend fun getAppUsageMinsForDay(packageName: String, date: String): Int
+
+    @Query("SELECT COUNT(id) FROM app_sessions WHERE packageName = :packageName AND date = :date")
+    suspend fun getAppOpensForDay(packageName: String, date: String): Int
+
     /**
      * Observable Flow version for UI to react to changes automatically.
      */
