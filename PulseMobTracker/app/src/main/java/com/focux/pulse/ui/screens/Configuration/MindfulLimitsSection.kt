@@ -14,12 +14,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.FocusRequester
 import com.focux.pulse.R
 import com.focux.pulse.data.local.entities.AppCategory
 import com.focux.pulse.data.local.entities.AppInfo
@@ -53,23 +57,53 @@ fun MindfulLimitsSection(
             ) {
                 Text("Mindful Limits", style = PulseAppFontSubHeader, color = PulseAppColorPrimary)
 
-                Surface(
-                    color = PulseAppColorSurface,
-                    shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
-                    modifier = Modifier
-                        .width(100.dp).height(PulseAppTimelineFilterButtonHeight)
-                        .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
-                        .clickable { viewModel.toggleEditMode() }
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (state.isEditMode) {
+                        Surface(
+                            color = PulseAppColorSurface,
+                            shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
+                            modifier = Modifier
+                                .height(PulseAppTimelineFilterButtonHeight)
+                                .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
+                                .clickable { viewModel.toggleEditMode() } // Ideally we could discard changes here, but skipping for now
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Icon(painter = painterResource(id = android.R.drawable.ic_menu_close_clear_cancel), contentDescription = "Cancel", tint = PulseAppColorDistracting, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Cancel", style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = PulseAppColorSecondary))
+                            }
+                        }
+                    }
+
+                    Surface(
+                        color = PulseAppColorSurface,
+                        shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
+                        modifier = Modifier
+                            .height(PulseAppTimelineFilterButtonHeight)
+                            .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
+                            .clickable { viewModel.toggleEditMode() }
                     ) {
-                        Text(
-                            text = if (state.isEditMode) "Save" else "Edit",
-                            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 15.sp, color = PulseAppColorSecondary)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            if (state.isEditMode) {
+                                Icon(painter = painterResource(id = android.R.drawable.ic_menu_save), contentDescription = "Save", tint = PulseAppColorPrimary, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                            } else {
+                                Icon(painter = painterResource(id = android.R.drawable.ic_menu_edit), contentDescription = "Edit", tint = PulseAppColorPrimary, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            Text(
+                                text = if (state.isEditMode) "Save" else "Edit",
+                                style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = if (state.isEditMode) PulseAppColorPrimary else PulseAppColorSecondary)
+                            )
+                        }
                     }
                 }
             }
@@ -110,14 +144,18 @@ fun MindfulLimitsSection(
 @Composable
 private fun MindfulLimitsViewMode(state: MindfulLimitsUiState) {
     Column {
-        fun format(value: Int?) = if (value == null) "No limit" else "${value}"
+        fun formatMin(value: Int?) = if (value == null) "-" else "${value}m"
+        fun formatX(value: Int?) = if (value == null) "-" else "${value}x"
         
         Text("Central Configurations", style = PulseAppFontSubHeader, color = PulseAppColorPrimary)
         Spacer(modifier = Modifier.height(4.dp))
-        Text("• Distracting Apps Limit: ${format(state.distSession)}m | Daily: ${format(state.distDaily)}m | Opens: ${format(state.distOpens)}x", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
-        Text("• Productive Apps Limit: ${format(state.prodSession)}m | Daily: ${format(state.prodDaily)}m | Opens: ${format(state.prodOpens)}x", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
-        Text("• Neutral Apps Limit: ${format(state.neutSession)}m | Daily: ${format(state.neutDaily)}m | Opens: ${format(state.neutOpens)}x", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
-        Text("• Breathing Pause: ${state.breathingDuration}s per phase (${state.breathingDuration * 4}s total cycle)", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
+        Text("• Distracting Apps Limit:\n  Session: ${formatMin(state.distSession)} | Daily: ${formatMin(state.distDaily)} | Opens: ${formatX(state.distOpens)}", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text("• Productive Apps Limit:\n  Session: ${formatMin(state.prodSession)} | Daily: ${formatMin(state.prodDaily)} | Opens: ${formatX(state.prodOpens)}", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text("• Neutral Apps Limit:\n  Session: ${formatMin(state.neutSession)} | Daily: ${formatMin(state.neutDaily)} | Opens: ${formatX(state.neutOpens)}", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text("• Breathing Pause:\n  ${state.breathingDuration}s per phase (${state.breathingDuration * 4}s total cycle)", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
         
         Spacer(modifier = Modifier.height(12.dp))
         
@@ -129,8 +167,10 @@ private fun MindfulLimitsViewMode(state: MindfulLimitsUiState) {
             Text("No custom overrides set.", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = Color.Gray)
         } else {
             customApps.take(5).forEach { app ->
-                val limitStr = "${format(app.sessionLimitMins)}m • ${format(app.dailyLimitMins)}m/day • ${format(app.dailyOpensLimit)}x"
-                Text("• ${app.appName.ifEmpty { app.packageName }} ............ $limitStr", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = Color.Gray)
+                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                    Text("• ${app.appName.ifEmpty { app.packageName }}", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = Color.Gray)
+                    Text("  Session: ${formatMin(app.sessionLimitMins)} | Daily: ${formatMin(app.dailyLimitMins)} | Opens: ${formatX(app.dailyOpensLimit)}", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
+                }
             }
             if (customApps.size > 5) {
                 Text("...and ${customApps.size - 5} more", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = Color.Gray)
@@ -153,12 +193,17 @@ private fun MindfulLimitsEditMode(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Central Configurations", style = PulseAppFontSubHeader, color = PulseAppColorPrimary)
-            Button(
-                onClick = onTuneGlobals,
-                colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorSurface),
-                shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
+            Surface(
+                color = PulseAppColorSurface,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.clickable { onTuneGlobals() }
             ) {
-                Text("⚙️ Tune", color = PulseAppColorSecondary)
+                Text(
+                    text = "⚙️ Tune",
+                    style = PulseAppFontBody.copy(fontSize = 12.sp),
+                    color = PulseAppColorSecondary,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                )
             }
         }
         
@@ -170,29 +215,53 @@ private fun MindfulLimitsEditMode(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            listOf("All", "Distracting", "Productive", "Neutral").forEach { filter ->
-                val isSelected = state.selectedFilter == filter
+            listOf("Distracting", "Productive", "Neutral").forEach { filter ->
+                val isSelected = filter in state.selectedFilters
                 Surface(
-                    color = if (isSelected) PulseAppColorPrimary.copy(alpha=0.2f) else PulseAppColorSurface,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.clickable { viewModel.setFilter(filter) }
+                    color = if (isSelected) PulseAppColorPrimary else PulseAppColorSurface,
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.weight(1f).height(32.dp).clip(RoundedCornerShape(50)).clickable { viewModel.toggleFilter(filter) }
                 ) {
-                    Text(
-                        text = filter,
-                        style = PulseAppFontBody.copy(fontSize = 12.sp),
-                        color = if (isSelected) PulseAppColorPrimary else PulseAppColorSecondary,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 8.dp)) {
+                        Text(
+                            text = filter,
+                            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = if (isSelected) Color.White else Color.LightGray)
+                        )
+                    }
                 }
             }
         }
         
-        Column(modifier = Modifier.heightIn(max = 400.dp)) {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                items(state.apps, key = { it.packageName }) { app ->
-                    val isCustom = app.sessionLimitMins != null || app.dailyLimitMins != null || app.dailyOpensLimit != null
-                    Row(
-                        modifier = Modifier
+        val focusRequester = remember { FocusRequester() }
+        Surface(
+            color = PulseAppColorSurface,
+            shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
+            modifier = Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(PulseAppCornerRadiusMedium)).clickable { focusRequester.requestFocus() }
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp)) {
+                Icon(painter = painterResource(id = android.R.drawable.ic_menu_search), contentDescription = "Search", tint = Color.White)
+                Spacer(modifier = Modifier.width(8.dp))
+                BasicTextField(
+                    value = state.searchQuery,
+                    onValueChange = { viewModel.setSearchQuery(it) },
+                    textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
+                    cursorBrush = SolidColor(PulseAppColorPrimary),
+                    modifier = Modifier.weight(1f).focusRequester(focusRequester),
+                    decorationBox = { innerTextField ->
+                        if (state.searchQuery.isEmpty()) Text("Search by name...", color = Color.Gray, fontSize = 14.sp)
+                        innerTextField()
+                    }
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        LazyColumn(modifier = Modifier.heightIn(max = 400.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            items(state.apps, key = { it.packageName }) { app ->
+                val isCustom = app.sessionLimitMins != null || app.dailyLimitMins != null || app.dailyOpensLimit != null
+                Row(
+                    modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
                             .background(PulseAppColorBackground.copy(alpha = 0.5f))
@@ -222,13 +291,11 @@ private fun MindfulLimitsEditMode(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             )
                         }
-                    }
                 }
             }
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MindfulAppTuneSheet(
@@ -258,7 +325,7 @@ private fun MindfulAppTuneSheet(
                     onCheckedChange = { useCustom = it },
                     colors = CheckboxDefaults.colors(checkedColor = PulseAppColorPrimary)
                 )
-                Text("Enable Custom Limits (otherwise uses defaults)", style = PulseAppFontBody, color = PulseAppColorSecondary)
+                Text("Enable custom limits", style = PulseAppFontBody, color = PulseAppColorSecondary)
             }
             
             if (useCustom) {
@@ -273,15 +340,25 @@ private fun MindfulAppTuneSheet(
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    if (useCustom) onConfirm(session, daily, opens)
-                    else onConfirm(null, null, null)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)
-            ) {
-                Text("Confirm", color = PulseAppColorBackground)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorDistracting)
+                ) {
+                    Text("Cancel")
+                }
+                
+                Button(
+                    onClick = {
+                        if (useCustom) onConfirm(session, daily, opens)
+                        else onConfirm(null, null, null)
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)
+                ) {
+                    Text("Confirm", color = PulseAppColorBackground)
+                }
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -323,7 +400,10 @@ private fun MindfulGlobalTuneSheet(
                 var breathing by remember { mutableStateOf(state.breathingDuration) }
                 Text("Breathing Pause Duration (per phase)", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
                 CounterBox(value = breathing, suffix = "secs", onValueChange = { breathing = it ?: 4 }, allowNull = false)
-                Button(onClick = { onConfirmBreathing(breathing); onDismiss() }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save Breathing", color = PulseAppColorBackground) }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorDistracting)) { Text("Cancel") }
+                    Button(onClick = { onConfirmBreathing(breathing); onDismiss() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save Breathing", color = PulseAppColorBackground) }
+                }
             } else {
                 var initialLoaded by remember { mutableStateOf(false) }
                 var session by remember { mutableStateOf<Int?>(null) }
@@ -345,7 +425,10 @@ private fun MindfulGlobalTuneSheet(
                     Text("Daily Opens Limit", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
                     CounterBox(value = opens, suffix = "times", onValueChange = { opens = it })
                     
-                    Button(onClick = { onConfirm(selectedTab, session, daily, opens); onDismiss() }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save Limits", color = PulseAppColorBackground) }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorDistracting)) { Text("Cancel") }
+                        Button(onClick = { onConfirm(selectedTab, session, daily, opens); onDismiss() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save Limits", color = PulseAppColorBackground) }
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))
@@ -364,17 +447,16 @@ fun CounterBox(
         Surface(color = PulseAppColorBackground, shape = RoundedCornerShape(4.dp), modifier = Modifier.size(36.dp).clickable {
             val current = value ?: 0
             if (current > 0) onValueChange(current - 1)
-            else if (allowNull) onValueChange(null)
         }) { Box(contentAlignment = Alignment.Center) { Text("-", style = PulseAppFontSubHeader, color = PulseAppColorPrimary) } }
         
-        Surface(color = PulseAppColorBackground, shape = RoundedCornerShape(4.dp), modifier = Modifier.width(80.dp).height(36.dp)) {
+        Surface(color = PulseAppColorBackground, shape = RoundedCornerShape(4.dp), modifier = Modifier.width(60.dp).height(36.dp)) {
             Box(contentAlignment = Alignment.Center) {
                 BasicTextField(
-                    value = if (value == null) "No limit" else value.toString(),
+                    value = value?.toString() ?: "",
                     onValueChange = {
                         val num = it.toIntOrNull()
                         if (num != null) onValueChange(num)
-                        else if (allowNull && it.isBlank()) onValueChange(null)
+                        else if (it.isBlank()) onValueChange(0) // Require explicit checkbox to set to null
                     },
                     textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = PulseAppColorPrimary, textAlign = TextAlign.Center),
                     modifier = Modifier.fillMaxWidth()
@@ -388,5 +470,17 @@ fun CounterBox(
         }) { Box(contentAlignment = Alignment.Center) { Text("+", style = PulseAppFontSubHeader, color = PulseAppColorPrimary) } }
         
         Text(suffix, style = PulseAppFontBody, color = PulseAppColorSecondary)
+        
+        if (allowNull) {
+            Spacer(modifier = Modifier.weight(1f))
+            Checkbox(
+                checked = value == null,
+                onCheckedChange = { isChecked -> 
+                    if (isChecked) onValueChange(null) else onValueChange(0) 
+                },
+                colors = CheckboxDefaults.colors(checkedColor = PulseAppColorPrimary)
+            )
+            Text("No limit", style = PulseAppFontBody.copy(fontSize = 12.sp), color = PulseAppColorSecondary)
+        }
     }
 }

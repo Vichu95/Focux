@@ -12,7 +12,8 @@ import kotlinx.coroutines.launch
 data class MindfulLimitsUiState(
     val apps: List<AppInfo> = emptyList(),
     val isEditMode: Boolean = false,
-    val selectedFilter: String = "All", // All, Distracting, Productive, Neutral
+    val selectedFilters: Set<String> = setOf("Distracting", "Productive", "Neutral"),
+    val searchQuery: String = "",
     
     // Global defaults
     val distSession: Int? = 5,
@@ -34,9 +35,9 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
     private val database = PulseDatabase.getDatabase(application)
     private val appInfoDao = database.appInfoDao()
     private val analyticsDao = database.analyticsDao()
-    
     private val _isEditMode = MutableStateFlow(false)
-    private val _selectedFilter = MutableStateFlow("All")
+    private val _selectedFilters = MutableStateFlow(setOf("Distracting", "Productive", "Neutral"))
+    private val _searchQuery = MutableStateFlow("")
     private val _globalLimits = MutableStateFlow(MindfulLimitsUiState())
 
     init {
@@ -68,15 +69,23 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
     val uiState: StateFlow<MindfulLimitsUiState> = combine(
         appInfoDao.getAllAppsFlow(),
         _isEditMode,
-        _selectedFilter,
+        _selectedFilters,
+        _searchQuery,
         _globalLimits
-    ) { apps, editMode, filter, globals ->
-        val filteredApps = if (filter == "All") apps else apps.filter { it.category.equals(filter, ignoreCase = true) }
+    ) { apps, editMode, filters, query, globals ->
+        var filteredApps = apps.filter { app -> filters.any { app.category.equals(it, ignoreCase = true) } }
+        
+        if (query.isNotBlank()) {
+            filteredApps = filteredApps.filter { 
+                it.appName.contains(query, ignoreCase = true) || it.packageName.contains(query, ignoreCase = true)
+            }
+        }
         
         globals.copy(
             apps = filteredApps,
             isEditMode = editMode,
-            selectedFilter = filter
+            selectedFilters = filters,
+            searchQuery = query
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MindfulLimitsUiState())
 
@@ -84,8 +93,17 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
         _isEditMode.value = !_isEditMode.value
     }
     
-    fun setFilter(filter: String) {
-        _selectedFilter.value = filter
+    fun toggleFilter(filter: String) {
+        val current = _selectedFilters.value
+        if (filter in current) {
+            _selectedFilters.value = current - filter
+        } else {
+            _selectedFilters.value = current + filter
+        }
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
     }
 
     fun updateAppLimits(packageName: String, session: Int?, daily: Int?, opens: Int?) {
