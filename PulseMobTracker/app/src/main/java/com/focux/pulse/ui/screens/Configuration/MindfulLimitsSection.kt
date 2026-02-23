@@ -135,6 +135,8 @@ private fun MindfulLimitsViewMode(state: MindfulLimitsUiState) {
         Text("• Neutral Apps Limit:\n  Session: ${formatMin(state.neutSession)} | Daily: ${formatMin(state.neutDaily)} | Opens: ${formatX(state.neutOpens)}", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
         Spacer(modifier = Modifier.height(2.dp))
         Text("• Breathing Pause:\n  ${state.breathingDuration}s per phase (${state.breathingDuration * 4}s total cycle)", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text("• Doom Scroll:\n  Trigger after ${state.doomScrollThreshold} switches within ${state.doomScrollWindowSecs}s", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
         
         Spacer(modifier = Modifier.height(12.dp))
         
