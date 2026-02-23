@@ -48,6 +48,7 @@ fun ConfigurationScreen() {
             onSave = { categoryViewModel.saveChanges() },
             onCancel = { categoryViewModel.cancelChanges() },
             onSearchQueryChanged = { categoryViewModel.setSearchQuery(it) },
+            onToggleFilter = { categoryViewModel.toggleFilter(it) },
             onCategoryChanged = { pkg, cat -> categoryViewModel.updateCategory(pkg, cat) }
         )
         

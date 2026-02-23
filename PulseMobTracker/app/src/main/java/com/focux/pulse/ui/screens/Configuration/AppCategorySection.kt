@@ -48,6 +48,7 @@ fun AppCategorySection(
     onSave: () -> Unit,
     onCancel: () -> Unit,
     onSearchQueryChanged: (String) -> Unit,
+    onToggleFilter: (String) -> Unit,
     onCategoryChanged: (String, String) -> Unit // (packageName, newCategory)
 ) {
     val context = LocalContext.current
@@ -187,6 +188,7 @@ fun AppCategorySection(
                 EditModeContent(
                     state = state,
                     onSearchQueryChanged = onSearchQueryChanged,
+                    onToggleFilter = onToggleFilter,
                     onCategoryChanged = onCategoryChanged
                 )
             } else {
@@ -426,10 +428,33 @@ private fun CategoryIconGrid(
 private fun EditModeContent(
     state: AppCategoryUiState,
     onSearchQueryChanged: (String) -> Unit,
+    onToggleFilter: (String) -> Unit,
     onCategoryChanged: (String, String) -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
+
+    // ── Category Filter Chips ── (same style as MindfulLimits)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        listOf("Distracting", "Productive", "Neutral", "Ignored").forEach { filter ->
+            val isSelected = filter in state.selectedFilters
+            Surface(
+                color = if (isSelected) PulseAppColorPrimary else PulseAppColorSurface,
+                shape = RoundedCornerShape(50),
+                modifier = Modifier.weight(1f).height(32.dp).clip(RoundedCornerShape(50)).clickable { onToggleFilter(filter) }
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = filter,
+                        style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 9.sp, color = if (isSelected) Color.White else Color.LightGray)
+                    )
+                }
+            }
+        }
+    }
 
     // ── Search Bar ──
     Surface(

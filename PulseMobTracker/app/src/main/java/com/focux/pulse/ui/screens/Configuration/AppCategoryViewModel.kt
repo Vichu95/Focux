@@ -19,7 +19,8 @@ data class AppCategoryUiState(
     val ignoredApps: List<AppInfo> = emptyList(),
     val allApps: List<AppInfo> = emptyList(),
     val isEditMode: Boolean = false,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val selectedFilters: Set<String> = setOf("Distracting", "Productive", "Neutral", "Ignored")
 )
 
 /**
@@ -42,6 +43,7 @@ class AppCategoryViewModel(application: Application) : AndroidViewModel(applicat
 
     private val _isEditMode = MutableStateFlow(false)
     private val _searchQuery = MutableStateFlow("")
+    private val _selectedFilters = MutableStateFlow(setOf("Distracting", "Productive", "Neutral", "Ignored"))
     
     // Pending category changes — only committed on Save
     private val _pendingChanges = MutableStateFlow<Map<String, String>>(emptyMap())
@@ -50,29 +52,39 @@ class AppCategoryViewModel(application: Application) : AndroidViewModel(applicat
         appInfoDao.getAllAppsFlow(),
         _isEditMode,
         _searchQuery,
+        _selectedFilters,
         _pendingChanges
-    ) { apps, editMode, query, pending ->
+    ) { args ->
+        val apps = args[0] as List<*>
+        @Suppress("UNCHECKED_CAST")
+        val appList = apps as List<AppInfo>
+        val editMode = args[1] as Boolean
+        val query = args[2] as String
+        @Suppress("UNCHECKED_CAST")
+        val filters = args[3] as Set<String>
+        @Suppress("UNCHECKED_CAST")
+        val pending = args[4] as Map<String, String>
         // Apply pending changes on top of DB state for live preview
-        val patched = apps.map { app ->
+        val patched = appList.map { app ->
             val pendingCategory = pending[app.packageName]
-            if (pendingCategory != null) {
-                app.copy(category = pendingCategory)
-            } else {
-                app
-            }
+            if (pendingCategory != null) app.copy(category = pendingCategory) else app
         }
         val grouped = patched.groupBy { it.category }
+        val filtered = patched.filter { app ->
+            filters.any { app.category.equals(it, ignoreCase = true) }
+        }
         AppCategoryUiState(
             productiveApps = grouped[AppCategory.PRODUCTIVE].orEmpty(),
             distractingApps = grouped[AppCategory.DISTRACTING].orEmpty(),
             neutralApps = grouped[AppCategory.NEUTRAL].orEmpty(),
             ignoredApps = grouped[AppCategory.IGNORED].orEmpty(),
-            allApps = if (query.isBlank()) patched else patched.filter {
+            allApps = if (query.isBlank()) filtered else filtered.filter {
                 it.appName.contains(query, ignoreCase = true) ||
                 it.packageName.contains(query, ignoreCase = true)
             },
             isEditMode = editMode,
-            searchQuery = query
+            searchQuery = query,
+            selectedFilters = filters
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppCategoryUiState())
 
@@ -80,6 +92,12 @@ class AppCategoryViewModel(application: Application) : AndroidViewModel(applicat
     fun toggleEditMode() {
         _isEditMode.value = !_isEditMode.value
         if (!_isEditMode.value) _searchQuery.value = ""
+    }
+
+    /** Toggle a category filter chip in edit mode */
+    fun toggleFilter(filter: String) {
+        val current = _selectedFilters.value
+        _selectedFilters.value = if (filter in current) current - filter else current + filter
     }
 
     /** Stage a category change locally (not yet persisted) */
