@@ -112,6 +112,9 @@ fun MindfulLimitsSection(
             },
             onConfirmBreathing = {
                 viewModel.updateBreathingDuration(it)
+            },
+            onConfirmDoomScroll = { windowSecs, threshold ->
+                viewModel.updateDoomScrollLimits(windowSecs, threshold)
             }
         )
     }
@@ -347,7 +350,8 @@ private fun MindfulGlobalTuneSheet(
     state: MindfulLimitsUiState,
     onDismiss: () -> Unit,
     onConfirm: (category: String, session: Int?, daily: Int?, opens: Int?) -> Unit,
-    onConfirmBreathing: (duration: Int) -> Unit
+    onConfirmBreathing: (duration: Int) -> Unit,
+    onConfirmDoomScroll: (windowSecs: Int, threshold: Int) -> Unit
 ) {
     val modalBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedTab by remember { mutableStateOf("Distracting") }
@@ -361,10 +365,10 @@ private fun MindfulGlobalTuneSheet(
             Text("Central Defaults", style = PulseAppFontHeader, color = PulseAppColorPrimary)
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                listOf("Distracting", "Productive", "Neutral", "Breathing").forEach { tab ->
+                listOf("Distracting", "Productive", "Neutral", "Breathing", "Doom Scroll").forEach { tab ->
                     Text(
                         text = tab,
-                        style = PulseAppFontBody.copy(fontSize = 12.sp, fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal),
+                        style = PulseAppFontBody.copy(fontSize = 11.sp, fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal),
                         color = if (selectedTab == tab) PulseAppColorPrimary else PulseAppColorSecondary,
                         modifier = Modifier.clickable { selectedTab = tab }.padding(4.dp)
                     )
@@ -379,6 +383,17 @@ private fun MindfulGlobalTuneSheet(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorDistracting)) { Text("Cancel") }
                     Button(onClick = { onConfirmBreathing(breathing); onDismiss() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save Breathing", color = PulseAppColorBackground) }
+                }
+            } else if (selectedTab == "Doom Scroll") {
+                var windowSecs by remember { mutableStateOf(state.doomScrollWindowSecs) }
+                var threshold by remember { mutableStateOf(state.doomScrollThreshold) }
+                Text("Detection Window", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
+                CounterBox(value = windowSecs, suffix = "secs", onValueChange = { windowSecs = it ?: 30 }, allowNull = false)
+                Text("Switch Threshold", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
+                CounterBox(value = threshold, suffix = "switches", onValueChange = { threshold = it ?: 4 }, allowNull = false)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorDistracting)) { Text("Cancel") }
+                    Button(onClick = { onConfirmDoomScroll(windowSecs, threshold); onDismiss() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save", color = PulseAppColorBackground) }
                 }
             } else {
                 var initialLoaded by remember { mutableStateOf(false) }

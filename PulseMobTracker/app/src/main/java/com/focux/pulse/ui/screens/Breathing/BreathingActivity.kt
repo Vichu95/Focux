@@ -73,6 +73,7 @@ class BreathingActivity : ComponentActivity() {
         val usedOpens = intent.getIntExtra("USED_OPENS", 0)
         
         val breathingDuration = intent.getIntExtra("BREATHING_DURATION", 4)
+        val isDoomScroll = intent.getBooleanExtra("IS_DOOM_SCROLL", false)
         
         setContent {
             PulseTheme {
@@ -88,6 +89,7 @@ class BreathingActivity : ComponentActivity() {
                         opensLimit = opensLimit,
                         usedOpens = usedOpens,
                         breathingDuration = breathingDuration,
+                        isDoomScroll = isDoomScroll,
                         onProceed = {
                             // Log: user proceeded to the app after breathing = FOCUS_LOST
                             logBreathingDecision(targetPackageName, "FOCUS_LOST")
@@ -152,6 +154,7 @@ fun BreathingScreen(
     opensLimit: Int,
     usedOpens: Int,
     breathingDuration: Int,
+    isDoomScroll: Boolean = false,
     onProceed: () -> Unit,
     onExit: () -> Unit
 ) {
@@ -241,7 +244,7 @@ fun BreathingScreen(
                 enter = fadeIn(animationSpec = tween(1000))
             ) {
                 Text(
-                    text = "Your focus is breaking.",
+                    text = if (isDoomScroll) "You're switching too fast." else "Your focus is breaking.",
                     style = PulseAppFontHeader.copy(fontSize = 22.sp, fontWeight = FontWeight.SemiBold),
                     color = Color.White,
                     textAlign = TextAlign.Center

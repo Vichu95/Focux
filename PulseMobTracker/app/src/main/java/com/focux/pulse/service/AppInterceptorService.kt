@@ -17,6 +17,11 @@ class AppInterceptorService : AccessibilityService() {
     private var lastInterceptTime: Long = 0
     private val scope = CoroutineScope(Dispatchers.IO)
 
+    // ── Doom Scroll Detection ──────────────────────────────────────
+    // Sliding window of window-change timestamps (any app, including same app re-opens).
+    private val recentSwitches = ArrayDeque<Long>()
+    private var doomScrollCooldownUntil: Long = 0L // Prevent re-triggering immediately after breathing
+
     companion object {
         // Map of <PackageName, ExpirationTimeMs>
         // Apps in this map won't be intercepted until their time expires
@@ -41,15 +46,50 @@ class AppInterceptorService : AccessibilityService() {
             val packageName = event.packageName?.toString() ?: return
             
             // Prevent self-interception or looping
-            if (packageName == "com.focux.pulse" || packageName == "com.android.systemui") return
+            if (packageName == "com.focux.pulse") return
             
-            // Cleanup expired whitelist entries occasionally
+            // Cleanup expired whitelist entries
             val now = System.currentTimeMillis()
             temporarilyAllowedApps.entries.removeIf { it.value < now }
 
             // Check if app is currently whitelisted (user just clicked "Proceed")
             if (temporarilyAllowedApps.containsKey(packageName)) return
 
+            // ── Doom Scroll Detection ──────────────────────────────
+            // Record this switch (every window change counts, including same app)
+            // Only count if we're not in a doom scroll cooldown
+            if (now > doomScrollCooldownUntil) {
+                scope.launch {
+                    try {
+                        val db = PulseDatabase.getDatabase(applicationContext)
+                        val windowSecs = db.analyticsDao().getState("limit_doomscroll_window_secs")?.toIntOrNull() ?: 30
+                        val threshold = db.analyticsDao().getState("limit_doomscroll_threshold")?.toIntOrNull() ?: 4
+                        val windowMs = windowSecs * 1000L
+
+                        synchronized(recentSwitches) {
+                            recentSwitches.addLast(now)
+                            // Prune entries older than the window
+                            while (recentSwitches.isNotEmpty() && (now - recentSwitches.first()) > windowMs) {
+                                recentSwitches.removeFirst()
+                            }
+
+                            if (recentSwitches.size >= threshold) {
+                                Log.d("AppInterceptor", "Doom scroll detected! ${recentSwitches.size} switches in ${windowSecs}s")
+                                recentSwitches.clear()
+                                doomScrollCooldownUntil = now + 60_000L // 60s cooldown after triggering
+                                val breathingStr = db.analyticsDao().getState("limit_breathing_duration")
+                                val breathingDuration = breathingStr?.toIntOrNull() ?: 4
+                                launchDoomScrollBreathing(packageName, breathingDuration)
+                                return@launch
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AppInterceptor", "Error in doom scroll detection", e)
+                    }
+                }
+            }
+
+            // ── Per-App Limit Check (debounced) ───────────────────
             // Debounce: Don't intercept the same app multiple times within a 5-second window
             if (packageName != lastInterceptedPackage || (now - lastInterceptTime) > 5000) {
                 
@@ -137,6 +177,22 @@ class AppInterceptorService : AccessibilityService() {
             putExtra("OPENS_LIMIT", opensLimit ?: -1)
             putExtra("USED_OPENS", usedOpens)
             putExtra("BREATHING_DURATION", breathingDuration)
+            putExtra("IS_DOOM_SCROLL", false)
+        }
+        startActivity(intent)
+    }
+
+    private fun launchDoomScrollBreathing(targetPackage: String, breathingDuration: Int) {
+        val intent = Intent(this, BreathingActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("TARGET_PACKAGE", targetPackage)
+            putExtra("SESSION_LIMIT_MINS", -1)
+            putExtra("DAILY_LIMIT_MINS", -1)
+            putExtra("USED_DAILY_MINS", 0)
+            putExtra("OPENS_LIMIT", -1)
+            putExtra("USED_OPENS", 0)
+            putExtra("BREATHING_DURATION", breathingDuration)
+            putExtra("IS_DOOM_SCROLL", true)
         }
         startActivity(intent)
     }
