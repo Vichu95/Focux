@@ -86,9 +86,13 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
                 canGoPrev = canGoPrev,
                 onFilterClick = { showFilterSheet = true },
                 isEditMode = isEditMode,
-                onEditClick = { isEditMode = !isEditMode },
-                onSaveClick = { 
-                    isEditMode = false 
+                onEditClick = {
+                    if (isEditMode) viewModel.cancelSessionChanges() // Discard staged edits on close
+                    isEditMode = !isEditMode
+                },
+                onSaveClick = {
+                    viewModel.saveSessionChanges()
+                    isEditMode = false
                 }
             )
         }

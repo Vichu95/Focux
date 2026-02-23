@@ -53,6 +53,10 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
 
     private val _filterState = MutableStateFlow(FilterState())
     val filterState: StateFlow<FilterState> = _filterState
+
+    // Pending session category overrides — staged locally, committed on Save
+    private val _pendingOverrides = MutableStateFlow<Map<Long, String>>(emptyMap())
+    val pendingOverrides: StateFlow<Map<Long, String>> = _pendingOverrides
     
 
 
@@ -65,8 +69,9 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
             kotlinx.coroutines.flow.combine(
                 _currentDate.filterNotNull(), 
                 appInfoDao.getAllAppsFlow(),
-                analyticsDao.getStateFlow("force_ui_refresh")
-            ) { dateStr, _, _ ->
+                analyticsDao.getStateFlow("force_ui_refresh"),
+                _pendingOverrides
+            ) { dateStr, _, _, _ ->
                 dateStr
             }.collect { dateStr ->
                 processDataForDate(dateStr)
@@ -196,7 +201,10 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                             deepWorkDuration = formatDuration(session.duration)
                         )
                     } else {
-                        val activeCategoryStr = session.categoryOverride ?: categoryMap[session.packageName]
+                        // Apply pending override (in-memory) first, then DB override, then category map
+                        val pending = _pendingOverrides.value
+                        val effectiveOverride = pending[session.id] ?: session.categoryOverride
+                        val activeCategoryStr = effectiveOverride ?: categoryMap[session.packageName]
                         val activityType = when (activeCategoryStr) {
                             AppCategory.PRODUCTIVE -> ActivityType.Productive
                             AppCategory.DISTRACTING -> ActivityType.Distracting
@@ -212,7 +220,7 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
                                 duration = formatDuration(session.duration),
                                 type = activityType,
                                 sessionId = session.id,
-                                categoryOverride = session.categoryOverride
+                                categoryOverride = effectiveOverride
                             ),
                             range = "${formatTime(session.startTime)} - ${formatTime(session.endTime)}",
                             isDeepWork = false,
@@ -438,23 +446,36 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
         )
     }
 
+    /** Stage a session category change locally — not yet persisted to DB */
     fun updateSessionCategory(sessionId: Long, newCategory: ActivityType) {
+        if (sessionId == 0L) return // Untracked session, skip
+        val appCategoryStr = when (newCategory) {
+            ActivityType.Productive -> AppCategory.PRODUCTIVE
+            ActivityType.Distracting -> AppCategory.DISTRACTING
+            ActivityType.Neutral -> AppCategory.NEUTRAL
+            ActivityType.Ignored -> AppCategory.IGNORED
+        }
+        _pendingOverrides.value = _pendingOverrides.value + (sessionId to appCategoryStr)
+    }
+
+    /** Commit all staged session overrides to the DB and recalculate stats */
+    fun saveSessionChanges() {
+        val changes = _pendingOverrides.value
+        _pendingOverrides.value = emptyMap()
         viewModelScope.launch {
-            val appCategoryStr = when (newCategory) {
-                ActivityType.Productive -> AppCategory.PRODUCTIVE
-                ActivityType.Distracting -> AppCategory.DISTRACTING
-                ActivityType.Neutral -> AppCategory.NEUTRAL
-                ActivityType.Ignored -> AppCategory.IGNORED
+            changes.forEach { (id, category) ->
+                analyticsDao.updateSessionCategoryOverride(id, category)
             }
-            analyticsDao.updateSessionCategoryOverride(sessionId, appCategoryStr)
-            
-            // Recalculate stats immediately to reflect changes in UI
-            // Note: In real app, you might want to inject Processor or call WorkManager
             val processor = com.focux.pulse.data.processors.DailySummaryProcessor(
                 context, analyticsDao, appInfoDao
             )
             processor.recalculateAllDailyStats()
         }
+    }
+
+    /** Discard all staged session overrides without writing to DB */
+    fun cancelSessionChanges() {
+        _pendingOverrides.value = emptyMap()
     }
 
     private fun mergeAdjacentDeepWork(events: List<TimelineEvent>): List<TimelineEvent> {
