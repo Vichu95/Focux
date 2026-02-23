@@ -30,7 +30,6 @@ import com.focux.pulse.data.local.PulseDatabase
 import com.focux.pulse.data.local.entities.AppSession
 import com.focux.pulse.service.AppInterceptorService
 import com.focux.pulse.ui.theme.*
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -40,9 +39,8 @@ import kotlin.random.Random
 
 class BreathingActivity : ComponentActivity() {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
-
-    /** Logs the breathing decision to app_sessions for opens tracking. */
+    /** Logs the breathing decision to app_sessions for opens tracking.
+     *  Only called for per-app limit triggers, not doom scroll. */
     private fun logBreathingDecision(packageName: String, type: String) {
         val now = System.currentTimeMillis()
         val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
@@ -57,7 +55,7 @@ class BreathingActivity : ComponentActivity() {
             startTimeStr = timeStr,
             endTimeStr = timeStr
         )
-        scope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             PulseDatabase.getDatabase(applicationContext).analyticsDao().insertSession(session)
         }
     }
@@ -91,7 +89,6 @@ class BreathingActivity : ComponentActivity() {
                         breathingDuration = breathingDuration,
                         isDoomScroll = isDoomScroll,
                         onProceed = {
-                            // Log: user proceeded to the app after breathing = FOCUS_LOST
                             logBreathingDecision(targetPackageName, "FOCUS_LOST")
                             val launchIntent = packageManager.getLaunchIntentForPackage(targetPackageName)
                             if (launchIntent != null) {
@@ -111,7 +108,6 @@ class BreathingActivity : ComponentActivity() {
                             finish()
                         },
                         onExit = {
-                            // Log: user closed the app after breathing = FOCUS_RETAINED
                             logBreathingDecision(targetPackageName, "FOCUS_RETAINED")
                             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                                 addCategory(Intent.CATEGORY_HOME)

@@ -90,16 +90,17 @@ class AppCategoryViewModel(application: Application) : AndroidViewModel(applicat
     /** Commit all pending changes to the database */
     fun saveChanges() {
         val changes = _pendingChanges.value
+        // Clear UI state immediately — don't wait for DB writes to finish
+        _pendingChanges.value = emptyMap()
+        _isEditMode.value = false
+        _searchQuery.value = ""
         viewModelScope.launch {
             changes.forEach { (pkg, cat) ->
                 appInfoDao.updateCategory(pkg, cat)
             }
-            _pendingChanges.value = emptyMap()
             // Recalculate daily stats so Top Apps reflect the change
             dailySummaryProcessor.recalculateAllDailyStats()
         }
-        _isEditMode.value = false
-        _searchQuery.value = ""
     }
 
     /** Discard all pending changes and exit edit mode */
