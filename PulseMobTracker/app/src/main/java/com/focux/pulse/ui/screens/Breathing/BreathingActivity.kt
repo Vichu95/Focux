@@ -26,14 +26,42 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.focux.pulse.data.local.PulseDatabase
+import com.focux.pulse.data.local.entities.AppSession
 import com.focux.pulse.service.AppInterceptorService
 import com.focux.pulse.ui.theme.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
 class BreathingActivity : ComponentActivity() {
+
+    private val scope = CoroutineScope(Dispatchers.IO)
+
+    /** Logs the breathing decision to app_sessions for opens tracking. */
+    private fun logBreathingDecision(packageName: String, type: String) {
+        val now = System.currentTimeMillis()
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        val timeStr = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(now))
+        val session = AppSession(
+            packageName = packageName,
+            startTime = now,
+            endTime = now,
+            duration = 0L,
+            type = type,
+            date = sdf.format(java.util.Date(now)),
+            startTimeStr = timeStr,
+            endTimeStr = timeStr
+        )
+        scope.launch {
+            PulseDatabase.getDatabase(applicationContext).analyticsDao().insertSession(session)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -50,7 +78,7 @@ class BreathingActivity : ComponentActivity() {
             PulseTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color.Black // Dark theme explicitly for this breathing screen to match reference
+                    color = Color.Black
                 ) {
                     BreathingScreen(
                         targetPackageName = targetPackageName,
@@ -61,11 +89,12 @@ class BreathingActivity : ComponentActivity() {
                         usedOpens = usedOpens,
                         breathingDuration = breathingDuration,
                         onProceed = {
+                            // Log: user proceeded to the app after breathing = FOCUS_LOST
+                            logBreathingDecision(targetPackageName, "FOCUS_LOST")
                             val launchIntent = packageManager.getLaunchIntentForPackage(targetPackageName)
                             if (launchIntent != null) {
                                 val isDailyExceeded = dailyLimitMins != -1 && usedDailyMins >= dailyLimitMins
                                 val isOpensExceeded = opensLimit != -1 && usedOpens >= opensLimit
-                                
                                 val defaultBypassMs = 5 * 60 * 1000L
                                 val durationMs = if (sessionLimitMins != -1) {
                                     sessionLimitMins * 60 * 1000L
@@ -80,6 +109,8 @@ class BreathingActivity : ComponentActivity() {
                             finish()
                         },
                         onExit = {
+                            // Log: user closed the app after breathing = FOCUS_RETAINED
+                            logBreathingDecision(targetPackageName, "FOCUS_RETAINED")
                             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                                 addCategory(Intent.CATEGORY_HOME)
                                 flags = Intent.FLAG_ACTIVITY_NEW_TASK

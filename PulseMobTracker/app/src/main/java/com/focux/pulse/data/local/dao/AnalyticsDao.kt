@@ -45,6 +45,12 @@ interface AnalyticsDao {
     suspend fun insertSessions(sessions: List<AppSession>)
 
     /**
+     * Inserts a single session (used for FOCUS_RETAINED / FOCUS_LOST breathing events).
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSession(session: AppSession)
+
+    /**
      * Retrieves all sessions for a specific date, ordered by time (newest first).
      * @param date Format: "YYYY-MM-DD"
      */
@@ -103,7 +109,13 @@ interface AnalyticsDao {
     @Query("SELECT COALESCE(SUM(duration) / 60000, 0) FROM app_sessions WHERE packageName = :packageName AND date = :date")
     suspend fun getAppUsageMinsForDay(packageName: String, date: String): Int
 
-    @Query("SELECT COUNT(id) FROM app_sessions WHERE packageName = :packageName AND date = :date")
+    // Effective opens = raw APP sessions - FOCUS_LOST events (breathing proceed = not a fresh impulsive open)
+    @Query("""
+        SELECT 
+            COUNT(CASE WHEN type = 'APP' THEN 1 END) - COUNT(CASE WHEN type = 'FOCUS_LOST' THEN 1 END)
+        FROM app_sessions 
+        WHERE packageName = :packageName AND date = :date
+    """)
     suspend fun getAppOpensForDay(packageName: String, date: String): Int
 
     /**
