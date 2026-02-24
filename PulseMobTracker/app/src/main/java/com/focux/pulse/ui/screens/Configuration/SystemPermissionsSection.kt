@@ -30,6 +30,7 @@ fun SystemPermissionsSection() {
     // from the Settings screen.
     var hasUsageAccess by remember { mutableStateOf(checkUsageAccess(context)) }
     var hasAccessibilityAccess by remember { mutableStateOf(checkAccessibilityAccess(context)) }
+    var showAccessibilityDialog by remember { mutableStateOf(false) }
     
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -61,7 +62,7 @@ fun SystemPermissionsSection() {
             )
             
             Text(
-                text = "Required permissions for Focux to operate correctly.",
+                text = "Required permissions for Pulse to operate correctly.",
                 style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall),
                 color = PulseAppColorSecondary
             )
@@ -82,10 +83,46 @@ fun SystemPermissionsSection() {
                 description = "Required to instantly intercept distracting apps and show the mindful Breathing Screen.",
                 isGranted = hasAccessibilityAccess,
                 onGrantClick = {
-                    context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    if (!hasAccessibilityAccess) {
+                        showAccessibilityDialog = true
+                    } else {
+                        context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    }
                 }
             )
         }
+    }
+
+    if (showAccessibilityDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showAccessibilityDialog = false },
+            title = {
+                Text("Accessibility Service Required", style = PulseAppFontSubHeader)
+            },
+            text = {
+                Text(
+                    text = "Pulse needs Accessibility Service access to detect when you open distracting apps and show a mindful breathing screen. Pulse does not view, collect, or transmit the content of your screen.",
+                    style = PulseAppFontBody
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showAccessibilityDialog = false
+                        context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    }
+                ) {
+                    Text("Continue")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.OutlinedButton(
+                    onClick = { showAccessibilityDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

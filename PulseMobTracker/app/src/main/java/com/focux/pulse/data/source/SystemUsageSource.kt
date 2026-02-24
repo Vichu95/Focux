@@ -5,7 +5,7 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.os.Process
-import android.util.Log
+import com.focux.pulse.utilities.Logger
 import com.focux.pulse.data.local.entities.PulseEvents
 import com.focux.pulse.data.local.entities.RawData
 import com.focux.pulse.data.local.dao.RawDataDao
@@ -43,7 +43,7 @@ class SystemUsageSource(
      */
     suspend fun logUsageStats() = withContext(Dispatchers.IO) {
         if (!hasPermission()) {
-            Log.e("SystemUsageSource", "Missing usage stats permission")
+            Logger.e("SystemUsageSource", "Missing usage stats permission")
             return@withContext
         }
 
@@ -55,7 +55,7 @@ class SystemUsageSource(
         // FIX: Add +1ms to avoid re-fetching the exact last event and burning an ID via INSERT OR IGNORE
         val startTime = if (lastTimestamp >= endTime) endTime - 15 * 60 * 1000 else lastTimestamp + 1
 
-        Log.d("SystemUsageSource", "Querying events from $startTime to $endTime")
+        Logger.d("SystemUsageSource", "Querying events from $startTime to $endTime")
 
         val events = usageStatsManager.queryEvents(startTime, endTime)
         val usageEvents = mutableListOf<UsageEvents.Event>()
@@ -84,10 +84,10 @@ class SystemUsageSource(
 
         if (rawDataList.isNotEmpty()) {
             val sortedEvents = rawDataList.sortedBy { it.timestamp }
-            Log.d("SystemUsageSource", "Inserting ${sortedEvents.size} events (duplicates will be ignored by DB)")
+            Logger.d("SystemUsageSource", "Inserting ${sortedEvents.size} events (duplicates will be ignored by DB)")
             rawDataDao.insertAll(sortedEvents)
         } else {
-            Log.d("SystemUsageSource", "No new events found")
+            Logger.d("SystemUsageSource", "No new events found")
         }
     }
 
@@ -99,27 +99,27 @@ class SystemUsageSource(
     suspend fun collectHistoricalData() = withContext(Dispatchers.IO) {
         mutex.withLock {
             if (!hasPermission()) {
-                Log.e("SystemUsageSource", "Missing usage stats permission for historical data")
+                Logger.e("SystemUsageSource", "Missing usage stats permission for historical data")
                 return@withLock
             }
 
             // Check explicit flag first - most robust check
             val historyImported = analyticsDao.getState("history_imported")?.toBoolean() ?: false
             if (historyImported) {
-                 Log.d("SystemUsageSource", "Historical data collection skipped - Flag 'history_imported' is TRUE")
+                 Logger.d("SystemUsageSource", "Historical data collection skipped - Flag 'history_imported' is TRUE")
                  return@withLock
             }
 
             // Fallback: Check if database is empty (in case state was wiped but not data? unlikely but safe)
             val existingData = rawDataDao.getLastEvent()
             if (existingData != null) {
-                Log.d("SystemUsageSource", "Historical data collection skipped - Database is NOT empty")
+                Logger.d("SystemUsageSource", "Historical data collection skipped - Database is NOT empty")
                 // Mark flag as true to avoid checking DB every time
                 analyticsDao.updateState(com.focux.pulse.data.local.entities.SystemState("history_imported", "true"))
                 return@withLock
             }
 
-            Log.d("SystemUsageSource", "Starting 7-day historical data collection...")
+            Logger.d("SystemUsageSource", "Starting 7-day historical data collection...")
 
             val endTime = System.currentTimeMillis()
             val startTime = endTime - (7 * 24 * 60 * 60 * 1000L)  // 7 days ago
@@ -151,17 +151,17 @@ class SystemUsageSource(
             // Double-check: Make sure DB is STILL empty (redundant with Mutex but harmless)
             val freshCheck = rawDataDao.getLastEvent()
             if (freshCheck != null) {
-                 Log.d("SystemUsageSource", "Historical data collection aborted - data appeared during fetch")
+                 Logger.d("SystemUsageSource", "Historical data collection aborted - data appeared during fetch")
                  analyticsDao.updateState(com.focux.pulse.data.local.entities.SystemState("history_imported", "true"))
                  return@withLock
             }
 
             if (rawDataList.isNotEmpty()) {
                 val sortedEvents = rawDataList.sortedBy { it.timestamp }
-                Log.d("SystemUsageSource", "Inserting ${sortedEvents.size} historical events")
+                Logger.d("SystemUsageSource", "Inserting ${sortedEvents.size} historical events")
                 rawDataDao.insertAll(sortedEvents)
             } else {
-                Log.d("SystemUsageSource", "No historical events found")
+                Logger.d("SystemUsageSource", "No historical events found")
             }
             
             // Mark history as imported!

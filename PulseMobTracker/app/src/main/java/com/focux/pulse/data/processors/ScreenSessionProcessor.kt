@@ -1,6 +1,6 @@
 package com.focux.pulse.data.processors
 
-import android.util.Log
+import com.focux.pulse.utilities.Logger
 import com.focux.pulse.data.local.entities.AppSession
 import com.focux.pulse.data.local.entities.PulseEvents
 import com.focux.pulse.data.local.entities.RawData
@@ -72,7 +72,7 @@ class ScreenSessionProcessor(
 
                 if (screenResult == null) {
                     // Incomplete screen cycle - stop processing SCREEN sessions here
-                    Log.d(TAG, "Incomplete SCREEN_ON at ID ${event.id}, stopping SCREEN pass.")
+                    Logger.d(TAG, "Incomplete SCREEN_ON at ID ${event.id}, stopping SCREEN pass.")
                     break
                 }
 

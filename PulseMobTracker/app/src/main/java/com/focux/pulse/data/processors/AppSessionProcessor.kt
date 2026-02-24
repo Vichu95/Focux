@@ -1,6 +1,6 @@
 package com.focux.pulse.data.processors
 
-import android.util.Log
+import com.focux.pulse.utilities.Logger
 import com.focux.pulse.data.local.entities.AppSession
 import com.focux.pulse.data.local.entities.PulseEvents
 import com.focux.pulse.data.local.entities.RawData
@@ -54,12 +54,12 @@ class AppSessionProcessor(
                         
                         if (eventsAfter >= PULSE_UNMATCHED_SKIP_THRESHOLD) {
                             // Enough events have passed, safe to skip this unmatched OPEN
-                            Log.d(TAG, "Skipping unmatched APP_OPEN at ID ${event.id} for ${event.packageName} (${eventsAfter} events after)")
+                            Logger.d(TAG, "Skipping unmatched APP_OPEN at ID ${event.id} for ${event.packageName} (${eventsAfter} events after)")
                             lastSuccessfullyProcessedId = event.id
                             continue
                         } else {
                             // Not enough events yet, wait for more data
-                            Log.d(TAG, "Unmatched APP_OPEN at ID ${event.id}, waiting for more data (${eventsAfter} events after)")
+                            Logger.d(TAG, "Unmatched APP_OPEN at ID ${event.id}, waiting for more data (${eventsAfter} events after)")
                             break
                         }
                     }
@@ -70,7 +70,7 @@ class AppSessionProcessor(
                     // Only create session if duration is meaningful (not jitter)
                     if (duration >= PULSE_JITTER_THRESHOLD_MS) {
                         val finalCloseTime = if (duration > MAX_SESSION_DURATION_MS) {
-                            Log.w(TAG, "Cap session > 8h: $duration for ${event.packageName}")
+                            Logger.w(TAG, "Cap session > 8h: $duration for ${event.packageName}")
                             event.timestamp + MAX_SESSION_DURATION_MS
                         } else {
                             closeTime

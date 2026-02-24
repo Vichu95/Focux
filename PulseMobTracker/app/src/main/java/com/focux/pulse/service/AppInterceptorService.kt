@@ -2,7 +2,7 @@ package com.focux.pulse.service
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
-import android.util.Log
+import com.focux.pulse.utilities.Logger
 import android.view.accessibility.AccessibilityEvent
 import com.focux.pulse.data.local.PulseDatabase
 import com.focux.pulse.data.local.entities.AppCategory
@@ -34,7 +34,7 @@ class AppInterceptorService : AccessibilityService() {
             val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             imePackages = imm.enabledInputMethodList.map { it.packageName }
         } catch (e: Exception) {
-            Log.e("AppInterceptor", "Failed to get IME packages", e)
+            Logger.e("AppInterceptor", "Failed to get IME packages", e)
         }
     }
 
@@ -94,7 +94,7 @@ class AppInterceptorService : AccessibilityService() {
                     if (windowSecs != null) doomWindowMs = windowSecs * 1000L
                     if (threshold != null) doomThreshold = threshold
                 } catch (e: Exception) {
-                    Log.e("AppInterceptor", "Error refreshing doom scroll config", e)
+                    Logger.e("AppInterceptor", "Error refreshing doom scroll config", e)
                 }
             }
         }
@@ -148,13 +148,13 @@ class AppInterceptorService : AccessibilityService() {
                     )
                 }
             } catch (e: Exception) {
-                Log.e("AppInterceptor", "Error querying app limits", e)
+                Logger.e("AppInterceptor", "Error querying app limits", e)
             }
         }
     }
 
     override fun onInterrupt() {
-        Log.d("AppInterceptor", "Service interrupted")
+        Logger.d("AppInterceptor", "Service interrupted")
     }
 
     private fun launchBreathingScreen(

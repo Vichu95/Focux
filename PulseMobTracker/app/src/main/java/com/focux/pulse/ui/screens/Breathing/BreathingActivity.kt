@@ -110,7 +110,7 @@ class BreathingActivity : ComponentActivity() {
                 liveUsedDailyMins = actualMins
                 liveUsedOpens = actualOpens
             } catch (e: Exception) {
-                android.util.Log.e("BreathingActivity", "Background sync failed", e)
+                com.focux.pulse.utilities.Logger.e("BreathingActivity", "Background sync failed", e)
             }
         }
         

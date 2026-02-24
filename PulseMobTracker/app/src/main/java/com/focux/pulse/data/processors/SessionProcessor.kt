@@ -1,7 +1,7 @@
 package com.focux.pulse.data.processors
 
 import android.content.Context
-import android.util.Log
+import com.focux.pulse.utilities.Logger
 import com.focux.pulse.data.local.dao.*
 import com.focux.pulse.data.local.entities.*
 import com.focux.pulse.utilities.AppInfoHelper
@@ -31,7 +31,7 @@ class SessionProcessor(
     }
 
     private val screenIgnoredApps: Set<String> by lazy {
-        Log.d(TAG, "Ignored Apps for Screen (Launchers only): $launcherPackages")
+        Logger.d(TAG, "Ignored Apps for Screen (Launchers only): $launcherPackages")
         launcherPackages
     }
 
@@ -79,7 +79,7 @@ class SessionProcessor(
             if (newAppId > lastAppId) {
                 analyticsDao.updateState(SystemState("last_processed_app_id", newAppId.toString()))
             }
-            Log.d(TAG, "APP pass: ${appSessions.size} sessions, bookmark: $lastAppId -> $newAppId")
+            Logger.d(TAG, "APP pass: ${appSessions.size} sessions, bookmark: $lastAppId -> $newAppId")
         }
         
         // PASS 2: Process SCREEN sessions (independent bookmark)
@@ -95,7 +95,7 @@ class SessionProcessor(
             if (newScreenId > lastScreenId) {
                 analyticsDao.updateState(SystemState("last_processed_screen_id", newScreenId.toString()))
             }
-            Log.d(TAG, "SCREEN pass: ${screenSessions.size} sessions, bookmark: $lastScreenId -> $newScreenId")
+            Logger.d(TAG, "SCREEN pass: ${screenSessions.size} sessions, bookmark: $lastScreenId -> $newScreenId")
         }
 
         // Save all sessions and update stats
@@ -154,7 +154,7 @@ class SessionProcessor(
             // Sorting by StartTime ensures they are interleaved correctly in the DB (resolving "Chunk" issue).
             val finalSessions = (refinedSessions + offlineSessions).sortedBy { it.startTime }
             
-            Log.d(TAG, "Inserting ${finalSessions.size} sessions (Active: ${refinedSessions.size}, New Offline: ${offlineSessions.size})")
+            Logger.d(TAG, "Inserting ${finalSessions.size} sessions (Active: ${refinedSessions.size}, New Offline: ${offlineSessions.size})")
             analyticsDao.insertSessions(finalSessions)
             
             // 4. UPDATE POINTER
@@ -203,7 +203,7 @@ class SessionProcessor(
                         // Valid Session (part of ongoing screen session not yet in this batch)
                         result.add(session)
                     } else {
-                        Log.d(TAG, "Phantom App Detected: ${session.packageName} at ${session.startTimeStr}. Reclassifying as NOTIFICATION.")
+                        Logger.d(TAG, "Phantom App Detected: ${session.packageName} at ${session.startTimeStr}. Reclassifying as NOTIFICATION.")
                         result.add(session.copy(type = PulseEvents.SESSION_NOTIFICATION))
                     }
                 }
