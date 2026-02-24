@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">Pulse</string>
-    <string name="accessibility_service_description">Focux uses Accessibility Services to instantly intercept distracting apps and launch a mindful Breathing session to help you regain focus limit.</string>
+    <string name="accessibility_service_description">Pulse uses Accessibility Services to instantly intercept distracting apps and launch a mindful Breathing session to help you regain focus limit.</string>
 </resources>
