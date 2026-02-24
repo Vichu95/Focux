@@ -109,10 +109,10 @@ interface AnalyticsDao {
     @Query("SELECT COALESCE(SUM(duration) / 60000, 0) FROM app_sessions WHERE packageName = :packageName AND date = :date")
     suspend fun getAppUsageMinsForDay(packageName: String, date: String): Int
 
-    // Effective opens = raw APP sessions - FOCUS_LOST events, floored at 0
+    // Effective opens = raw SESSION_APP entries - FOCUS_LOST events, floored at 0
     @Query("""
         SELECT MAX(0,
-            COUNT(CASE WHEN type = 'APP' THEN 1 END) - COUNT(CASE WHEN type = 'FOCUS_LOST' THEN 1 END)
+            COUNT(CASE WHEN type = 'SESSION_APP' THEN 1 END) - COUNT(CASE WHEN type = 'FOCUS_LOST' THEN 1 END)
         )
         FROM app_sessions 
         WHERE packageName = :packageName AND date = :date
