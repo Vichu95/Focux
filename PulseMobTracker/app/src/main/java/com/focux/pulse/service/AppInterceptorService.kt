@@ -23,6 +23,21 @@ class AppInterceptorService : AccessibilityService() {
     @Volatile private var doomWindowMs: Long = 30_000L
     @Volatile private var doomThreshold: Int = 5
     @Volatile private var doomConfigLoadedAt: Long = 0L
+    
+    private var imePackages: List<String> = emptyList()
+
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        
+        // Dynamically get all enabled keyboards (Input Methods) so we don't have to hardcode package names
+        try {
+            val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            imePackages = imm.enabledInputMethodList.map { it.packageName }
+            Log.d("AppInterceptor", "Found IME packages: $imePackages")
+        } catch (e: Exception) {
+            Log.e("AppInterceptor", "Failed to get IME packages", e)
+        }
+    }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
@@ -35,6 +50,11 @@ class AppInterceptorService : AccessibilityService() {
 
         // Prevent self-interception
         if (packageName == "com.focux.pulse") return
+        
+        // Ignore system UI and keyboards. They are background overlays, not conscious "app switches"
+        if (packageName == "com.android.systemui" || packageName == "android" || packageName in imePackages) {
+            return
+        }
 
         // Check if the user has switched apps
         if (packageName == lastInterceptedPackage) return
