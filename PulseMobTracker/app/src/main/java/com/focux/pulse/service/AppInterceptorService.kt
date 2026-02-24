@@ -33,7 +33,6 @@ class AppInterceptorService : AccessibilityService() {
         try {
             val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             imePackages = imm.enabledInputMethodList.map { it.packageName }
-            Log.d("AppInterceptor", "Found IME packages: $imePackages")
         } catch (e: Exception) {
             Log.e("AppInterceptor", "Failed to get IME packages", e)
         }
@@ -60,7 +59,6 @@ class AppInterceptorService : AccessibilityService() {
         if (packageName == lastInterceptedPackage) return
         
         // Track the newly opened app
-        Log.d("AppInterceptor", "App Opened: $packageName | Class: $className")
         lastInterceptedPackage = packageName
         
         val now = System.currentTimeMillis()
@@ -75,7 +73,6 @@ class AppInterceptorService : AccessibilityService() {
         
         // Check if we hit the limit
         if (recentSwitches.size >= doomThreshold) {
-            Log.d("AppInterceptor", "Doom scroll detected! ${recentSwitches.size} switches in ${doomWindowMs / 1000}s")
             recentSwitches.clear() // Reset so next episode can fire immediately
             
             scope.launch {
@@ -139,10 +136,7 @@ class AppInterceptorService : AccessibilityService() {
                 val isOpensExceeded = actualOpens != null && usedOpens >= actualOpens
                 val isSpeedbump = category == AppCategory.DISTRACTING || actualSessionMins != null
                 
-                Log.d("AppInterceptor", "Limits for $packageName -> Category: $category | Speedbump: $isSpeedbump | Daily: $usedDailyMins/$actualDailyMins | Opens: $usedOpens/$actualOpens")
-                
                 if (isSpeedbump || isDailyExceeded || isOpensExceeded) {
-                    Log.d("AppInterceptor", "Intercepting App: $packageName (Category: $category)")
                     launchBreathingScreen(
                         packageName, 
                         actualSessionMins, 
