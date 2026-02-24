@@ -270,7 +270,7 @@ fun BreathingScreen(
                 enter = fadeIn(animationSpec = tween(1000))
             ) {
                 Text(
-                    text = if (isDoomScroll) "You're switching too fast." else "Your focus is breaking.",
+                    text = if (isDoomScroll) "You are doom scrolling." else "Your focus is breaking.",
                     style = PulseAppFontHeader.copy(fontSize = 22.sp, fontWeight = FontWeight.SemiBold),
                     color = Color.White,
                     textAlign = TextAlign.Center
@@ -330,21 +330,23 @@ fun BreathingScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Limits info
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(bottom = 24.dp)
-                    ) {
-                        if (sessionLimitMins != -1) {
-                            Text("Session Limit: $sessionLimitMins mins", color = Color.Gray, style = PulseAppFontLabel.copy(fontSize = 12.sp))
-                        }
-                        if (dailyLimitMins != -1) {
-                            val color = if (usedDailyMins >= dailyLimitMins) PulseAppColorDistracting else Color.Gray
-                            Text("Daily Limit: $usedDailyMins / $dailyLimitMins mins", color = color, style = PulseAppFontLabel.copy(fontSize = 12.sp))
-                        }
-                        if (opensLimit != -1) {
-                            val color = if (usedOpens >= opensLimit) PulseAppColorDistracting else Color.Gray
-                            Text("Daily Opens: $usedOpens / $opensLimit times", color = color, style = PulseAppFontLabel.copy(fontSize = 12.sp))
+                    // Limits info (only shown for regular app limits, not doom scrolling)
+                    if (!isDoomScroll) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(bottom = 24.dp)
+                        ) {
+                            if (sessionLimitMins != -1) {
+                                Text("Session Limit: $sessionLimitMins mins", color = Color.Gray, style = PulseAppFontLabel.copy(fontSize = 12.sp))
+                            }
+                            if (dailyLimitMins != -1) {
+                                val color = if (usedDailyMins >= dailyLimitMins) PulseAppColorDistracting else Color.Gray
+                                Text("Daily Limit: $usedDailyMins / $dailyLimitMins mins", color = color, style = PulseAppFontLabel.copy(fontSize = 12.sp))
+                            }
+                            if (opensLimit != -1) {
+                                val color = if (usedOpens >= opensLimit) PulseAppColorDistracting else Color.Gray
+                                Text("Daily Opens: $usedOpens / $opensLimit times", color = color, style = PulseAppFontLabel.copy(fontSize = 12.sp))
+                            }
                         }
                     }
                     

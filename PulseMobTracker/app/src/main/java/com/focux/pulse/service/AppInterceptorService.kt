@@ -15,6 +15,14 @@ class AppInterceptorService : AccessibilityService() {
 
     private var lastInterceptedPackage: String = ""
     private val scope = CoroutineScope(Dispatchers.IO)
+    
+    // ── Doom Scroll Detection ────────────────────────────────────────
+    private val recentSwitches = ArrayDeque<Long>()
+    
+    // Cached config — reloaded occasionally (default: 5 switches / 30 secs)
+    @Volatile private var doomWindowMs: Long = 30_000L
+    @Volatile private var doomThreshold: Int = 5
+    @Volatile private var doomConfigLoadedAt: Long = 0L
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
@@ -34,6 +42,45 @@ class AppInterceptorService : AccessibilityService() {
         // Track the newly opened app
         Log.d("AppInterceptor", "App Opened: $packageName | Class: $className")
         lastInterceptedPackage = packageName
+        
+        val now = System.currentTimeMillis()
+
+        // ── Doom Scroll Check ──────────────────────────────────────────
+        recentSwitches.addLast(now)
+        
+        // Remove timestamps older than the window
+        while (recentSwitches.isNotEmpty() && (now - recentSwitches.first()) > doomWindowMs) {
+            recentSwitches.removeFirst()
+        }
+        
+        // Check if we hit the limit
+        if (recentSwitches.size >= doomThreshold) {
+            Log.d("AppInterceptor", "Doom scroll detected! ${recentSwitches.size} switches in ${doomWindowMs / 1000}s")
+            recentSwitches.clear() // Reset so next episode can fire immediately
+            
+            scope.launch {
+                val db = PulseDatabase.getDatabase(applicationContext)
+                val breathingDuration = db.analyticsDao().getState("limit_breathing_duration")?.toIntOrNull() ?: 4
+                launchDoomScrollBreathing(packageName, breathingDuration)
+            }
+            return // Stop here, no need to process per-app limits
+        }
+
+        // Refresh doom scroll config from DB at most once per minute
+        if (now - doomConfigLoadedAt > 60_000L) {
+            doomConfigLoadedAt = now
+            scope.launch {
+                try {
+                    val db = PulseDatabase.getDatabase(applicationContext)
+                    val windowSecs = db.analyticsDao().getState("limit_doomscroll_window_secs")?.toLongOrNull()
+                    val threshold = db.analyticsDao().getState("limit_doomscroll_threshold")?.toIntOrNull()
+                    if (windowSecs != null) doomWindowMs = windowSecs * 1000L
+                    if (threshold != null) doomThreshold = threshold
+                } catch (e: Exception) {
+                    Log.e("AppInterceptor", "Error refreshing doom scroll config", e)
+                }
+            }
+        }
 
         // Evaluate limits for the new app
         scope.launch {
@@ -115,6 +162,21 @@ class AppInterceptorService : AccessibilityService() {
             putExtra("USED_OPENS", usedOpens)
             putExtra("BREATHING_DURATION", breathingDuration)
             putExtra("IS_DOOM_SCROLL", false)
+        }
+        startActivity(intent)
+    }
+
+    private fun launchDoomScrollBreathing(targetPackage: String, breathingDuration: Int) {
+        val intent = Intent(this, BreathingActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("TARGET_PACKAGE", targetPackage)
+            putExtra("SESSION_LIMIT_MINS", -1)
+            putExtra("DAILY_LIMIT_MINS", -1)
+            putExtra("USED_DAILY_MINS", 0)
+            putExtra("OPENS_LIMIT", -1)
+            putExtra("USED_OPENS", 0)
+            putExtra("BREATHING_DURATION", breathingDuration)
+            putExtra("IS_DOOM_SCROLL", true)
         }
         startActivity(intent)
     }
