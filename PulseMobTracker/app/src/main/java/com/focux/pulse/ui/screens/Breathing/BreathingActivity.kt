@@ -133,17 +133,6 @@ class BreathingActivity : ComponentActivity() {
                             logBreathingDecision(targetPackageName, "FOCUS_LOST")
                             val launchIntent = packageManager.getLaunchIntentForPackage(targetPackageName)
                             if (launchIntent != null) {
-                                val isDailyExceeded = dailyLimitMins != -1 && usedDailyMins >= dailyLimitMins
-                                val isOpensExceeded = opensLimit != -1 && usedOpens >= opensLimit
-                                val defaultBypassMs = 5 * 60 * 1000L
-                                val durationMs = if (sessionLimitMins != -1) {
-                                    sessionLimitMins * 60 * 1000L
-                                } else if (isDailyExceeded || isOpensExceeded) {
-                                    defaultBypassMs
-                                } else {
-                                    -1L
-                                }
-                                AppInterceptorService.allowAppContinuance(targetPackageName, durationMs)
                                 startActivity(launchIntent)
                             }
                             finish()

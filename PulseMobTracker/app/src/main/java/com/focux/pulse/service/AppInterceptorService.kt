@@ -14,151 +14,86 @@ import kotlinx.coroutines.launch
 class AppInterceptorService : AccessibilityService() {
 
     private var lastInterceptedPackage: String = ""
-    private var lastInterceptTime: Long = 0
     private val scope = CoroutineScope(Dispatchers.IO)
-
-    // ── Doom Scroll Detection (in-memory, no DB hit per event) ────────
-    // All window changes count — no exclusions (configurable after testing)
-    private val recentSwitches = ArrayDeque<Long>()
-    private var lastDoomScrollPackage: String = "" // Deduplicate same-app events
-
-    // Cached config — only reloaded from DB once per minute
-    @Volatile private var doomWindowMs: Long = 20_000L
-    @Volatile private var doomThreshold: Int = 6
-    @Volatile private var doomConfigLoadedAt: Long = 0L
-
-    companion object {
-        // Map of <PackageName, ExpirationTimeMs>
-        // Apps in this map won't be intercepted until their time expires
-        val temporarilyAllowedApps = mutableMapOf<String, Long>()
-        
-        fun allowAppContinuance(packageName: String, durationMs: Long) {
-            temporarilyAllowedApps[packageName] = if (durationMs == -1L) Long.MAX_VALUE else System.currentTimeMillis() + durationMs
-        }
-    }
-
-    private var cachedLauncherPackages: List<String> = emptyList()
-
-    override fun onServiceConnected() {
-        super.onServiceConnected()
-        Log.d("AppInterceptor", "Service connected")
-        cachedLauncherPackages = com.focux.pulse.utilities.AppInfoHelper.getLauncherPackages(this)
-    }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || 
-            event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-            
-            val packageName = event.packageName?.toString() ?: return
-            
-            // Prevent self-interception
-            if (packageName == "com.focux.pulse") return
+        // Only care about when a new window/app actually opens
+        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        
+        val packageName = event.packageName?.toString() ?: return
+        val className = event.className?.toString() ?: "UnknownClass"
 
-            val now = System.currentTimeMillis()
+        // Prevent self-interception
+        if (packageName == "com.focux.pulse") return
 
-            // Defualt: 6 switches in 20s. We deduplicate by packageName so internal app
-            // state changes (like keyboard opening in Chrome) don't trigger it.
-            // Exception: We allow repeated events for Launcher packages to detect 
-            // "fidgeting" on the home screen (swiping to app drawer, etc).
-            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                val isLauncher = cachedLauncherPackages.contains(packageName)
+        // Check if the user has switched apps
+        if (packageName == lastInterceptedPackage) return
+        
+        // Track the newly opened app
+        Log.d("AppInterceptor", "App Opened: $packageName | Class: $className")
+        lastInterceptedPackage = packageName
+
+        // Evaluate limits for the new app
+        scope.launch {
+            try {
+                val db = PulseDatabase.getDatabase(applicationContext)
+                val appInfo = db.appInfoDao().getAppInfo(packageName)
                 
-                if (packageName != lastDoomScrollPackage || isLauncher) {
-                    lastDoomScrollPackage = packageName
-                    recentSwitches.addLast(now)
-                // Prune entries older than the window
-                while (recentSwitches.isNotEmpty() && (now - recentSwitches.first()) > doomWindowMs) {
-                    recentSwitches.removeFirst()
-                }
-                if (recentSwitches.size >= doomThreshold) {
-                    Log.d("AppInterceptor", "Doom scroll detected! ${recentSwitches.size} switches in ${doomWindowMs / 1000}s")
-                    recentSwitches.clear() // Reset so next episode can fire immediately
-                    lastDoomScrollPackage = "" // Allow clean slate
-                    scope.launch {
-                        val db = PulseDatabase.getDatabase(applicationContext)
-                        val breathingDuration = db.analyticsDao().getState("limit_breathing_duration")?.toIntOrNull() ?: 4
-                        launchDoomScrollBreathing(packageName, breathingDuration)
-                    }
-                    return // Don't also apply per-app limits for the same event
-                }
-                } // Missing brace added here
-            }
+                val category = appInfo?.category ?: AppCategory.NEUTRAL
+                val customSession = appInfo?.sessionLimitMins
+                val globalSessionStr = db.analyticsDao().getState("limit_${category.lowercase()}_session")
+                val actualSessionMins = customSession
+                    ?: globalSessionStr?.toIntOrNull()
+                    ?: if (category == AppCategory.DISTRACTING) 5 else null
+                    
+                val customDaily = appInfo?.dailyLimitMins
+                val globalDailyStr = db.analyticsDao().getState("limit_${category.lowercase()}_daily")
+                val actualDailyMins = customDaily
+                    ?: globalDailyStr?.toIntOrNull()
+                    ?: if (category == AppCategory.DISTRACTING) 30 else null
 
-            // Refresh doom scroll config from DB at most once per minute (non-blocking)
-            if (now - doomConfigLoadedAt > 60_000L) {
-                doomConfigLoadedAt = now // Set immediately so concurrent events don't also trigger a refresh
-                scope.launch {
-                    try {
-                        val db = PulseDatabase.getDatabase(applicationContext)
-                        doomWindowMs = (db.analyticsDao().getState("limit_doomscroll_window_secs")?.toLongOrNull() ?: 30L) * 1000L
-                        doomThreshold = db.analyticsDao().getState("limit_doomscroll_threshold")?.toIntOrNull() ?: 4
-                    } catch (e: Exception) {
-                        Log.e("AppInterceptor", "Error refreshing doom scroll config", e)
-                    }
-                }
-            }
+                val customOpens = appInfo?.dailyOpensLimit
+                val globalOpensStr = db.analyticsDao().getState("limit_${category.lowercase()}_opens")
+                val actualOpens = customOpens
+                    ?: globalOpensStr?.toIntOrNull()
+                    ?: if (category == AppCategory.DISTRACTING) 10 else null
 
-            // ── Per-App Limit Check ─────────────────────────────────────────
-            // Cleanup expired whitelist entries
-            temporarilyAllowedApps.entries.removeIf { it.value < now }
-            if (temporarilyAllowedApps.containsKey(packageName)) return
-
-            // Debounce: Don't intercept the same app multiple times within 5 seconds
-            if (packageName != lastInterceptedPackage || (now - lastInterceptTime) > 5000) {
-                if (packageName != lastInterceptedPackage) {
-                    temporarilyAllowedApps.clear()
-                }
-                lastInterceptedPackage = packageName
-                lastInterceptTime = now
+                val breathingDuration = db.analyticsDao().getState("limit_breathing_duration")?.toIntOrNull() ?: 4
                 
-                scope.launch {
-                    try {
-                        val db = PulseDatabase.getDatabase(applicationContext)
-                        val appInfo = db.appInfoDao().getAppInfo(packageName)
-                        
-                        val category = appInfo?.category ?: AppCategory.NEUTRAL
-                        val customSession = appInfo?.sessionLimitMins
-                        val globalSessionStr = db.analyticsDao().getState("limit_${category.lowercase()}_session")
-                        val actualSessionMins = customSession
-                            ?: globalSessionStr?.toIntOrNull()
-                            ?: if (category == AppCategory.DISTRACTING) 5 else null
-                            
-                        val customDaily = appInfo?.dailyLimitMins
-                        val globalDailyStr = db.analyticsDao().getState("limit_${category.lowercase()}_daily")
-                        val actualDailyMins = customDaily
-                            ?: globalDailyStr?.toIntOrNull()
-                            ?: if (category == AppCategory.DISTRACTING) 30 else null
-
-                        val customOpens = appInfo?.dailyOpensLimit
-                        val globalOpensStr = db.analyticsDao().getState("limit_${category.lowercase()}_opens")
-                        val actualOpens = customOpens
-                            ?: globalOpensStr?.toIntOrNull()
-                            ?: if (category == AppCategory.DISTRACTING) 10 else null
-
-                        val breathingDuration = db.analyticsDao().getState("limit_breathing_duration")?.toIntOrNull() ?: 4
-                        
-                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                        val todayStr = sdf.format(java.util.Date())
-                        
-                        val usedDailyMins = if (actualDailyMins != null) db.analyticsDao().getAppUsageMinsForDay(packageName, todayStr) else 0
-                        val usedOpens = if (actualOpens != null) db.analyticsDao().getAppOpensForDay(packageName, todayStr) else 0
-                        
-                        val isDailyExceeded = actualDailyMins != null && usedDailyMins >= actualDailyMins
-                        val isOpensExceeded = actualOpens != null && usedOpens >= actualOpens
-                        val isSpeedbump = category == AppCategory.DISTRACTING || actualSessionMins != null
-                        
-                        if (isSpeedbump || isDailyExceeded || isOpensExceeded) {
-                            Log.d("AppInterceptor", "Intercepting App: $packageName (Category: $category)")
-                            launchBreathingScreen(packageName, actualSessionMins, actualDailyMins, usedDailyMins, actualOpens, usedOpens, breathingDuration)
-                        }
-                    } catch (e: Exception) {
-                        Log.e("AppInterceptor", "Error querying app limits", e)
-                    }
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                val todayStr = sdf.format(java.util.Date())
+                
+                val usedDailyMins = if (actualDailyMins != null) db.analyticsDao().getAppUsageMinsForDay(packageName, todayStr) else 0
+                val usedOpens = if (actualOpens != null) db.analyticsDao().getAppOpensForDay(packageName, todayStr) else 0
+                
+                val isDailyExceeded = actualDailyMins != null && usedDailyMins >= actualDailyMins
+                val isOpensExceeded = actualOpens != null && usedOpens >= actualOpens
+                val isSpeedbump = category == AppCategory.DISTRACTING || actualSessionMins != null
+                
+                Log.d("AppInterceptor", "Limits for $packageName -> Category: $category | Speedbump: $isSpeedbump | Daily: $usedDailyMins/$actualDailyMins | Opens: $usedOpens/$actualOpens")
+                
+                if (isSpeedbump || isDailyExceeded || isOpensExceeded) {
+                    Log.d("AppInterceptor", "Intercepting App: $packageName (Category: $category)")
+                    launchBreathingScreen(
+                        packageName, 
+                        actualSessionMins, 
+                        actualDailyMins, 
+                        usedDailyMins, 
+                        actualOpens, 
+                        usedOpens, 
+                        breathingDuration
+                    )
                 }
+            } catch (e: Exception) {
+                Log.e("AppInterceptor", "Error querying app limits", e)
             }
         }
+    }
+
+    override fun onInterrupt() {
+        Log.d("AppInterceptor", "Service interrupted")
     }
 
     private fun launchBreathingScreen(
@@ -182,24 +117,5 @@ class AppInterceptorService : AccessibilityService() {
             putExtra("IS_DOOM_SCROLL", false)
         }
         startActivity(intent)
-    }
-
-    private fun launchDoomScrollBreathing(targetPackage: String, breathingDuration: Int) {
-        val intent = Intent(this, BreathingActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("TARGET_PACKAGE", targetPackage)
-            putExtra("SESSION_LIMIT_MINS", -1)
-            putExtra("DAILY_LIMIT_MINS", -1)
-            putExtra("USED_DAILY_MINS", 0)
-            putExtra("OPENS_LIMIT", -1)
-            putExtra("USED_OPENS", 0)
-            putExtra("BREATHING_DURATION", breathingDuration)
-            putExtra("IS_DOOM_SCROLL", true)
-        }
-        startActivity(intent)
-    }
-
-    override fun onInterrupt() {
-        Log.e("AppInterceptor", "Service interrupted")
     }
 }
