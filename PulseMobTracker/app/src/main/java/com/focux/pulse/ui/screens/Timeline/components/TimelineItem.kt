@@ -285,7 +285,7 @@ fun DashedLineVertical(color: Color, modifier: Modifier = Modifier) {
 @Composable
 fun AppTimelineCard(event: TimelineEvent, isEditMode: Boolean, onCategoryChange: ((ActivityType) -> Unit)? = null, modifier: Modifier = Modifier) {
     var isSelecting by remember { mutableStateOf(false) }
-    var selectedType by remember { mutableStateOf(event.app.type ?: ActivityType.Neutral) }
+    var selectedType by remember(event.app.type) { mutableStateOf(event.app.type ?: ActivityType.Neutral) }
     
     // Frame 17: Flexible Width Card (Dynamic Height)
 

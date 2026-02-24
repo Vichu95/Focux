@@ -29,8 +29,8 @@ data class MindfulLimitsUiState(
     val neutOpens: Int? = null,
     
     val breathingDuration: Int = 4, // 4s per phase
-    val doomScrollWindowSecs: Int = 30, // sliding window for doom scroll detection
-    val doomScrollThreshold: Int = 4  // number of switches within the window to trigger
+    val doomScrollWindowSecs: Int = 20, // sliding window for doom scroll detection
+    val doomScrollThreshold: Int = 6  // number of switches within the window to trigger
 )
 
 class MindfulLimitsViewModel(application: Application) : AndroidViewModel(application) {
@@ -64,8 +64,8 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
                 neutOpens = parse(analyticsDao.getState("limit_neutral_opens")),
 
                 breathingDuration = parse(analyticsDao.getState("limit_breathing_duration")) ?: 4,
-                doomScrollWindowSecs = parse(analyticsDao.getState("limit_doomscroll_window_secs")) ?: 30,
-                doomScrollThreshold = parse(analyticsDao.getState("limit_doomscroll_threshold")) ?: 4
+                doomScrollWindowSecs = parse(analyticsDao.getState("limit_doomscroll_window_secs")) ?: 20,
+                doomScrollThreshold = parse(analyticsDao.getState("limit_doomscroll_threshold")) ?: 6
             )
         }
     }
