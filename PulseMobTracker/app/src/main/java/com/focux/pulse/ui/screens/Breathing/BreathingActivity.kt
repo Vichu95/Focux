@@ -56,7 +56,7 @@ class BreathingActivity : ComponentActivity() {
             startTimeStr = timeStr,
             endTimeStr = timeStr
         )
-        lifecycleScope.launch(Dispatchers.IO) {
+        kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
             PulseDatabase.getDatabase(applicationContext).analyticsDao().insertSession(session)
         }
     }
@@ -74,6 +74,46 @@ class BreathingActivity : ComponentActivity() {
         val breathingDuration = intent.getIntExtra("BREATHING_DURATION", 4)
         val isDoomScroll = intent.getBooleanExtra("IS_DOOM_SCROLL", false)
         
+        // State variables to hold the live counts
+        var liveUsedDailyMins by mutableStateOf(usedDailyMins)
+        var liveUsedOpens by mutableStateOf(usedOpens)
+        
+        // Background sync to fetch fresh data *during* the breathing session
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // Wait for almost the full duration to give Android's UsageStatsManager 
+                // enough time to register the app open event.
+                delay((breathingDuration * 1000L).coerceAtLeast(1000L) - 500L)
+                
+                val db = PulseDatabase.getDatabase(applicationContext)
+                
+                // 1. Fetch raw data from OS
+                val usageSource = com.focux.pulse.data.source.SystemUsageSource(
+                    applicationContext, db.rawDataDao(), db.analyticsDao()
+                )
+                usageSource.logUsageStats()
+                
+                // 2. Process into sessions
+                val processor = com.focux.pulse.data.processors.SessionProcessor(
+                    applicationContext, db.rawDataDao(), db.analyticsDao(), db.appInfoDao()
+                )
+                processor.processPendingData()
+                
+                // 3. Re-query actual usage
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                val todayStr = sdf.format(java.util.Date())
+                
+                val actualMins = db.analyticsDao().getAppUsageMinsForDay(targetPackageName, todayStr)
+                val actualOpens = db.analyticsDao().getAppOpensForDay(targetPackageName, todayStr)
+                
+                // 4. Update UI
+                liveUsedDailyMins = actualMins
+                liveUsedOpens = actualOpens
+            } catch (e: Exception) {
+                android.util.Log.e("BreathingActivity", "Background sync failed", e)
+            }
+        }
+        
         setContent {
             PulseTheme {
                 Surface(
@@ -84,9 +124,9 @@ class BreathingActivity : ComponentActivity() {
                         targetPackageName = targetPackageName,
                         sessionLimitMins = sessionLimitMins,
                         dailyLimitMins = dailyLimitMins,
-                        usedDailyMins = usedDailyMins,
+                        usedDailyMins = liveUsedDailyMins,
                         opensLimit = opensLimit,
-                        usedOpens = usedOpens,
+                        usedOpens = liveUsedOpens,
                         breathingDuration = breathingDuration,
                         isDoomScroll = isDoomScroll,
                         onProceed = {
