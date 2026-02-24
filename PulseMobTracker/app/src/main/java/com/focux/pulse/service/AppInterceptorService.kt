@@ -20,7 +20,7 @@ class AppInterceptorService : AccessibilityService() {
     // ── Doom Scroll Detection (in-memory, no DB hit per event) ────────
     // All window changes count — no exclusions (configurable after testing)
     private val recentSwitches = ArrayDeque<Long>()
-    private var lastDoomScrollPackage: String = "" // Only count actual app-to-app switches
+    private var lastDoomScrollNode: String = "" // Dedup by package+class to allow same-app state changes
 
     // Cached config — only reloaded from DB once per minute
     @Volatile private var doomWindowMs: Long = 20_000L
@@ -56,12 +56,15 @@ class AppInterceptorService : AccessibilityService() {
             val now = System.currentTimeMillis()
 
             // ── Doom Scroll Detection ──────────────────────────────────────────
-            // Only count TYPE_WINDOW_STATE_CHANGED AND only when the package actually
-            // changes — dialogs, keyboard, screen-on events fire STATE_CHANGED for the
-            // same package and would inflate the count otherwise.
+            // Defualt: 6 switches in 20s. We deduplicate by packageName+className
+            // so same-app navigation (like opening the home app drawer) counts, 
+            // but we avoid getting flooded by the same exact window state.
+            val className = event.className?.toString() ?: ""
+            val node = "$packageName|$className"
+            
             if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
-                && packageName != lastDoomScrollPackage) {
-                lastDoomScrollPackage = packageName
+                && node != lastDoomScrollNode) {
+                lastDoomScrollNode = node
                 recentSwitches.addLast(now)
                 // Prune entries older than the window
                 while (recentSwitches.isNotEmpty() && (now - recentSwitches.first()) > doomWindowMs) {
@@ -70,7 +73,7 @@ class AppInterceptorService : AccessibilityService() {
                 if (recentSwitches.size >= doomThreshold) {
                     Log.d("AppInterceptor", "Doom scroll detected! ${recentSwitches.size} switches in ${doomWindowMs / 1000}s")
                     recentSwitches.clear() // Reset so next episode can fire immediately
-                    lastDoomScrollPackage = "" // Allow same-app re-entry after reset
+                    lastDoomScrollNode = "" // Allow same-app re-entry after reset
                     scope.launch {
                         val db = PulseDatabase.getDatabase(applicationContext)
                         val breathingDuration = db.analyticsDao().getState("limit_breathing_duration")?.toIntOrNull() ?: 4
