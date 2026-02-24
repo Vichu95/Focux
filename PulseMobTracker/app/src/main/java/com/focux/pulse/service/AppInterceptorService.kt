@@ -21,11 +21,9 @@ class AppInterceptorService : AccessibilityService() {
     // All window changes count — no exclusions (configurable after testing)
     private val recentSwitches = ArrayDeque<Long>()
 
-    @Volatile private var doomScrollCooldownUntil: Long = 0L
-
     // Cached config — only reloaded from DB once per minute
-    @Volatile private var doomWindowMs: Long = 30_000L
-    @Volatile private var doomThreshold: Int = 4
+    @Volatile private var doomWindowMs: Long = 20_000L
+    @Volatile private var doomThreshold: Int = 6
     @Volatile private var doomConfigLoadedAt: Long = 0L
 
     companion object {
@@ -56,9 +54,10 @@ class AppInterceptorService : AccessibilityService() {
 
             val now = System.currentTimeMillis()
 
-            // ── Doom Scroll Detection (pure in-memory, runs on every event) ──
-            // No exclusions — all apps including launcher count.
-            if (now > doomScrollCooldownUntil) {
+            // ── Doom Scroll Detection ──────────────────────────────────────────
+            // Only count genuine app-switch events (STATE_CHANGED), not content
+            // updates (CONTENT_CHANGED fires dozens of times per second on scroll).
+            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
                 recentSwitches.addLast(now)
                 // Prune entries older than the window
                 while (recentSwitches.isNotEmpty() && (now - recentSwitches.first()) > doomWindowMs) {
@@ -66,8 +65,7 @@ class AppInterceptorService : AccessibilityService() {
                 }
                 if (recentSwitches.size >= doomThreshold) {
                     Log.d("AppInterceptor", "Doom scroll detected! ${recentSwitches.size} switches in ${doomWindowMs / 1000}s")
-                    recentSwitches.clear()
-                    doomScrollCooldownUntil = now + 60_000L
+                    recentSwitches.clear() // Reset so next episode can fire immediately
                     scope.launch {
                         val db = PulseDatabase.getDatabase(applicationContext)
                         val breathingDuration = db.analyticsDao().getState("limit_breathing_duration")?.toIntOrNull() ?: 4
