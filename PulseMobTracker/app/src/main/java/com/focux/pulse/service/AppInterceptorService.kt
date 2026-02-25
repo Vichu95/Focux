@@ -13,8 +13,13 @@ import kotlinx.coroutines.launch
 
 class AppInterceptorService : AccessibilityService() {
 
+    companion object {
+        var instance: AppInterceptorService? = null
+    }
+
     private var lastInterceptedPackage: String = ""
     private val scope = CoroutineScope(Dispatchers.IO)
+    private var activeSessionJob: kotlinx.coroutines.Job? = null
     
     // ── Doom Scroll Detection ────────────────────────────────────────
     private val recentSwitches = ArrayDeque<Long>()
@@ -22,12 +27,13 @@ class AppInterceptorService : AccessibilityService() {
     // Cached config — reloaded occasionally (default: 5 switches / 30 secs)
     @Volatile private var doomWindowMs: Long = 30_000L
     @Volatile private var doomThreshold: Int = 5
-    @Volatile private var doomConfigLoadedAt: Long = 0L
+    @Volatile private var mindfulConfigLoadedAt: Long = 0L
     
     private var imePackages: List<String> = emptyList()
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        instance = this
         
         // Dynamically get all enabled keyboards (Input Methods) so we don't have to hardcode package names
         try {
@@ -84,17 +90,17 @@ class AppInterceptorService : AccessibilityService() {
         }
 
         // Refresh doom scroll config from DB at most once per minute
-        if (now - doomConfigLoadedAt > 60_000L) {
-            doomConfigLoadedAt = now
+        if (now - mindfulConfigLoadedAt > 60_000L) {
+            mindfulConfigLoadedAt = now
             scope.launch {
                 try {
                     val db = PulseDatabase.getDatabase(applicationContext)
-                    val windowSecs = db.analyticsDao().getState("limit_doomscroll_window_secs")?.toLongOrNull()
-                    val threshold = db.analyticsDao().getState("limit_doomscroll_threshold")?.toIntOrNull()
+                    val windowSecs = db.analyticsDao().getState("mindful_doomscroll_window_secs")?.toLongOrNull()
+                    val threshold = db.analyticsDao().getState("mindful_doomscroll_threshold")?.toIntOrNull()
                     if (windowSecs != null) doomWindowMs = windowSecs * 1000L
                     if (threshold != null) doomThreshold = threshold
                 } catch (e: Exception) {
-                    Logger.e("AppInterceptor", "Error refreshing doom scroll config", e)
+                    Logger.e("AppInterceptor", "Error refreshing mindful config", e)
                 }
             }
         }
@@ -124,7 +130,8 @@ class AppInterceptorService : AccessibilityService() {
                     ?: globalOpensStr?.toIntOrNull()
                     ?: if (category == AppCategory.DISTRACTING) 10 else null
 
-                val breathingDuration = db.analyticsDao().getState("limit_breathing_duration")?.toIntOrNull() ?: 4
+                val baseBreathingDuration = db.analyticsDao().getState("mindful_base_duration")?.toIntOrNull() ?: 4
+                val penaltyMultiplier = db.analyticsDao().getState("mindful_penalty_multiplier")?.toIntOrNull() ?: 3
                 
                 val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
                 val todayStr = sdf.format(java.util.Date())
@@ -134,18 +141,37 @@ class AppInterceptorService : AccessibilityService() {
                 
                 val isDailyExceeded = actualDailyMins != null && usedDailyMins >= actualDailyMins
                 val isOpensExceeded = actualOpens != null && usedOpens >= actualOpens
-                val isSpeedbump = category == AppCategory.DISTRACTING || actualSessionMins != null
+                
+                // Only act as a launch speedbump for Distracting apps, OR if daily/open limits are exceeded.
+                // If it's just a Neutral app with a session limit, we don't speedbump the launch, we just run the timer!
+                val isSpeedbump = category == AppCategory.DISTRACTING
+                
+                // Apply penalty if they breached a daily limit
+                val finalBreathingDuration = if (isDailyExceeded || isOpensExceeded) {
+                    baseBreathingDuration * penaltyMultiplier
+                } else {
+                    baseBreathingDuration
+                }
                 
                 if (isSpeedbump || isDailyExceeded || isOpensExceeded) {
+                    // Stop any existing timer since they are in Breathing
+                    activeSessionJob?.cancel()
                     launchBreathingScreen(
-                        packageName, 
-                        actualSessionMins, 
-                        actualDailyMins, 
-                        usedDailyMins, 
-                        actualOpens, 
-                        usedOpens, 
-                        breathingDuration
+                        targetPackage = packageName, 
+                        sessionLimitMins = actualSessionMins, 
+                        dailyLimitMins = actualDailyMins, 
+                        usedDailyMins = usedDailyMins, 
+                        opensLimit = actualOpens, 
+                        usedOpens = usedOpens, 
+                        breathingDuration = finalBreathingDuration,
+                        isTimeout = false
                     )
+                } else if (actualSessionMins != null) {
+                    // No speedbump required, but we need to start the timer!
+                    startSessionTimer(packageName, actualSessionMins, finalBreathingDuration)
+                } else {
+                    // No limits at all for this app. Cancel any timers running from previous apps.
+                    activeSessionJob?.cancel()
                 }
             } catch (e: Exception) {
                 Logger.e("AppInterceptor", "Error querying app limits", e)
@@ -155,6 +181,38 @@ class AppInterceptorService : AccessibilityService() {
 
     override fun onInterrupt() {
         Logger.d("AppInterceptor", "Service interrupted")
+        instance = null
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        instance = null
+        activeSessionJob?.cancel()
+    }
+    
+    fun startSessionTimer(packageName: String, sessionLimitMins: Int, breathingDuration: Int) {
+        activeSessionJob?.cancel()
+        if (sessionLimitMins <= 0) return
+        
+        Logger.d("AppInterceptor", "Starting session timer for $packageName (${sessionLimitMins}m)")
+        activeSessionJob = scope.launch(Dispatchers.Main) {
+            kotlinx.coroutines.delay(sessionLimitMins * 60 * 1000L)
+            
+            // If they are still using this same app when the timer fires
+            if (lastInterceptedPackage == packageName) {
+                Logger.d("AppInterceptor", "Session expired for $packageName!")
+                launchBreathingScreen(
+                    targetPackage = packageName,
+                    sessionLimitMins = sessionLimitMins,
+                    dailyLimitMins = null,
+                    usedDailyMins = 0,
+                    opensLimit = null,
+                    usedOpens = 0,
+                    breathingDuration = breathingDuration,
+                    isTimeout = true
+                )
+            }
+        }
     }
 
     private fun launchBreathingScreen(
@@ -164,7 +222,8 @@ class AppInterceptorService : AccessibilityService() {
         usedDailyMins: Int,
         opensLimit: Int?,
         usedOpens: Int,
-        breathingDuration: Int
+        breathingDuration: Int,
+        isTimeout: Boolean
     ) {
         val intent = Intent(this, BreathingActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -176,6 +235,7 @@ class AppInterceptorService : AccessibilityService() {
             putExtra("USED_OPENS", usedOpens)
             putExtra("BREATHING_DURATION", breathingDuration)
             putExtra("IS_DOOM_SCROLL", false)
+            putExtra("IS_TIMEOUT", isTimeout)
         }
         startActivity(intent)
     }
@@ -191,6 +251,7 @@ class AppInterceptorService : AccessibilityService() {
             putExtra("USED_OPENS", 0)
             putExtra("BREATHING_DURATION", breathingDuration)
             putExtra("IS_DOOM_SCROLL", true)
+            putExtra("IS_TIMEOUT", false)
         }
         startActivity(intent)
     }

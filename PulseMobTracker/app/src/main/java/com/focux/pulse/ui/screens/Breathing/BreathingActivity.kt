@@ -73,6 +73,7 @@ class BreathingActivity : ComponentActivity() {
         
         val breathingDuration = intent.getIntExtra("BREATHING_DURATION", 4)
         val isDoomScroll = intent.getBooleanExtra("IS_DOOM_SCROLL", false)
+        val isTimeout = intent.getBooleanExtra("IS_TIMEOUT", false)
         
         // State variables to hold the live counts
         var liveUsedDailyMins by mutableStateOf(usedDailyMins)
@@ -129,8 +130,19 @@ class BreathingActivity : ComponentActivity() {
                         usedOpens = liveUsedOpens,
                         breathingDuration = breathingDuration,
                         isDoomScroll = isDoomScroll,
+                        isTimeout = isTimeout,
                         onProceed = {
                             logBreathingDecision(targetPackageName, "FOCUS_LOST")
+                            
+                            // Restart the interceptor's running session timer if they are going back in
+                            if (sessionLimitMins > 0) {
+                                com.focux.pulse.service.AppInterceptorService.instance?.startSessionTimer(
+                                    targetPackageName,
+                                    sessionLimitMins,
+                                    breathingDuration
+                                )
+                            }
+                            
                             val launchIntent = packageManager.getLaunchIntentForPackage(targetPackageName)
                             if (launchIntent != null) {
                                 startActivity(launchIntent)
@@ -181,6 +193,7 @@ fun BreathingScreen(
     usedOpens: Int,
     breathingDuration: Int,
     isDoomScroll: Boolean = false,
+    isTimeout: Boolean = false,
     onProceed: () -> Unit,
     onExit: () -> Unit
 ) {
@@ -269,8 +282,13 @@ fun BreathingScreen(
                 visible = isSequenceComplete,
                 enter = fadeIn(animationSpec = tween(1000))
             ) {
+                val headerText = when {
+                    isTimeout -> "Session time expired."
+                    isDoomScroll -> "You are doom scrolling."
+                    else -> "Your focus is breaking."
+                }
                 Text(
-                    text = if (isDoomScroll) "You are doom scrolling." else "Your focus is breaking.",
+                    text = headerText,
                     style = PulseAppFontHeader.copy(fontSize = 22.sp, fontWeight = FontWeight.SemiBold),
                     color = Color.White,
                     textAlign = TextAlign.Center
