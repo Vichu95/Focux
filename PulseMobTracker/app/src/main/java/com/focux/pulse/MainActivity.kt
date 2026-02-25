@@ -28,37 +28,23 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PulseTheme {
-                var hasUsageAccess by remember { mutableStateOf(checkUsageStatsPermission()) }
-                var hasAccessibilityAccess by remember { mutableStateOf(com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)) }
+                val hasUsageAccess = checkUsageStatsPermission()
+                val hasAccessibilityAccess = com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)
                 
-                // Re-check permission when app resumes (simple way to catch return from settings)
-                // In a real app, use LifecycleEventObserver or request launcher
-                val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
-                androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
-                    val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-                        if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                            hasUsageAccess = checkUsageStatsPermission()
-                            hasAccessibilityAccess = com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)
-                            if (hasUsageAccess && hasAccessibilityAccess) {
-                                initDataCollection()
-                            }
-                        }
-                    }
-                    lifecycleOwner.lifecycle.addObserver(observer)
-                    onDispose {
-                        lifecycleOwner.lifecycle.removeObserver(observer)
-                    }
-                }
+                // We only jump straight to the app if they ALREADY have permissions when the app starts.
+                // If they don't, we show Onboarding and don't leave until they explicitly finish.
+                var isOnboardingCompleted by remember { mutableStateOf(hasUsageAccess && hasAccessibilityAccess) }
 
-                if (hasUsageAccess && hasAccessibilityAccess) {
+                if (isOnboardingCompleted) {
                     MainAppStructure()
                 } else {
                     com.focux.pulse.ui.screens.onboarding.OnboardingScreen(
                         onFinish = {
-                            hasUsageAccess = checkUsageStatsPermission()
-                            hasAccessibilityAccess = com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)
-                            if (hasUsageAccess && hasAccessibilityAccess) {
+                            val finalUsageAccess = checkUsageStatsPermission()
+                            val finalAccessibilityAccess = com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)
+                            if (finalUsageAccess && finalAccessibilityAccess) {
                                 initDataCollection()
+                                isOnboardingCompleted = true
                             }
                         }
                     )

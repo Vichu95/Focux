@@ -21,6 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
 import com.focux.pulse.R
 import com.focux.pulse.ui.theme.*
 import kotlinx.coroutines.delay
@@ -90,28 +97,28 @@ fun ValuePropPage(onNext: () -> Unit) {
         
         // Feature 1
         FeatureRow(
-            icon = android.R.drawable.ic_menu_agenda, // Placeholder outline
+            icon = Icons.Default.DateRange,
             title = "Track Your Habits",
-            description = "Understand how you use your phone with detailed timelines and focus scores."
+            description = "Visualize your daily screen time and calculate your holistic focus score."
         )
         Spacer(modifier = Modifier.height(24.dp))
         
         // Feature 2
         FeatureRow(
-            icon = android.R.drawable.ic_dialog_info, // Placeholder
-            title = "Prevent Doomscrolling",
-            description = "Pulse detects rapid app switching and helps you break the cycle of mindless scrolling."
+            icon = Icons.Default.Warning,
+            title = "Stop Doomscrolling",
+            description = "Pulse automatically catches you when rapidly switching between distracting apps."
         )
         Spacer(modifier = Modifier.height(24.dp))
         
         // Feature 3
         FeatureRow(
-            icon = android.R.drawable.ic_menu_recent_history, // Placeholder
+            icon = Icons.Default.Favorite,
             title = "Mindful Interventions",
-            description = "Instead of locking your phone, we gently guide you to focus with a breathing exercise."
+            description = "Instead of hard blocks, gently redirect attention with a short breathing exercise."
         )
         
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(48.dp))
         
         Button(
             onClick = onNext,
@@ -127,17 +134,25 @@ fun ValuePropPage(onNext: () -> Unit) {
 }
 
 @Composable
-private fun FeatureRow(icon: Int, title: String, description: String) {
+private fun FeatureRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, description: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            painter = painterResource(id = icon),
-            contentDescription = null,
-            tint = PulseAppColorPrimary,
-            modifier = Modifier.size(32.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(PulseAppColorPrimary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = PulseAppColorPrimary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
         Spacer(modifier = Modifier.width(16.dp))
         Column {
             Text(
@@ -148,7 +163,7 @@ private fun FeatureRow(icon: Int, title: String, description: String) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = description,
-                style = PulseAppFontBody.copy(color = Color.Gray),
+                style = PulseAppFontBody.copy(color = Color.Gray, fontSize = 14.sp),
             )
         }
     }
@@ -164,13 +179,21 @@ fun UsageAccessPage(isGranted: Boolean, onGrantClick: () -> Unit, onNextClick: (
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        val iconTint = if (isGranted) PulseAppColorProductive else PulseAppColorPrimary
-        Icon(
-            painter = painterResource(id = if (isGranted) android.R.drawable.checkbox_on_background else android.R.drawable.ic_menu_sort_by_size),
-            contentDescription = null,
-            tint = iconTint,
-            modifier = Modifier.size(80.dp)
-        )
+        val iconTint = PulseAppColorPrimary
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(PulseAppColorPrimary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isGranted) Icons.Default.Check else Icons.Default.Info,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(64.dp)
+            )
+        }
         
         Spacer(modifier = Modifier.height(32.dp))
         
@@ -189,7 +212,7 @@ fun UsageAccessPage(isGranted: Boolean, onGrantClick: () -> Unit, onNextClick: (
             color = Color.LightGray
         )
         
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(48.dp))
         
         if (!isGranted) {
             Button(
@@ -204,7 +227,7 @@ fun UsageAccessPage(isGranted: Boolean, onGrantClick: () -> Unit, onNextClick: (
             Button(
                 onClick = onNextClick,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorProductive),
+                colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary),
                 shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
             ) {
                 Text("Continue", color = PulseAppColorBackground, style = PulseAppFontHeader.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold))
@@ -230,13 +253,21 @@ fun AccessibilityAccessPage(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        val iconTint = if (isGranted) PulseAppColorProductive else PulseAppColorPrimary
-        Icon(
-            painter = painterResource(id = if (isGranted) android.R.drawable.checkbox_on_background else android.R.drawable.ic_secure),
-            contentDescription = null,
-            tint = iconTint,
-            modifier = Modifier.size(80.dp)
-        )
+        val iconTint = PulseAppColorPrimary
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(PulseAppColorPrimary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isGranted) Icons.Default.Check else Icons.Default.Lock,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(64.dp)
+            )
+        }
         
         Spacer(modifier = Modifier.height(32.dp))
         
@@ -256,7 +287,7 @@ fun AccessibilityAccessPage(
             color = Color.LightGray
         )
         
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(48.dp))
         
         if (!isGranted) {
             Button(
@@ -271,7 +302,7 @@ fun AccessibilityAccessPage(
             Button(
                 onClick = onNextClick,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorProductive),
+                colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary),
                 shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
             ) {
                 Text("Finish Setup", color = PulseAppColorBackground, style = PulseAppFontHeader.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold))
@@ -311,26 +342,35 @@ fun ReadyPage(onFinish: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            painter = painterResource(id = android.R.drawable.star_on),
-            contentDescription = null,
-            tint = PulseAppColorProductive,
-            modifier = Modifier.size(100.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(PulseAppColorPrimary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = PulseAppColorPrimary,
+                modifier = Modifier.size(64.dp)
+            )
+        }
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(40.dp))
         
         Text(
-            text = "You're All Set!",
+            text = "Enjoy your focus",
             style = PulseAppFontHeader.copy(fontSize = 32.sp),
             color = PulseAppColorSecondary,
+            textAlign = TextAlign.Center
         )
         
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "Pulse is now ready to help you build healthier digital habits. Everything works automatically in the background.",
-            style = PulseAppFontBody,
+            text = "Pulse is now active in the background. Spend less time scrolling and more time living.",
+            style = PulseAppFontBody.copy(fontSize = 16.sp),
             textAlign = TextAlign.Center,
             color = Color.Gray
         )
@@ -340,10 +380,10 @@ fun ReadyPage(onFinish: () -> Unit) {
         Button(
             onClick = onFinish,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorProductive),
+            colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary),
             shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
         ) {
-            Text("Go to Dashboard", color = PulseAppColorBackground, style = PulseAppFontHeader.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold))
+            Text("Open Dashboard", color = PulseAppColorBackground, style = PulseAppFontHeader.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold))
         }
     }
 }
