@@ -21,6 +21,9 @@ class AppInterceptorService : AccessibilityService() {
     private val scope = CoroutineScope(Dispatchers.IO)
     private var activeSessionJob: kotlinx.coroutines.Job? = null
     
+    @Volatile private var exemptPackage: String? = null
+    @Volatile private var exemptExpiry: Long = 0L
+    
     // ── Doom Scroll Detection ────────────────────────────────────────
     private val recentSwitches = ArrayDeque<Long>()
     
@@ -147,10 +150,17 @@ class AppInterceptorService : AccessibilityService() {
                 val isSpeedbump = category == AppCategory.DISTRACTING
                 
                 // Apply penalty if they breached a daily limit
-                val finalBreathingDuration = if (isDailyExceeded || isOpensExceeded) {
-                    baseBreathingDuration * penaltyMultiplier
-                } else {
-                    baseBreathingDuration
+                val finalBreathingDuration = baseBreathingDuration
+                val finalBreathingCycles = if (isDailyExceeded || isOpensExceeded) penaltyMultiplier else 1
+                
+                // If they just finished a breathing exercise for this app (like Doom Scroll),
+                // we bypass any immediate per-app speedbumps to prevent back-to-back popups.
+                if (packageName == exemptPackage && System.currentTimeMillis() < exemptExpiry) {
+                    exemptPackage = null // Consume exemption
+                    if (actualSessionMins != null) {
+                        startSessionTimer(packageName, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
+                    }
+                    return@launch
                 }
                 
                 if (isSpeedbump || isDailyExceeded || isOpensExceeded) {
@@ -164,11 +174,12 @@ class AppInterceptorService : AccessibilityService() {
                         opensLimit = actualOpens, 
                         usedOpens = usedOpens, 
                         breathingDuration = finalBreathingDuration,
+                        breathingCycles = finalBreathingCycles,
                         isTimeout = false
                     )
                 } else if (actualSessionMins != null) {
                     // No speedbump required, but we need to start the timer!
-                    startSessionTimer(packageName, actualSessionMins, finalBreathingDuration)
+                    startSessionTimer(packageName, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
                 } else {
                     // No limits at all for this app. Cancel any timers running from previous apps.
                     activeSessionJob?.cancel()
@@ -190,7 +201,22 @@ class AppInterceptorService : AccessibilityService() {
         activeSessionJob?.cancel()
     }
     
-    fun startSessionTimer(packageName: String, sessionLimitMins: Int, breathingDuration: Int) {
+    fun notifyBreathingCompleted(packageName: String) {
+        exemptPackage = packageName
+        exemptExpiry = System.currentTimeMillis() + 10_000L // Instant fallback to block race conditions
+        
+        scope.launch {
+            try {
+                val db = PulseDatabase.getDatabase(applicationContext)
+                val exemptionSecs = db.analyticsDao().getState("mindful_exemption_window_secs")?.toLongOrNull() ?: 10L
+                exemptExpiry = System.currentTimeMillis() + (exemptionSecs * 1000L)
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+    }
+    
+    fun startSessionTimer(packageName: String, sessionLimitMins: Int, breathingDuration: Int, breathingCycles: Int) {
         activeSessionJob?.cancel()
         if (sessionLimitMins <= 0) return
         
@@ -209,6 +235,7 @@ class AppInterceptorService : AccessibilityService() {
                     opensLimit = null,
                     usedOpens = 0,
                     breathingDuration = breathingDuration,
+                    breathingCycles = breathingCycles,
                     isTimeout = true
                 )
             }
@@ -223,6 +250,7 @@ class AppInterceptorService : AccessibilityService() {
         opensLimit: Int?,
         usedOpens: Int,
         breathingDuration: Int,
+        breathingCycles: Int,
         isTimeout: Boolean
     ) {
         val intent = Intent(this, BreathingActivity::class.java).apply {
@@ -234,6 +262,7 @@ class AppInterceptorService : AccessibilityService() {
             putExtra("OPENS_LIMIT", opensLimit ?: -1)
             putExtra("USED_OPENS", usedOpens)
             putExtra("BREATHING_DURATION", breathingDuration)
+            putExtra("BREATHING_CYCLES", breathingCycles)
             putExtra("IS_DOOM_SCROLL", false)
             putExtra("IS_TIMEOUT", isTimeout)
         }
@@ -250,6 +279,7 @@ class AppInterceptorService : AccessibilityService() {
             putExtra("OPENS_LIMIT", -1)
             putExtra("USED_OPENS", 0)
             putExtra("BREATHING_DURATION", breathingDuration)
+            putExtra("BREATHING_CYCLES", 1)
             putExtra("IS_DOOM_SCROLL", true)
             putExtra("IS_TIMEOUT", false)
         }

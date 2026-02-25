@@ -30,6 +30,7 @@ data class MindfulLimitsUiState(
     
     val breathingDuration: Int = 4, // 4s per phase
     val penaltyMultiplier: Int = 3, // 3x multiplier when daily limit exceeded
+    val exemptionWindowSecs: Int = 10, // Seconds to bypass double speedbump
     val doomScrollWindowSecs: Int = 30, // sliding window for doom scroll detection
     val doomScrollThreshold: Int = 5  // number of switches within the window to trigger
 )
@@ -66,6 +67,7 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
 
                 breathingDuration = parse(analyticsDao.getState("mindful_base_duration")) ?: 4,
                 penaltyMultiplier = parse(analyticsDao.getState("mindful_penalty_multiplier")) ?: 3,
+                exemptionWindowSecs = parse(analyticsDao.getState("mindful_exemption_window_secs")) ?: 10,
                 doomScrollWindowSecs = parse(analyticsDao.getState("mindful_doomscroll_window_secs")) ?: 30,
                 doomScrollThreshold = parse(analyticsDao.getState("mindful_doomscroll_threshold")) ?: 5
             )
@@ -135,10 +137,11 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
         }
     }
     
-    fun updateMindfulInterventions(breathing: Int, penalty: Int, doomWindowSecs: Int, doomThreshold: Int) {
+    fun updateMindfulInterventions(breathing: Int, penalty: Int, exemption: Int, doomWindowSecs: Int, doomThreshold: Int) {
         viewModelScope.launch {
             analyticsDao.updateState(SystemState("mindful_base_duration", breathing.toString()))
             analyticsDao.updateState(SystemState("mindful_penalty_multiplier", penalty.toString()))
+            analyticsDao.updateState(SystemState("mindful_exemption_window_secs", exemption.toString()))
             analyticsDao.updateState(SystemState("mindful_doomscroll_window_secs", doomWindowSecs.toString()))
             analyticsDao.updateState(SystemState("mindful_doomscroll_threshold", doomThreshold.toString()))
             loadGlobalLimits()

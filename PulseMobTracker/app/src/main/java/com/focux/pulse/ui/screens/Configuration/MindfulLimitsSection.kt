@@ -110,8 +110,8 @@ fun MindfulLimitsSection(
             onConfirm = { category, session, daily, opens ->
                 viewModel.updateGlobalLimits(category, session, daily, opens)
             },
-            onConfirmMindful = { breathing, penalty, doomWindowSecs, doomThreshold ->
-                viewModel.updateMindfulInterventions(breathing, penalty, doomWindowSecs, doomThreshold)
+            onConfirmMindful = { breathing, penalty, exemption, doomWindowSecs, doomThreshold ->
+                viewModel.updateMindfulInterventions(breathing, penalty, exemption, doomWindowSecs, doomThreshold)
             }
         )
     }
@@ -131,7 +131,7 @@ private fun MindfulLimitsViewMode(state: MindfulLimitsUiState) {
         Spacer(modifier = Modifier.height(2.dp))
         Text("• Neutral Apps Limit:\n  Session: ${formatMin(state.neutSession)} | Daily: ${formatMin(state.neutDaily)} | Opens: ${formatX(state.neutOpens)}", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
         Spacer(modifier = Modifier.height(2.dp))
-        Text("• Mindful Interventions:\n  Pause: ${state.breathingDuration}s | Over-limit Penalty: ${state.penaltyMultiplier}x\n  Doom Scroll: ${state.doomScrollThreshold} switches in ${state.doomScrollWindowSecs}s", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
+        Text("• Mindful Interventions:\n  Pause: ${state.breathingDuration}s | Over-limit Penalty: ${state.penaltyMultiplier}x | Exemption: ${state.exemptionWindowSecs}s\n  Doom Scroll: ${state.doomScrollThreshold} switches in ${state.doomScrollWindowSecs}s", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
         
         Spacer(modifier = Modifier.height(12.dp))
         
@@ -347,7 +347,7 @@ private fun MindfulGlobalTuneSheet(
     state: MindfulLimitsUiState,
     onDismiss: () -> Unit,
     onConfirm: (category: String, session: Int?, daily: Int?, opens: Int?) -> Unit,
-    onConfirmMindful: (breathing: Int, penalty: Int, doomWindowSecs: Int, doomThreshold: Int) -> Unit
+    onConfirmMindful: (breathing: Int, penalty: Int, exemption: Int, doomWindowSecs: Int, doomThreshold: Int) -> Unit
 ) {
     val modalBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedTab by remember { mutableStateOf("Distracting") }
@@ -375,6 +375,7 @@ private fun MindfulGlobalTuneSheet(
             if (selectedTab == "Mindful Interventions") {
                 var breathing by remember { mutableStateOf(state.breathingDuration) }
                 var penalty by remember { mutableStateOf(state.penaltyMultiplier) }
+                var exemption by remember { mutableStateOf(state.exemptionWindowSecs) }
                 var windowSecs by remember { mutableStateOf(state.doomScrollWindowSecs) }
                 var threshold by remember { mutableStateOf(state.doomScrollThreshold) }
                 
@@ -386,6 +387,9 @@ private fun MindfulGlobalTuneSheet(
                         
                         Text("Over-Limit Penalty Multiplier", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
                         CounterBox(value = penalty, suffix = "x", onValueChange = { penalty = it ?: 3 }, allowNull = false)
+                        
+                        Text("Post-Breathing Exemption", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
+                        CounterBox(value = exemption, suffix = "secs", onValueChange = { exemption = it ?: 10 }, allowNull = false)
                         
                         Divider(color = PulseAppColorBackground, modifier = Modifier.padding(vertical = 8.dp))
                         
@@ -399,7 +403,7 @@ private fun MindfulGlobalTuneSheet(
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorDistracting)) { Text("Cancel") }
-                    Button(onClick = { onConfirmMindful(breathing, penalty, windowSecs, threshold); onDismiss() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save Interventions", color = PulseAppColorBackground) }
+                    Button(onClick = { onConfirmMindful(breathing, penalty, exemption, windowSecs, threshold); onDismiss() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save Interventions", color = PulseAppColorBackground) }
                 }
             } else {
                 var initialLoaded by remember { mutableStateOf(false) }

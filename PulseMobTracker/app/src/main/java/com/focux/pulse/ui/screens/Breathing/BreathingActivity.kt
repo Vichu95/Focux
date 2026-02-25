@@ -72,6 +72,7 @@ class BreathingActivity : ComponentActivity() {
         val usedOpens = intent.getIntExtra("USED_OPENS", 0)
         
         val breathingDuration = intent.getIntExtra("BREATHING_DURATION", 4)
+        val breathingCycles = intent.getIntExtra("BREATHING_CYCLES", 1)
         val isDoomScroll = intent.getBooleanExtra("IS_DOOM_SCROLL", false)
         val isTimeout = intent.getBooleanExtra("IS_TIMEOUT", false)
         
@@ -129,17 +130,22 @@ class BreathingActivity : ComponentActivity() {
                         opensLimit = opensLimit,
                         usedOpens = liveUsedOpens,
                         breathingDuration = breathingDuration,
+                        breathingCycles = breathingCycles,
                         isDoomScroll = isDoomScroll,
                         isTimeout = isTimeout,
                         onProceed = {
                             logBreathingDecision(targetPackageName, "FOCUS_LOST")
+                            
+                            // Prevent back-to-back intercepts by notifying the service
+                            com.focux.pulse.service.AppInterceptorService.instance?.notifyBreathingCompleted(targetPackageName)
                             
                             // Restart the interceptor's running session timer if they are going back in
                             if (sessionLimitMins > 0) {
                                 com.focux.pulse.service.AppInterceptorService.instance?.startSessionTimer(
                                     targetPackageName,
                                     sessionLimitMins,
-                                    breathingDuration
+                                    breathingDuration,
+                                    breathingCycles
                                 )
                             }
                             
@@ -192,6 +198,7 @@ fun BreathingScreen(
     opensLimit: Int,
     usedOpens: Int,
     breathingDuration: Int,
+    breathingCycles: Int,
     isDoomScroll: Boolean = false,
     isTimeout: Boolean = false,
     onProceed: () -> Unit,
@@ -201,6 +208,7 @@ fun BreathingScreen(
     
     val phaseDurationMs = breathingDuration * 1000L
     val cycleDurationMs = phaseDurationMs * 4L
+    val totalDurationMs = cycleDurationMs * breathingCycles
     
     var isSequenceComplete by remember { mutableStateOf(false) }
     var currentPhaseText by remember { mutableStateOf("Inhale...") }
@@ -247,8 +255,9 @@ fun BreathingScreen(
                 }
             }
             
-            if (elapsed >= cycleDurationMs) {
+            if (elapsed >= totalDurationMs) {
                 isSequenceComplete = true
+                break
             }
             
             delay(16)
