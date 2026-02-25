@@ -110,11 +110,8 @@ fun MindfulLimitsSection(
             onConfirm = { category, session, daily, opens ->
                 viewModel.updateGlobalLimits(category, session, daily, opens)
             },
-            onConfirmBreathing = {
-                viewModel.updateBreathingDuration(it)
-            },
-            onConfirmDoomScroll = { windowSecs, threshold ->
-                viewModel.updateDoomScrollLimits(windowSecs, threshold)
+            onConfirmMindful = { breathing, penalty, doomWindowSecs, doomThreshold ->
+                viewModel.updateMindfulInterventions(breathing, penalty, doomWindowSecs, doomThreshold)
             }
         )
     }
@@ -134,9 +131,7 @@ private fun MindfulLimitsViewMode(state: MindfulLimitsUiState) {
         Spacer(modifier = Modifier.height(2.dp))
         Text("• Neutral Apps Limit:\n  Session: ${formatMin(state.neutSession)} | Daily: ${formatMin(state.neutDaily)} | Opens: ${formatX(state.neutOpens)}", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
         Spacer(modifier = Modifier.height(2.dp))
-        Text("• Breathing Pause:\n  ${state.breathingDuration}s per phase (${state.breathingDuration * 4}s total cycle)", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
-        Spacer(modifier = Modifier.height(2.dp))
-        Text("• Doom Scroll:\n  Trigger after ${state.doomScrollThreshold} switches within ${state.doomScrollWindowSecs}s", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
+        Text("• Mindful Interventions:\n  Pause: ${state.breathingDuration}s | Over-limit Penalty: ${state.penaltyMultiplier}x\n  Doom Scroll: ${state.doomScrollThreshold} switches in ${state.doomScrollWindowSecs}s", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
         
         Spacer(modifier = Modifier.height(12.dp))
         
@@ -352,8 +347,7 @@ private fun MindfulGlobalTuneSheet(
     state: MindfulLimitsUiState,
     onDismiss: () -> Unit,
     onConfirm: (category: String, session: Int?, daily: Int?, opens: Int?) -> Unit,
-    onConfirmBreathing: (duration: Int) -> Unit,
-    onConfirmDoomScroll: (windowSecs: Int, threshold: Int) -> Unit
+    onConfirmMindful: (breathing: Int, penalty: Int, doomWindowSecs: Int, doomThreshold: Int) -> Unit
 ) {
     val modalBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedTab by remember { mutableStateOf("Distracting") }
@@ -367,10 +361,10 @@ private fun MindfulGlobalTuneSheet(
             Text("Central Defaults", style = PulseAppFontHeader, color = PulseAppColorPrimary)
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                listOf("Distracting", "Productive", "Neutral", "Breathing", "Doom Scroll").forEach { tab ->
+                listOf("Distracting", "Productive", "Neutral", "Mindful Interventions").forEach { tab ->
                     Text(
                         text = tab,
-                        style = PulseAppFontBody.copy(fontSize = 11.sp, fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal),
+                        style = PulseAppFontBody.copy(fontSize = 10.sp, fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal),
                         color = if (selectedTab == tab) PulseAppColorPrimary else PulseAppColorSecondary,
                         modifier = Modifier.clickable { selectedTab = tab }.padding(4.dp)
                     )
@@ -378,24 +372,34 @@ private fun MindfulGlobalTuneSheet(
             }
             Divider(color = PulseAppColorBackground)
             
-            if (selectedTab == "Breathing") {
+            if (selectedTab == "Mindful Interventions") {
                 var breathing by remember { mutableStateOf(state.breathingDuration) }
-                Text("Breathing Pause Duration (per phase)", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
-                CounterBox(value = breathing, suffix = "secs", onValueChange = { breathing = it ?: 4 }, allowNull = false)
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorDistracting)) { Text("Cancel") }
-                    Button(onClick = { onConfirmBreathing(breathing); onDismiss() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save Breathing", color = PulseAppColorBackground) }
-                }
-            } else if (selectedTab == "Doom Scroll") {
+                var penalty by remember { mutableStateOf(state.penaltyMultiplier) }
                 var windowSecs by remember { mutableStateOf(state.doomScrollWindowSecs) }
                 var threshold by remember { mutableStateOf(state.doomScrollThreshold) }
-                Text("Detection Window", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
-                CounterBox(value = windowSecs, suffix = "secs", onValueChange = { windowSecs = it ?: 30 }, allowNull = false)
-                Text("Switch Threshold", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
-                CounterBox(value = threshold, suffix = "switches", onValueChange = { threshold = it ?: 4 }, allowNull = false)
+                
+                LazyColumn(modifier = Modifier.heightIn(max = 250.dp)) {
+                    item {
+                        Text("Breathing Limits", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
+                        Text("Base Pause Duration", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
+                        CounterBox(value = breathing, suffix = "secs", onValueChange = { breathing = it ?: 4 }, allowNull = false)
+                        
+                        Text("Over-Limit Penalty Multiplier", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
+                        CounterBox(value = penalty, suffix = "x", onValueChange = { penalty = it ?: 3 }, allowNull = false)
+                        
+                        Divider(color = PulseAppColorBackground, modifier = Modifier.padding(vertical = 8.dp))
+                        
+                        Text("Doom Scroll Detection", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
+                        Text("Detection Time Window", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
+                        CounterBox(value = windowSecs, suffix = "secs", onValueChange = { windowSecs = it ?: 30 }, allowNull = false)
+                        
+                        Text("Rapid Switch Threshold", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
+                        CounterBox(value = threshold, suffix = "switches", onValueChange = { threshold = it ?: 5 }, allowNull = false)
+                    }
+                }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorDistracting)) { Text("Cancel") }
-                    Button(onClick = { onConfirmDoomScroll(windowSecs, threshold); onDismiss() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save", color = PulseAppColorBackground) }
+                    Button(onClick = { onConfirmMindful(breathing, penalty, windowSecs, threshold); onDismiss() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save Interventions", color = PulseAppColorBackground) }
                 }
             } else {
                 var initialLoaded by remember { mutableStateOf(false) }

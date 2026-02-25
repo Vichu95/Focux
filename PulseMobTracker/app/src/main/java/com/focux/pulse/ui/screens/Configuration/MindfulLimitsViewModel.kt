@@ -29,8 +29,9 @@ data class MindfulLimitsUiState(
     val neutOpens: Int? = null,
     
     val breathingDuration: Int = 4, // 4s per phase
-    val doomScrollWindowSecs: Int = 20, // sliding window for doom scroll detection
-    val doomScrollThreshold: Int = 6  // number of switches within the window to trigger
+    val penaltyMultiplier: Int = 3, // 3x multiplier when daily limit exceeded
+    val doomScrollWindowSecs: Int = 30, // sliding window for doom scroll detection
+    val doomScrollThreshold: Int = 5  // number of switches within the window to trigger
 )
 
 class MindfulLimitsViewModel(application: Application) : AndroidViewModel(application) {
@@ -63,9 +64,10 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
                 neutDaily = parse(analyticsDao.getState("limit_neutral_daily")),
                 neutOpens = parse(analyticsDao.getState("limit_neutral_opens")),
 
-                breathingDuration = parse(analyticsDao.getState("limit_breathing_duration")) ?: 4,
-                doomScrollWindowSecs = parse(analyticsDao.getState("limit_doomscroll_window_secs")) ?: 20,
-                doomScrollThreshold = parse(analyticsDao.getState("limit_doomscroll_threshold")) ?: 6
+                breathingDuration = parse(analyticsDao.getState("mindful_base_duration")) ?: 4,
+                penaltyMultiplier = parse(analyticsDao.getState("mindful_penalty_multiplier")) ?: 3,
+                doomScrollWindowSecs = parse(analyticsDao.getState("mindful_doomscroll_window_secs")) ?: 30,
+                doomScrollThreshold = parse(analyticsDao.getState("mindful_doomscroll_threshold")) ?: 5
             )
         }
     }
@@ -133,17 +135,12 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
         }
     }
     
-    fun updateBreathingDuration(duration: Int) {
+    fun updateMindfulInterventions(breathing: Int, penalty: Int, doomWindowSecs: Int, doomThreshold: Int) {
         viewModelScope.launch {
-            analyticsDao.updateState(SystemState("limit_breathing_duration", duration.toString()))
-            loadGlobalLimits()
-        }
-    }
-
-    fun updateDoomScrollLimits(windowSecs: Int, threshold: Int) {
-        viewModelScope.launch {
-            analyticsDao.updateState(SystemState("limit_doomscroll_window_secs", windowSecs.toString()))
-            analyticsDao.updateState(SystemState("limit_doomscroll_threshold", threshold.toString()))
+            analyticsDao.updateState(SystemState("mindful_base_duration", breathing.toString()))
+            analyticsDao.updateState(SystemState("mindful_penalty_multiplier", penalty.toString()))
+            analyticsDao.updateState(SystemState("mindful_doomscroll_window_secs", doomWindowSecs.toString()))
+            analyticsDao.updateState(SystemState("mindful_doomscroll_threshold", doomThreshold.toString()))
             loadGlobalLimits()
         }
     }
