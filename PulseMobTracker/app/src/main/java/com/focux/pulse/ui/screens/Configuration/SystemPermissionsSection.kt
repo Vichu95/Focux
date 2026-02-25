@@ -198,7 +198,7 @@ private fun PermissionRow(
 }
 
 // Helper functions (Consider moving these to a dedicated PermissionsHelper if used elsewhere)
-private fun checkUsageAccess(context: Context): Boolean {
+fun checkUsageAccess(context: Context): Boolean {
     val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
     val mode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
         appOps.unsafeCheckOpNoThrow(
@@ -216,7 +216,7 @@ private fun checkUsageAccess(context: Context): Boolean {
     return mode == AppOpsManager.MODE_ALLOWED
 }
 
-private fun checkAccessibilityAccess(context: Context): Boolean {
+fun checkAccessibilityAccess(context: Context): Boolean {
     var accessibilityEnabled = 0
     val accessibilityFound = false
     try {

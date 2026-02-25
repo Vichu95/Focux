@@ -28,7 +28,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PulseTheme {
-                var hasPermission by remember { mutableStateOf(checkUsageStatsPermission()) }
+                var hasUsageAccess by remember { mutableStateOf(checkUsageStatsPermission()) }
+                var hasAccessibilityAccess by remember { mutableStateOf(com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)) }
                 
                 // Re-check permission when app resumes (simple way to catch return from settings)
                 // In a real app, use LifecycleEventObserver or request launcher
@@ -36,8 +37,9 @@ class MainActivity : ComponentActivity() {
                 androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
                     val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
                         if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                            hasPermission = checkUsageStatsPermission()
-                            if (hasPermission) {
+                            hasUsageAccess = checkUsageStatsPermission()
+                            hasAccessibilityAccess = com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)
+                            if (hasUsageAccess && hasAccessibilityAccess) {
                                 initDataCollection()
                             }
                         }
@@ -48,10 +50,18 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (hasPermission) {
+                if (hasUsageAccess && hasAccessibilityAccess) {
                     MainAppStructure()
                 } else {
-                    com.focux.pulse.ui.screens.onboarding.PermissionScreen()
+                    com.focux.pulse.ui.screens.onboarding.OnboardingScreen(
+                        onFinish = {
+                            hasUsageAccess = checkUsageStatsPermission()
+                            hasAccessibilityAccess = com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)
+                            if (hasUsageAccess && hasAccessibilityAccess) {
+                                initDataCollection()
+                            }
+                        }
+                    )
                 }
             }
         }
