@@ -16,9 +16,18 @@ interface MaintenanceDao {
 
     @Query("DELETE FROM app_sessions")
     suspend fun clearAppSessions()
+    
+    @Query("DELETE FROM app_sessions WHERE startTime < :timestampThreshold")
+    suspend fun clearOldAppSessions(timestampThreshold: Long)
 
     @Query("DELETE FROM daily_stats")
     suspend fun clearDailyStats()
+    
+    @Query("DELETE FROM daily_stats WHERE date < :dateThreshold")
+    suspend fun clearOldDailyStats(dateThreshold: String)
+    
+    @Query("DELETE FROM raw_data WHERE timestamp < :timestampThreshold")
+    suspend fun clearOldRawData(timestampThreshold: Long)
     
     @Query("DELETE FROM app_info")
     suspend fun clearAppInfo()

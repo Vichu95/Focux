@@ -5,6 +5,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import android.content.Intent
+import androidx.core.content.FileProvider
+import java.io.File
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.AlertDialog
@@ -17,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.focux.pulse.data.local.PulseDatabase
@@ -32,31 +40,30 @@ fun ConfigurationScreen() {
     
     var showClearDialog by remember { mutableStateOf(false) }
     var showReprocessDialog by remember { mutableStateOf(false) }
+    var showClearOldDialog by remember { mutableStateOf(false) }
+    var weeksToKeep by remember { mutableStateOf("2") }
+    
+    var dbSizeBytes by remember { mutableLongStateOf(0L) }
+    
+    fun updateDbSize() {
+        val file = context.getDatabasePath("pulse_user.db")
+        dbSizeBytes = if (file.exists()) file.length() else 0L
+    }
 
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/x-sqlite3")
-    ) { uri ->
-        uri?.let { destUri ->
-            scope.launch {
-                statusMessage = "Exporting database..."
-                try {
-                    val dbFile = context.getDatabasePath("pulse_database")
-                    if (dbFile.exists()) {
-                        context.contentResolver.openOutputStream(destUri)?.use { output ->
-                            dbFile.inputStream().use { input ->
-                                input.copyTo(output)
-                            }
-                        }
-                        statusMessage = "✓ Database exported successfully!"
-                    } else {
-                        statusMessage = "✗ Database file not found."
-                    }
-                } catch (e: Exception) {
-                    statusMessage = "✗ Export failed: ${e.message}"
-                }
-            }
+    LaunchedEffect(Unit) {
+        updateDbSize()
+    }
+    
+    val dbSizeString = remember(dbSizeBytes) {
+        val kb = dbSizeBytes / 1024f
+        if (kb > 1024f) {
+            String.format(java.util.Locale.getDefault(), "%.2f MB", kb / 1024f)
+        } else {
+            String.format(java.util.Locale.getDefault(), "%.1f KB", kb)
         }
     }
+
+    // exportLauncher removed, we now use Intent.ACTION_SEND in the button click
 
     // App Category ViewModel
     val categoryViewModel: AppCategoryViewModel = viewModel()
@@ -101,11 +108,22 @@ fun ConfigurationScreen() {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "Database Management",
-                    style = PulseAppFontSubHeader,
-                    color = PulseAppColorPrimary
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Database Management",
+                        style = PulseAppFontSubHeader,
+                        color = PulseAppColorPrimary
+                    )
+                    Text(
+                        text = dbSizeString,
+                        style = PulseAppFontSubHeader.copy(fontSize = 14.sp),
+                        color = PulseAppColorSecondary
+                    )
+                }
                 
                 Text(
                     text = "Export your data for backup or analysis, or reset the app if you encounter issues. Pulse guarantees 100% privacy—your data always belongs to you.",
@@ -116,8 +134,36 @@ fun ConfigurationScreen() {
                 // Export Database Button
                 Button(
                     onClick = {
-                        val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
-                        exportLauncher.launch("pulse_backup_$timestamp.db")
+                        scope.launch {
+                            try {
+                                statusMessage = "Preparing database for export..."
+                                val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
+                                
+                                // We copy to cache dir so FileProvider can share it securely
+                                val sharedDir = File(context.cacheDir, "shared")
+                                if (!sharedDir.exists()) sharedDir.mkdirs()
+                                
+                                val dbFile = context.getDatabasePath("pulse_user.db")
+                                if (dbFile.exists()) {
+                                    val exportFile = File(sharedDir, "pulse_backup_$timestamp.db")
+                                    dbFile.copyTo(exportFile, overwrite = true)
+                                    
+                                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", exportFile)
+                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "application/x-sqlite3"
+                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    
+                                    context.startActivity(Intent.createChooser(intent, "Share Database Backup"))
+                                    statusMessage = "✓ Ready to share!"
+                                } else {
+                                    statusMessage = "✗ Database file not found."
+                                }
+                            } catch (e: Exception) {
+                                statusMessage = "✗ Export failed: ${e.message}"
+                            }
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = PulseAppColorPrimary
@@ -126,6 +172,20 @@ fun ConfigurationScreen() {
                 ) {
                     Text(
                         text = "Export Database",
+                        color = PulseAppColorBackground
+                    )
+                }
+                
+                // Clear Old Data Button
+                Button(
+                    onClick = { showClearOldDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PulseAppColorDistracting.copy(alpha = 0.8f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Clear Old Data",
                         color = PulseAppColorBackground
                     )
                 }
@@ -226,6 +286,8 @@ fun ConfigurationScreen() {
                                 )
 
                                 statusMessage = "✓ Database cleared & restarted!"
+                                kotlinx.coroutines.delay(500)
+                                updateDbSize()
                             } catch (e: Exception) {
                                 statusMessage = "✗ Error: ${e.message}"
                             }
@@ -296,6 +358,8 @@ fun ConfigurationScreen() {
                                 )
 
                                 statusMessage = "✓ Data cleared! Reprocessing started..."
+                                kotlinx.coroutines.delay(500)
+                                updateDbSize()
                             } catch (e: Exception) {
                                 statusMessage = "✗ Error: ${e.message}"
                             }
@@ -307,6 +371,78 @@ fun ConfigurationScreen() {
             },
             dismissButton = {
                 OutlinedButton(onClick = { showReprocessDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+    
+    // Clear Old Data Dialog
+    if (showClearOldDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearOldDialog = false },
+            title = {
+                Text("Clear Old Data", style = PulseAppFontSubHeader)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Enter the number of weeks of history you want to KEEP. Everything older will be permanently deleted.",
+                        style = PulseAppFontBody
+                    )
+                    OutlinedTextField(
+                        value = weeksToKeep,
+                        onValueChange = { weeksToKeep = it },
+                        label = { Text("Weeks to keep") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val weeks = weeksToKeep.toLongOrNull()
+                        if (weeks == null || weeks < 0) {
+                            statusMessage = "✗ Invalid number of weeks"
+                            return@Button
+                        }
+                        
+                        showClearOldDialog = false
+                        scope.launch {
+                            try {
+                                statusMessage = "Clearing old data..."
+                                val db = PulseDatabase.getDatabase(context)
+                                
+                                // Calculate thresholds
+                                val nowMillis = System.currentTimeMillis()
+                                val thresholdMillis = nowMillis - (weeks * 7L * 24L * 60L * 60L * 1000L)
+                                
+                                val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                                val thresholdDateString = dateFormat.format(java.util.Date(thresholdMillis))
+                                
+                                db.maintenanceDao().clearOldAppSessions(thresholdMillis)
+                                db.maintenanceDao().clearOldRawData(thresholdMillis)
+                                db.maintenanceDao().clearOldDailyStats(thresholdDateString)
+                                
+                                // Vacuum to reclaim space
+                                db.openHelper.writableDatabase.execSQL("VACUUM")
+                                
+                                kotlinx.coroutines.delay(500)
+                                updateDbSize()
+                                statusMessage = "✓ Old data cleared successfully!"
+                            } catch (e: Exception) {
+                                statusMessage = "✗ Failed: ${e.message}"
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorDistracting)
+                ) {
+                    Text("Delete Old Data", color = PulseAppColorBackground)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showClearOldDialog = false }) {
                     Text("Cancel")
                 }
             }
