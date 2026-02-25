@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -25,6 +29,34 @@ fun ConfigurationScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var statusMessage by remember { mutableStateOf("") }
+    
+    var showClearDialog by remember { mutableStateOf(false) }
+    var showReprocessDialog by remember { mutableStateOf(false) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/x-sqlite3")
+    ) { uri ->
+        uri?.let { destUri ->
+            scope.launch {
+                statusMessage = "Exporting database..."
+                try {
+                    val dbFile = context.getDatabasePath("pulse_database")
+                    if (dbFile.exists()) {
+                        context.contentResolver.openOutputStream(destUri)?.use { output ->
+                            dbFile.inputStream().use { input ->
+                                input.copyTo(output)
+                            }
+                        }
+                        statusMessage = "✓ Database exported successfully!"
+                    } else {
+                        statusMessage = "✗ Database file not found."
+                    }
+                } catch (e: Exception) {
+                    statusMessage = "✗ Export failed: ${e.message}"
+                }
+            }
+        }
+    }
 
     // App Category ViewModel
     val categoryViewModel: AppCategoryViewModel = viewModel()
@@ -76,13 +108,84 @@ fun ConfigurationScreen() {
                 )
                 
                 Text(
-                    text = "Clear all raw data and reset processing indexes. Use this if you encounter data issues after reinstalling.",
+                    text = "Export your data for backup or analysis, or reset the app if you encounter issues. Pulse guarantees 100% privacy—your data always belongs to you.",
                     style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall),
                     color = PulseAppColorSecondary
                 )
                 
+                // Export Database Button
                 Button(
                     onClick = {
+                        val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
+                        exportLauncher.launch("pulse_backup_$timestamp.db")
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PulseAppColorPrimary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Export Database",
+                        color = PulseAppColorBackground
+                    )
+                }
+                
+                // Clear Database Button
+                Button(
+                    onClick = { showClearDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PulseAppColorDistracting
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Clear Database & Reset Indexes",
+                        color = PulseAppColorBackground
+                    )
+                }
+                
+                // Reprocess Data Button
+                Button(
+                    onClick = { showReprocessDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PulseAppColorSecondary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Reprocess Data (Keep Raw Logs)",
+                        color = PulseAppColorBackground
+                    )
+                }
+                
+                if (statusMessage.isNotEmpty()) {
+                    Text(
+                        text = statusMessage,
+                        style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall),
+                        color = if (statusMessage.startsWith("✓")) PulseAppColorPrimary else PulseAppColorDistracting
+                    )
+                }
+            }
+        }
+    }
+    
+    // Clear Database Confirmation Dialog
+    if (showClearDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDialog = false },
+            title = {
+                Text("Clear All Data?", style = PulseAppFontSubHeader)
+            },
+            text = {
+                Text(
+                    "This will completely erase all your saved habits, timelines, and raw tracking data. This action cannot be undone. Are you sure?",
+                    style = PulseAppFontBody
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showClearDialog = false
                         scope.launch {
                             try {
                                 val workManager = androidx.work.WorkManager.getInstance(context)
@@ -128,20 +231,36 @@ fun ConfigurationScreen() {
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PulseAppColorDistracting
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+                    colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorDistracting)
                 ) {
-                    Text(
-                        text = "Clear Database & Reset Indexes",
-                        color = PulseAppColorBackground
-                    )
+                    Text("Delete Everything", color = PulseAppColorBackground)
                 }
-                
-                // Reprocess Data Button
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showClearDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+    
+    // Reprocess Data Confirmation Dialog
+    if (showReprocessDialog) {
+        AlertDialog(
+            onDismissRequest = { showReprocessDialog = false },
+            title = {
+                Text("Reprocess Data?", style = PulseAppFontSubHeader)
+            },
+            text = {
+                Text(
+                    "This will delete summarized statistics and rebuild them from raw tracking logs. This is useful for fixing data glitches. Your raw history stays intact.",
+                    style = PulseAppFontBody
+                )
+            },
+            confirmButton = {
                 Button(
                     onClick = {
+                        showReprocessDialog = false
                         scope.launch {
                             try {
                                 val workManager = androidx.work.WorkManager.getInstance(context)
@@ -181,27 +300,17 @@ fun ConfigurationScreen() {
                                 statusMessage = "✗ Error: ${e.message}"
                             }
                         }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PulseAppColorSecondary
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+                    }
                 ) {
-                    Text(
-                        text = "Reprocess Data (Keep Raw Logs)",
-                        color = PulseAppColorBackground
-                    )
+                    Text("Reprocess Data")
                 }
-                
-                if (statusMessage.isNotEmpty()) {
-                    Text(
-                        text = statusMessage,
-                        style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall),
-                        color = if (statusMessage.startsWith("✓")) PulseAppColorPrimary else PulseAppColorDistracting
-                    )
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showReprocessDialog = false }) {
+                    Text("Cancel")
                 }
             }
-        }
+        )
     }
 }
 

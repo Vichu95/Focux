@@ -117,6 +117,14 @@ fun ValuePropPage(onNext: () -> Unit) {
             title = "Mindful Interventions",
             description = "Instead of hard blocks, gently redirect attention with a short breathing exercise."
         )
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Feature 4
+        FeatureRow(
+            icon = Icons.Default.Lock,
+            title = "100% Private, 0% Ads",
+            description = "No internet required. Your data belongs to you, stays on your device, and can be exported at any time."
+        )
         
         Spacer(modifier = Modifier.height(48.dp))
         
