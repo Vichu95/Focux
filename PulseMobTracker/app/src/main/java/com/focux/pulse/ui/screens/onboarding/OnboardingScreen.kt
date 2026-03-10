@@ -75,7 +75,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                         currentStep = OnboardingStep.VALUE_PROP
                     }
                     
-                    OnboardingStep.VALUE_PROP -> ValuePropPage {
+                    OnboardingStep.VALUE_PROP -> IntroPager {
                         // Skip steps if already granted (e.g., re-installing)
                         currentStep = when {
                             !hasUsageAccess -> OnboardingStep.USAGE_ACCESS

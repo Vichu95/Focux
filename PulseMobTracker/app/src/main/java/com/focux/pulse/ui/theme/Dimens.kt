@@ -15,6 +15,7 @@ val PulseAppDividerHeight = 97.dp
 val PulseAppRoutineAppTextWidth = 110.dp
 
 // Corner Radius
+val PulseAppCornerRadiusSmall = 8.dp
 val PulseAppCornerRadiusMedium = 12.dp
 val PulseAppCornerRadiusLarge = 16.dp
 

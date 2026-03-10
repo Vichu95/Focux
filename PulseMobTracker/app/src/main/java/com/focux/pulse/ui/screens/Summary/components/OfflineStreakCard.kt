@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -18,6 +20,25 @@ import com.focux.pulse.ui.theme.*
 
 @Composable
 fun OfflineStreakCard(data: OfflineStreakData) {
+    var showHelpDialog by remember { mutableStateOf(false) }
+
+    if (showHelpDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showHelpDialog = false },
+            title = { Text("Longest Offline Gap", color = PulseAppColorPrimary, style = PulseAppFontSubHeader) },
+            text = { 
+                Text("This tracks your longest continuous period of not using your phone during the day. A longer offline streak indicates deep, uninterrupted focus or rest.", color = PulseAppColorSecondary, style = PulseAppFontBody)
+            },
+            confirmButton = {
+                androidx.compose.material3.Button(
+                    onClick = { showHelpDialog = false },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)
+                ) { Text("Got it", color = PulseAppColorBackground) }
+            },
+            containerColor = PulseAppColorSurface
+        )
+    }
+
     // Frame Unused Time (CSS Specs)
     Column(
         modifier = Modifier
@@ -25,6 +46,8 @@ fun OfflineStreakCard(data: OfflineStreakData) {
             .height(PulseAppOfflineStreakCardHeight)
             .background(Color.Transparent, RoundedCornerShape(PulseAppCornerRadiusMedium))
             .border(PulseAppBorderWidthThick, PulseAppColorPrimary, RoundedCornerShape(PulseAppCornerRadiusMedium)) // 2dp Border
+            .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
+            .clickable { showHelpDialog = true }
             .padding(PulseAppCardPadding), // 16px Padding
         horizontalAlignment = Alignment.Start
     ) {

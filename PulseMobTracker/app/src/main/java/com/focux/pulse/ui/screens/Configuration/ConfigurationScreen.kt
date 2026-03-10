@@ -1,6 +1,8 @@
 package com.focux.pulse.ui.screens.Configuration
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,6 +45,9 @@ fun ConfigurationScreen() {
     var showClearOldDialog by remember { mutableStateOf(false) }
     var weeksToKeep by remember { mutableStateOf("2") }
     
+    var showUserGuide by remember { mutableStateOf(false) }
+    var showTutorialReplay by remember { mutableStateOf(false) }
+    
     var dbSizeBytes by remember { mutableLongStateOf(0L) }
     
     fun updateDbSize() {
@@ -72,6 +77,18 @@ fun ConfigurationScreen() {
     // Mindful Limits ViewModel
     val limitsViewModel: MindfulLimitsViewModel = viewModel()
 
+    if (showTutorialReplay) {
+        com.focux.pulse.ui.screens.onboarding.IntroPager(
+            onNext = { showTutorialReplay = false }
+        )
+        return
+    }
+
+    if (showUserGuide) {
+        UserGuideScreen(onBack = { showUserGuide = false })
+        return
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -80,6 +97,11 @@ fun ConfigurationScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // ── Help & Guides Section ──
+        HelpSection(
+            onShowGuide = { showUserGuide = true },
+            onReplayTour = { showTutorialReplay = true }
+        )
         // ── App Category Section ──
         AppCategorySection(
             state = categoryState,
@@ -450,3 +472,64 @@ fun ConfigurationScreen() {
     }
 }
 
+@Composable
+fun HelpSection(
+    onShowGuide: () -> Unit,
+    onReplayTour: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
+            .background(PulseAppColorSurface)
+            .border(
+                width = 1.dp,
+                color = PulseAppColorPrimary.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
+            )
+            .padding(PulseAppPaddingMedium),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Help & Guides",
+                style = PulseAppFontHeader,
+                color = PulseAppColorPrimary
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(PulseAppCornerRadiusSmall))
+                    .background(PulseAppColorBackground)
+                    .clickable { onShowGuide() }
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("User Guide & FAQs", style = PulseAppFontSubHeader, color = PulseAppColorPrimary)
+                Text(">", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(PulseAppCornerRadiusSmall))
+                    .background(PulseAppColorBackground)
+                    .clickable { onReplayTour() }
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("View App Tour", style = PulseAppFontSubHeader, color = PulseAppColorPrimary)
+                Text(">", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
+            }
+        }
+    }
+}

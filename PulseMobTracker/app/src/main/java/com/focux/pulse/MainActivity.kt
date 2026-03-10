@@ -11,7 +11,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import kotlinx.coroutines.launch
 import com.focux.pulse.ui.screens.Configuration.ConfigurationScreen
 import com.focux.pulse.ui.screens.Insights.InsightsScreen
@@ -21,6 +26,7 @@ import com.focux.pulse.ui.screens.components.BottomNavBar
 import com.focux.pulse.utilities.PulseAppDataLoggingFrequency
 
 import com.focux.pulse.ui.theme.PulseTheme
+import com.focux.pulse.ui.theme.PulseAppColorPrimary
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,13 +37,9 @@ class MainActivity : ComponentActivity() {
                 val hasUsageAccess = checkUsageStatsPermission()
                 val hasAccessibilityAccess = com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)
                 
-                // We only jump straight to the app if they ALREADY have permissions when the app starts.
-                // If they don't, we show Onboarding and don't leave until they explicitly finish.
                 var isOnboardingCompleted by remember { mutableStateOf(hasUsageAccess && hasAccessibilityAccess) }
 
-                if (isOnboardingCompleted) {
-                    MainAppStructure()
-                } else {
+                if (!isOnboardingCompleted) {
                     com.focux.pulse.ui.screens.onboarding.OnboardingScreen(
                         onFinish = {
                             val finalUsageAccess = checkUsageStatsPermission()
@@ -48,6 +50,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     )
+                } else {
+                    MainAppStructure()
                 }
             }
         }

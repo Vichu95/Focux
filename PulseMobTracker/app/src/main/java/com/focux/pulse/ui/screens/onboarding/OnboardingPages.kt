@@ -21,6 +21,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.border
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.DateRange
@@ -31,6 +35,7 @@ import androidx.compose.material.icons.filled.Lock
 import com.focux.pulse.R
 import com.focux.pulse.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun SplashPage(onSplashComplete: () -> Unit) {
@@ -76,67 +81,188 @@ fun SplashPage(onSplashComplete: () -> Unit) {
     }
 }
 
+data class TutorialPage(
+    val title: String,
+    val description: String,
+    val imageRes: Int? = null,
+    val graphic: (@Composable () -> Unit)? = null
+)
+
 @Composable
-fun ValuePropPage(onNext: () -> Unit) {
+fun MiniLimitsGraphic() {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Social Media", color = PulseAppColorSecondary, style = PulseAppFontSubHeader)
+            Text("45 / 60m", color = PulseAppColorPrimary, style = PulseAppFontBody)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Box(modifier = Modifier.height(16.dp).fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(PulseAppColorBackground)) {
+            Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(0.75f).clip(RoundedCornerShape(8.dp)).background(PulseAppColorPrimary))
+        }
+    }
+}
+
+@Composable
+fun WelcomeFeaturesGraphic() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        FeatureRow(
+            icon = Icons.Default.DateRange,
+            title = "Track Your Habits",
+            description = "Visualize daily screen time and Focus Score."
+        )
+        FeatureRow(
+            icon = Icons.Default.Warning,
+            title = "Stop Doomscrolling",
+            description = "Pulse catches you when opening distracting apps."
+        )
+        FeatureRow(
+            icon = Icons.Default.Favorite,
+            title = "Mindful Interventions",
+            description = "Redirect attention with breathing exercises."
+        )
+    }
+}
+
+@Composable
+fun TimelineScreenshotGraphic() {
+    Image(
+        painter = painterResource(id = R.drawable.intro_timeline),
+        contentDescription = "Timeline Screenshot",
+        modifier = Modifier
+            .fillMaxWidth(0.9f)
+            .height(240.dp)
+            .clip(RoundedCornerShape(PulseAppCornerRadiusLarge))
+            .border(1.dp, PulseAppColorPrimary.copy(alpha=0.3f), RoundedCornerShape(PulseAppCornerRadiusLarge)),
+        contentScale = ContentScale.Crop,
+        alignment = androidx.compose.ui.BiasAlignment(0f, -0.2f) // Shift crop to focus on the middle/top timeline area
+    )
+}
+
+@Composable
+fun IntroPager(onNext: () -> Unit) {
+    val pagerState = rememberPagerState(pageCount = { 3 })
+    val scope = rememberCoroutineScope()
+
+    val pages = listOf(
+        TutorialPage(
+            title = "Welcome to Pulse",
+            description = "Your Focus Score (0-100) rewards mindful mornings and deep work while penalizing endless scrolling.",
+            graphic = { WelcomeFeaturesGraphic() }
+        ),
+        TutorialPage(
+            title = "The Timeline",
+            description = "🟢 Productive: Essential apps\n🔴 Distracting: Apps that break focus\n⚪ Neutral: System/Background apps\n\nTip: You can change an app's category by tapping Edit!",
+            graphic = { TimelineScreenshotGraphic() }
+        ),
+        TutorialPage(
+            title = "Configuration",
+            description = "Take control by setting Mindful Limits on specific app categories or configuring app types as Productive, Distracting, or Neutral.",
+            graphic = null
+        )
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(PulseAppColorBackground)
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(PulseAppPaddingMedium)
+            .systemBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Welcome to Pulse",
-            style = PulseAppFontHeader.copy(fontSize = 28.sp),
-            color = PulseAppColorPrimary,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(48.dp))
-        
-        // Feature 1
-        FeatureRow(
-            icon = Icons.Default.DateRange,
-            title = "Track Your Habits",
-            description = "Visualize your daily screen time and calculate your holistic focus score."
-        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Pager
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f)
+        ) { page ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp)
+                    .padding(top = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top
+            ) {
+                // Graphic Container (Fixed height to ensure text aligns perfectly across all pages)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(260.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    pages[page].graphic?.invoke()
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Text(
+                    text = pages[page].title,
+                    style = PulseAppFontHeader.copy(fontSize = 28.sp),
+                    color = PulseAppColorPrimary,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = pages[page].description,
+                    style = PulseAppFontBody.copy(fontSize = 16.sp, lineHeight = 24.sp),
+                    color = PulseAppColorSecondary,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
-        
-        // Feature 2
-        FeatureRow(
-            icon = Icons.Default.Warning,
-            title = "Stop Doomscrolling",
-            description = "Pulse automatically catches you when rapidly switching between distracting apps."
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // Feature 3
-        FeatureRow(
-            icon = Icons.Default.Favorite,
-            title = "Mindful Interventions",
-            description = "Instead of hard blocks, gently redirect attention with a short breathing exercise."
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // Feature 4
-        FeatureRow(
-            icon = Icons.Default.Lock,
-            title = "100% Private, 0% Ads",
-            description = "No internet required. Your data belongs to you, stays on your device, and can be exported at any time."
-        )
-        
-        Spacer(modifier = Modifier.height(48.dp))
-        
-        Button(
-            onClick = onNext,
+
+        // Bottom Controls
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary),
-            shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Let's Get Started", color = PulseAppColorBackground, style = PulseAppFontHeader.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold))
+            // Page Indicators
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                repeat(pages.size) { iteration ->
+                    val color = if (pagerState.currentPage == iteration) PulseAppColorPrimary else PulseAppColorSurface
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                    )
+                }
+            }
+            
+            // Next / Finish Button
+            Button(
+                onClick = {
+                    if (pagerState.currentPage == pages.size - 1) {
+                        onNext()
+                    } else {
+                        scope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        }
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)
+            ) {
+                Text(
+                    text = if (pagerState.currentPage == pages.size - 1) "Get Started" else "Next",
+                    color = PulseAppColorBackground
+                )
+            }
         }
     }
 }

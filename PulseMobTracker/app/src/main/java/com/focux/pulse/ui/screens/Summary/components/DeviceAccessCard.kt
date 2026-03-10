@@ -5,9 +5,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.focux.pulse.utilities.DeviceAccessData
@@ -15,6 +17,28 @@ import com.focux.pulse.ui.theme.*
 
 @Composable
 fun DeviceAccessCard(data: DeviceAccessData) {
+    var showHelpDialog by remember { mutableStateOf(false) }
+
+    if (showHelpDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showHelpDialog = false },
+            title = { Text("Device Access Meaning", color = PulseAppColorPrimary, style = PulseAppFontSubHeader) },
+            text = { 
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("• Unlocks: Every time you turn your screen on and unlock your device to use an app.", color = PulseAppColorSecondary, style = PulseAppFontBody)
+                    Text("• Glances: Turning your screen on for less than ~15 seconds without opening any actual app (e.g., just checking the time, or looking at a notification).", color = PulseAppColorSecondary, style = PulseAppFontBody)
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.Button(
+                    onClick = { showHelpDialog = false },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)
+                ) { Text("Got it", color = PulseAppColorBackground) }
+            },
+            containerColor = PulseAppColorSurface
+        )
+    }
+
     // Frame Unlock Info (CSS Specs)
     Column(
         modifier = Modifier
@@ -22,6 +46,8 @@ fun DeviceAccessCard(data: DeviceAccessData) {
             .height(PulseAppDeviceAccessCardHeight)
             .background(Color.Transparent, RoundedCornerShape(PulseAppCornerRadiusMedium))
             .border(PulseAppBorderWidthThick, PulseAppColorPrimary, RoundedCornerShape(PulseAppCornerRadiusMedium))
+            .clip(RoundedCornerShape(PulseAppCornerRadiusMedium))
+            .clickable { showHelpDialog = true }
             .padding(PulseAppPaddingMedium),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
