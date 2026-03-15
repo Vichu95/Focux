@@ -46,7 +46,6 @@ fun ConfigurationScreen() {
     var weeksToKeep by remember { mutableStateOf("2") }
     
     var showUserGuide by remember { mutableStateOf(false) }
-    var showTutorialReplay by remember { mutableStateOf(false) }
     
     var dbSizeBytes by remember { mutableLongStateOf(0L) }
     
@@ -77,12 +76,7 @@ fun ConfigurationScreen() {
     // Mindful Limits ViewModel
     val limitsViewModel: MindfulLimitsViewModel = viewModel()
 
-    if (showTutorialReplay) {
-        com.focux.pulse.ui.screens.onboarding.IntroPager(
-            onNext = { showTutorialReplay = false }
-        )
-        return
-    }
+
 
     if (showUserGuide) {
         UserGuideScreen(onBack = { showUserGuide = false })
@@ -99,8 +93,7 @@ fun ConfigurationScreen() {
     ) {
         // ── Help & Guides Section ──
         HelpSection(
-            onShowGuide = { showUserGuide = true },
-            onReplayTour = { showTutorialReplay = true }
+            onShowGuide = { showUserGuide = true }
         )
         // ── App Category Section ──
         AppCategorySection(
@@ -474,8 +467,7 @@ fun ConfigurationScreen() {
 
 @Composable
 fun HelpSection(
-    onShowGuide: () -> Unit,
-    onReplayTour: () -> Unit
+    onShowGuide: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -514,20 +506,6 @@ fun HelpSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("User Guide & FAQs", style = PulseAppFontSubHeader, color = PulseAppColorPrimary)
-                Text(">", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(PulseAppCornerRadiusSmall))
-                    .background(PulseAppColorBackground)
-                    .clickable { onReplayTour() }
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("View App Tour", style = PulseAppFontSubHeader, color = PulseAppColorPrimary)
                 Text(">", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
             }
         }

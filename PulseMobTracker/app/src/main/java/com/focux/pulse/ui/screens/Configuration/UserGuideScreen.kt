@@ -27,7 +27,7 @@ val pulseFaqs = listOf(
     ),
     FaqItem(
         "What does the Timeline look like?",
-        "The Timeline shows your exact app usage minute-by-minute. \n🔵 Blue = Productive apps\n🔴 Red = Distracting apps\n⚪ Grey = Neutral/System apps\nIf you see a 'fire/breathe' icon, it means Pulse caught you opening a distracting app and paused you."
+        "The Timeline shows your exact app usage minute-by-day. \n🟢 Green = Productive apps\n🔴 Red = Distracting apps\n⚪ Grey = Neutral/System apps\nIf you see a 'fire/breathe' icon, it means Pulse caught you opening a distracting app and paused you."
     ),
     FaqItem(
         "How do I change individual session categories?",
