@@ -109,11 +109,6 @@ interface AnalyticsDao {
     @Query("SELECT COALESCE(SUM(duration) / 60000, 0) FROM app_sessions WHERE packageName = :packageName AND date = :date")
     suspend fun getAppUsageMinsForDay(packageName: String, date: String): Int
 
-    // Effective opens = raw SESSION_APP entries - FOCUS_RETAINED - FOCUS_LOST
-    // Rationale: 
-    // - Every app launch creates a micro SESSION_APP before interception (+1)
-    // - Abort (Exit) adds FOCUS_RETAINED (+1). Net should be 0: +1 - 1 = 0
-    // - Proceed adds FOCUS_LOST (+1) AND a second SESSION_APP for the real usage (+1). Net should be 1: (1+1) - 1 = 1
     @Query("""
         SELECT MAX(0,
             COUNT(CASE WHEN type = 'SESSION_APP' THEN 1 END) - 
@@ -124,6 +119,9 @@ interface AnalyticsDao {
         WHERE packageName = :packageName AND date = :date
     """)
     suspend fun getAppOpensForDay(packageName: String, date: String): Int
+
+    @Query("SELECT MAX(endTime) FROM app_sessions WHERE packageName = :packageName")
+    suspend fun getLastSessionEndTime(packageName: String): Long?
 
     /**
      * Observable Flow version for UI to react to changes automatically.

@@ -24,21 +24,22 @@ class AppInterceptorService : AccessibilityService() {
     @Volatile private var exemptPackage: String? = null
     @Volatile private var exemptExpiry: Long = 0L
     
-    // ── Doom Scroll Detection ────────────────────────────────────────
     private val recentSwitches = ArrayDeque<Long>()
-    
-    // Cached config — reloaded occasionally (default: 5 switches / 30 secs)
     @Volatile private var doomWindowMs: Long = 30_000L
     @Volatile private var doomThreshold: Int = 5
     @Volatile private var mindfulConfigLoadedAt: Long = 0L
-    
     private var imePackages: List<String> = emptyList()
 
+    @Volatile private var globalPauseExpiry: Long = 0L
+    private val lastCloseTimestampMap = mutableMapOf<String, Long>()
+
+    fun pauseInterventions(minutes: Long) {
+        globalPauseExpiry = System.currentTimeMillis() + (minutes * 60_000L)
+    }
+    
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
-        
-        // Dynamically get all enabled keyboards (Input Methods) so we don't have to hardcode package names
         try {
             val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             imePackages = imm.enabledInputMethodList.map { it.packageName }
@@ -49,50 +50,42 @@ class AppInterceptorService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        
-        // Only care about when a new window/app actually opens
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         
         val packageName = event.packageName?.toString() ?: return
-        val className = event.className?.toString() ?: "UnknownClass"
-
-        // Prevent self-interception
         if (packageName == "com.focux.pulse") return
+        if (packageName == "com.android.systemui" || packageName == "android" || packageName in imePackages) return
+        if (packageName == lastInterceptedPackage) return
         
-        // Ignore system UI and keyboards. They are background overlays, not conscious "app switches"
-        if (packageName == "com.android.systemui" || packageName == "android" || packageName in imePackages) {
+        val now = System.currentTimeMillis()
+        val lastLeftPackage = lastInterceptedPackage
+        if (lastLeftPackage.isNotEmpty()) {
+            lastCloseTimestampMap[lastLeftPackage] = now
+        }
+
+        lastInterceptedPackage = packageName
+
+        // ── Global Snooze/Pause Interventions Check ────────────────────
+        if (now < globalPauseExpiry) {
+            Logger.d("AppInterceptor", "Interventions paused. Skipping checks.")
             return
         }
 
-        // Check if the user has switched apps
-        if (packageName == lastInterceptedPackage) return
-        
-        // Track the newly opened app
-        lastInterceptedPackage = packageName
-        
-        val now = System.currentTimeMillis()
-
-        // ── Doom Scroll Check ──────────────────────────────────────────
         recentSwitches.addLast(now)
-        
-        // Remove timestamps older than the window
         while (recentSwitches.isNotEmpty() && (now - recentSwitches.first()) > doomWindowMs) {
             recentSwitches.removeFirst()
         }
         
-        // Check if we hit the limit
         if (recentSwitches.size >= doomThreshold) {
-            recentSwitches.clear() // Reset so next episode can fire immediately
-            
+            recentSwitches.clear()
             scope.launch {
                 val db = PulseDatabase.getDatabase(applicationContext)
                 val breathingDuration = db.analyticsDao().getState("limit_breathing_duration")?.toIntOrNull() ?: 4
                 launchDoomScrollBreathing(packageName, breathingDuration)
             }
-            return // Stop here, no need to process per-app limits
+            return
         }
 
-        // Refresh doom scroll config from DB at most once per minute
         if (now - mindfulConfigLoadedAt > 60_000L) {
             mindfulConfigLoadedAt = now
             scope.launch {
@@ -102,36 +95,28 @@ class AppInterceptorService : AccessibilityService() {
                     val threshold = db.analyticsDao().getState("mindful_doomscroll_threshold")?.toIntOrNull()
                     if (windowSecs != null) doomWindowMs = windowSecs * 1000L
                     if (threshold != null) doomThreshold = threshold
-                } catch (e: Exception) {
-                    Logger.e("AppInterceptor", "Error refreshing mindful config", e)
-                }
+                } catch (e: Exception) {}
             }
         }
 
-        // Evaluate limits for the new app
         scope.launch {
             try {
                 val db = PulseDatabase.getDatabase(applicationContext)
                 val appInfo = db.appInfoDao().getAppInfo(packageName)
-                
                 val category = appInfo?.category ?: AppCategory.NEUTRAL
+                val isSpeedbump = category == AppCategory.DISTRACTING
+
                 val customSession = appInfo?.sessionLimitMins
                 val globalSessionStr = db.analyticsDao().getState("limit_${category.lowercase()}_session")
-                val actualSessionMins = customSession
-                    ?: globalSessionStr?.toIntOrNull()
-                    ?: if (category == AppCategory.DISTRACTING) 5 else null
+                val actualSessionMins = customSession ?: globalSessionStr?.toIntOrNull() ?: if (isSpeedbump) 5 else null
                     
                 val customDaily = appInfo?.dailyLimitMins
                 val globalDailyStr = db.analyticsDao().getState("limit_${category.lowercase()}_daily")
-                val actualDailyMins = customDaily
-                    ?: globalDailyStr?.toIntOrNull()
-                    ?: if (category == AppCategory.DISTRACTING) 30 else null
+                val actualDailyMins = customDaily ?: globalDailyStr?.toIntOrNull() ?: if (isSpeedbump) 30 else null
 
                 val customOpens = appInfo?.dailyOpensLimit
                 val globalOpensStr = db.analyticsDao().getState("limit_${category.lowercase()}_opens")
-                val actualOpens = customOpens
-                    ?: globalOpensStr?.toIntOrNull()
-                    ?: if (category == AppCategory.DISTRACTING) 10 else null
+                val actualOpens = customOpens ?: globalOpensStr?.toIntOrNull() ?: if (isSpeedbump) 10 else null
 
                 val baseBreathingDuration = db.analyticsDao().getState("mindful_base_duration")?.toIntOrNull() ?: 4
                 val penaltyMultiplier = db.analyticsDao().getState("mindful_penalty_multiplier")?.toIntOrNull() ?: 3
@@ -141,22 +126,34 @@ class AppInterceptorService : AccessibilityService() {
                 
                 val usedDailyMins = if (actualDailyMins != null) db.analyticsDao().getAppUsageMinsForDay(packageName, todayStr) else 0
                 val usedOpens = if (actualOpens != null) db.analyticsDao().getAppOpensForDay(packageName, todayStr) else 0
-                
+
                 val isDailyExceeded = actualDailyMins != null && usedDailyMins >= actualDailyMins
                 val isOpensExceeded = actualOpens != null && usedOpens >= actualOpens
                 
-                // Only act as a launch speedbump for Distracting apps, OR if daily/open limits are exceeded.
-                // If it's just a Neutral app with a session limit, we don't speedbump the launch, we just run the timer!
-                val isSpeedbump = category == AppCategory.DISTRACTING
-                
-                // Apply penalty if they breached a daily limit
                 val finalBreathingDuration = baseBreathingDuration
                 val finalBreathingCycles = if (isDailyExceeded || isOpensExceeded) penaltyMultiplier else 1
                 
-                // If they just finished a breathing exercise for this app (like Doom Scroll),
-                // we bypass any immediate per-app speedbumps to prevent back-to-back popups.
+                // --- Cold-Start Free Pass Detection ---
+                val lastDbEndTime = db.analyticsDao().getLastSessionEndTime(packageName) ?: 0L
+                val lastRamEndTime = lastCloseTimestampMap[packageName] ?: 0L
+                val lastEndTime = maxOf(lastDbEndTime, lastRamEndTime)
+                
+                val msSinceLastClose = System.currentTimeMillis() - lastEndTime
+                val isColdStart = usedOpens == 0 || (lastEndTime > 0L && msSinceLastClose >= 3_600_000L) // 1 Hour
+
+                if (isSpeedbump && isColdStart && !isDailyExceeded && !isOpensExceeded) {
+                    Logger.d("AppInterceptor", "Cold start for $packageName. Opening straight with 10s cooldown.")
+                    exemptPackage = packageName
+                    exemptExpiry = System.currentTimeMillis() + 10_000L // 10s Exemption cooldown
+                    
+                    if (actualSessionMins != null) {
+                        startSessionTimer(packageName, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
+                    }
+                    return@launch
+                }
+
                 if (packageName == exemptPackage && System.currentTimeMillis() < exemptExpiry) {
-                    exemptPackage = null // Consume exemption
+                    Logger.d("AppInterceptor", "App $packageName is currently exempt.")
                     if (actualSessionMins != null) {
                         startSessionTimer(packageName, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
                     }
@@ -164,7 +161,6 @@ class AppInterceptorService : AccessibilityService() {
                 }
                 
                 if (isSpeedbump || isDailyExceeded || isOpensExceeded) {
-                    // Stop any existing timer since they are in Breathing
                     activeSessionJob?.cancel()
                     launchBreathingScreen(
                         targetPackage = packageName, 
@@ -178,10 +174,8 @@ class AppInterceptorService : AccessibilityService() {
                         isTimeout = false
                     )
                 } else if (actualSessionMins != null) {
-                    // No speedbump required, but we need to start the timer!
                     startSessionTimer(packageName, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
                 } else {
-                    // No limits at all for this app. Cancel any timers running from previous apps.
                     activeSessionJob?.cancel()
                 }
             } catch (e: Exception) {
@@ -189,6 +183,8 @@ class AppInterceptorService : AccessibilityService() {
             }
         }
     }
+
+    // Keep rest of the file
 
     override fun onInterrupt() {
         Logger.d("AppInterceptor", "Service interrupted")

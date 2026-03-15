@@ -233,31 +233,27 @@ fun BreathingScreen(
             
             when {
                 phaseInMs < phaseDurationMs -> {
-                    // Inhale
-                    currentPhaseText = "Inhale... ${secondsLeft}s"
+                    currentPhaseText = if (isSequenceComplete) "Inhale..." else "Inhale... ${secondsLeft}s"
                     currentPhaseScale = (phaseInMs.toFloat() / phaseDurationMs)
                 }
                 phaseInMs < phaseDurationMs * 2 -> {
-                    // Hold full
-                    currentPhaseText = "Hold... ${secondsLeft}s"
+                    currentPhaseText = if (isSequenceComplete) "Hold..." else "Hold... ${secondsLeft}s"
                     currentPhaseScale = 1f
                 }
                 phaseInMs < phaseDurationMs * 3 -> {
-                    // Exhale
-                    currentPhaseText = "Exhale... ${secondsLeft}s"
+                    currentPhaseText = if (isSequenceComplete) "Exhale..." else "Exhale... ${secondsLeft}s"
                     val exElapsed = phaseInMs - phaseDurationMs * 2
                     currentPhaseScale = 1f - (exElapsed.toFloat() / phaseDurationMs)
                 }
                 else -> {
-                    // Hold empty
-                    currentPhaseText = "Hold... ${secondsLeft}s"
+                    currentPhaseText = if (isSequenceComplete) "Hold..." else "Hold... ${secondsLeft}s"
                     currentPhaseScale = 0f
                 }
             }
             
             if (elapsed >= totalDurationMs) {
                 isSequenceComplete = true
-                break
+                // Do not break: continue breathing animation so users can practice
             }
             
             delay(16)
@@ -378,6 +374,21 @@ fun BreathingScreen(
                     }
                     
                     // Smaller Buttons
+                    if (!isDoomScroll) {
+                        OutlinedButton(
+                            onClick = {
+                                com.focux.pulse.service.AppInterceptorService.instance?.pauseInterventions(5)
+                                onProceed()
+                            },
+                            modifier = Modifier.padding(bottom = 16.dp).height(36.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, PulseAppColorSecondary.copy(alpha = 0.6f)),
+                            shape = RoundedCornerShape(18.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp)
+                        ) {
+                            Text("Snooze Interventions (5m)", color = PulseAppColorSecondary, style = PulseAppFontLabel.copy(fontSize = 12.sp))
+                        }
+                    }
+                    
                     Row(
                         modifier = Modifier.fillMaxWidth(0.85f), // Don't span full width
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
