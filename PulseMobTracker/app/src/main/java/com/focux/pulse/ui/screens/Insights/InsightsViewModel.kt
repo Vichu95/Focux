@@ -104,6 +104,16 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
 
     private fun loadWeeklyData() {
         viewModelScope.launch {
+            // Update earliest date dynamically to reflect recalculations
+            val earliestStr = analyticsDao.getEarliestDate()
+            if (earliestStr != null) {
+                try {
+                    _earliestDate.value = java.time.LocalDate.parse(earliestStr)
+                } catch (e: Exception) {
+                    com.focux.pulse.utilities.Logger.e("InsightsViewModel", "Failed to parse earliest date: $earliestStr", e)
+                }
+            }
+
             val weekStart = _currentWeekStart.value
             val weekEnd = weekStart.plusDays(6)
             val today = java.time.LocalDate.now()

@@ -399,62 +399,53 @@ class DailySummaryProcessor(
             // -------------------------------------------------------------
             
             if (!isPendingPhase) {
-                val yesterdayCal = Calendar.getInstance().apply { time = currentDateObj; add(Calendar.DAY_OF_YEAR, -1) }
-                val yesterdayDate = sdfDay.format(yesterdayCal.time)
-                
-                val yesterdayStats = analyticsDao.getDailyStats(yesterdayDate)
-                
-                if (yesterdayStats != null) {
-                    // Effective Day for Yesterday: [Yesterday WakeUp -> Today Sleep Start]
-                    // If Yesterday's sleep wasn't calculated, default to 07:00 AM yesterday.
-                    val yesterdayStart = if (yesterdayStats.sleepTimeEnd > 0) yesterdayStats.sleepTimeEnd else {
-                        yesterdayCal.apply { set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_WAKEUP_HOUR); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0) }.timeInMillis
+                try {
+                    val yesterdayCal = Calendar.getInstance().apply { time = currentDateObj; add(Calendar.DAY_OF_YEAR, -1) }
+                    val yesterdayDate = sdfDay.format(yesterdayCal.time)
+                    
+                    val yesterdayStats = analyticsDao.getDailyStats(yesterdayDate)
+                    
+                    if (yesterdayStats != null) {
+                        // Effective Day for Yesterday: [Yesterday WakeUp -> Today Sleep Start]
+                        val yesterdayStart = if (yesterdayStats.sleepTimeEnd > 0) yesterdayStats.sleepTimeEnd else {
+                            yesterdayCal.apply { set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_WAKEUP_HOUR); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0) }.timeInMillis
+                        }
+                        
+                        val sleepOnset = finalSleepStart
+                        val extendedWindowEnd = finalSleepEnd 
+
+                        val effectiveDaySessions = analyticsDao.getSessionsOverlapping(yesterdayStart, extendedWindowEnd)
+                        
+                        val correctedLastApp = effectiveDaySessions
+                            .filter { 
+                                 it.type == PulseEvents.SESSION_APP && 
+                                 it.packageName !in ignoredApps && it.packageName !in launcherPackages
+                            }
+                            .maxByOrNull { it.startTime }
+
+                        val correctedOfflineStreak = effectiveDaySessions
+                            .filter { 
+                                it.type == PulseEvents.SESSION_OFFLINE && 
+                                it.endTime <= sleepOnset 
+                            }
+                            .maxByOrNull { it.duration }
+
+                        val updatedYesterday = yesterdayStats.copy(
+                            lastAppPackage = correctedLastApp?.packageName ?: yesterdayStats.lastAppPackage,
+                            lastAppStartTime = correctedLastApp?.startTime ?: yesterdayStats.lastAppStartTime,
+                            lastAppEndTime = correctedLastApp?.endTime ?: yesterdayStats.lastAppEndTime,
+                            
+                            offlineStreakDuration = correctedOfflineStreak?.duration ?: yesterdayStats.offlineStreakDuration,
+                            offlineStreakStart = correctedOfflineStreak?.startTime ?: yesterdayStats.offlineStreakStart,
+                            offlineStreakEnd = correctedOfflineStreak?.endTime ?: yesterdayStats.offlineStreakEnd,
+                            
+                            sleepTimeStart = sleepOnset, 
+                            sleepReadableStart = com.focux.pulse.utilities.TimeUtils.format(sleepOnset)
+                        )
+                        analyticsDao.updateDailyStats(updatedYesterday)
                     }
-                    
-                    // User Request:
-                    // 1. Last App: "Last app used till today sleep end"
-                    //    This captures any late night usage (e.g. 3 AM woke up, check phone, slept 4 AM). 
-                    //    The 3 AM usage belongs to Yesterday's active timeline.
-                    val extendedWindowEnd = finalSleepEnd 
-                    
-                    // 2. Offline Streak: "max offline streak till today sleep start"
-                    //    This excludes the sleep session itself.
-                    val sleepOnset = finalSleepStart
-
-                    // Fetch full window for Last App search
-                    val effectiveDaySessions = analyticsDao.getSessionsOverlapping(yesterdayStart, extendedWindowEnd)
-                    
-                    // 1. Recalculate Last App (Latest session in the full window)
-                    val correctedLastApp = effectiveDaySessions
-                        .filter { 
-                             it.type == PulseEvents.SESSION_APP && 
-                             it.packageName !in ignoredApps && it.packageName !in launcherPackages
-                        }
-                        .maxByOrNull { it.startTime }
-
-                    // 2. Recalculate Offline Streak (Max offline BEFORE Sleep Onset)
-                    val correctedOfflineStreak = effectiveDaySessions
-                        .filter { 
-                            it.type == PulseEvents.SESSION_OFFLINE && 
-                            it.endTime <= sleepOnset 
-                        }
-                        .maxByOrNull { it.duration }
-
-                    // Update Yesterday's Stats
-                    val updatedYesterday = yesterdayStats.copy(
-                        lastAppPackage = correctedLastApp?.packageName ?: yesterdayStats.lastAppPackage,
-                        lastAppStartTime = correctedLastApp?.startTime ?: yesterdayStats.lastAppStartTime,
-                        lastAppEndTime = correctedLastApp?.endTime ?: yesterdayStats.lastAppEndTime,
-                        
-                        offlineStreakDuration = correctedOfflineStreak?.duration ?: yesterdayStats.offlineStreakDuration,
-                        offlineStreakStart = correctedOfflineStreak?.startTime ?: yesterdayStats.offlineStreakStart,
-                        offlineStreakEnd = correctedOfflineStreak?.endTime ?: yesterdayStats.offlineStreakEnd,
-                        
-                        // Semantic Update: Correct Yesterday's "Active Day End" to Actual Bedtime
-                        sleepTimeStart = sleepOnset, 
-                        sleepReadableStart = com.focux.pulse.utilities.TimeUtils.format(sleepOnset)
-                    )
-                    analyticsDao.updateDailyStats(updatedYesterday)
+                } catch (e: Exception) {
+                    com.focux.pulse.utilities.Logger.e("DailySummaryProcessor", "Historical correction failed for date: $date", e)
                 }
             }
         }

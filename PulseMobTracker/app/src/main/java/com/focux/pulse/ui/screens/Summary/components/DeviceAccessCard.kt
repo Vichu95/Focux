@@ -26,7 +26,7 @@ fun DeviceAccessCard(data: DeviceAccessData) {
             text = { 
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("• Unlocks: Every time you turn your screen on and unlock your device to use an app.", color = PulseAppColorSecondary, style = PulseAppFontBody)
-                    Text("• Glances: Turning your screen on for less than ~15 seconds without opening any actual app (e.g., just checking the time, or looking at a notification).", color = PulseAppColorSecondary, style = PulseAppFontBody)
+                    Text("• Glances: Turning your screen on without opening any app (e.g., just checking the time, or looking at a notification).", color = PulseAppColorSecondary, style = PulseAppFontBody)
                 }
             },
             confirmButton = {

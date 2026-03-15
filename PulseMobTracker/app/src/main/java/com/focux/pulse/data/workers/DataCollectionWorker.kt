@@ -37,8 +37,8 @@ class DataCollectionWorker(
             
             Result.success()
         } catch (e: Exception) {
-            e.printStackTrace()
-            Result.retry()
+            com.focux.pulse.utilities.Logger.e("DataCollectionWorker", "Background data collection failed", e)
+            Result.failure()
         }
     }
 }

@@ -56,7 +56,7 @@ class BreathingActivity : ComponentActivity() {
             startTimeStr = timeStr,
             endTimeStr = timeStr
         )
-        kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO) {
             PulseDatabase.getDatabase(applicationContext).analyticsDao().insertSession(session)
         }
     }

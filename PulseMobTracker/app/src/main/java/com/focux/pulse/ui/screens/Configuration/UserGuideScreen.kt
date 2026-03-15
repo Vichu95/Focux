@@ -44,6 +44,10 @@ val pulseFaqs = listOf(
     FaqItem(
         "How do I export my data?",
         "Scroll down to the 'Database Management' section in the Configuration tab and tap 'Export Database'. You can then save your raw SQLite data file or directly share it via Telegram, Email, or Google Drive."
+    ),
+    FaqItem(
+        "How is the Holistic Focus Score calculated?",
+        "Your Focus Score (0-100) evaluates 5 distinct components:\n• 🕐 **Screen Time Balance (40 pts)**: Starts at 20. Grows with Productive usage; decreases with Distracting screens.\n• 📱 **Unlocking Habits (20 pts)**: Degrades based on absolute count of unlocks and locks.\n• 🌅 **Morning Habit (10 pts)**: Discarded if your first app upon waking is defined as Distracting.\n• 🧠 **Deep Work Hours (15 pts)**: Awards points for your longest continuous uninterrupted offline flow (Target: 2 hours).\n• 💤 **Sleep Quality (15 pts)**: Awarded for consistent rest duration and avoiding late-night interruptions."
     )
 )
 

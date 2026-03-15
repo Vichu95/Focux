@@ -53,7 +53,6 @@ abstract class PulseDatabase : RoomDatabase() {
                     "pulse_user.db"
                 )
                 .addMigrations(MIGRATION_14_15, MIGRATION_15_16)
-                .fallbackToDestructiveMigration() // Useful for dev/onboarding phase to avoid crash on schema change
                 .build()
                 INSTANCE = instance
                 instance
