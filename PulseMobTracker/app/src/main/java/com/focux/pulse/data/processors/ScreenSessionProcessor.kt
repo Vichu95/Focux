@@ -200,8 +200,19 @@ class ScreenSessionProcessor(
                         indicesToMark.add(j)
                         continue
                     }
-                    // Incomplete cycle
-                    return null 
+                    // Abandoned cycle: screenplay missed screen-off.
+                    // Return a 0-sec Glance to avoid loop deadlock on historical re-scrapes.
+                    val session = AppSession(
+                        packageName = "system",
+                        startTime = screenOnEvent.timestamp,
+                        endTime = screenOnEvent.timestamp,
+                        duration = 0,
+                        type = PulseEvents.SESSION_GLANCE,
+                        date = sdf.format(Date(screenOnEvent.timestamp)),
+                        startTimeStr = TimeUtils.format(screenOnEvent.timestamp),
+                        endTimeStr = TimeUtils.format(screenOnEvent.timestamp)
+                    )
+                    return Pair(listOf(session), listOf(screenOnIndex))
                 }
             }
         }

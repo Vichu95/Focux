@@ -348,13 +348,43 @@ class InsightsViewModel(application: Application) : AndroidViewModel(application
                         weekStatsMap[yesterdayDateStr] ?: analyticsDao.getDailyStats(yesterdayDateStr)
                     } else null
                     
-                    // Actual sleep for "Today" is Today's wakeup (sleepTimeEnd) - Yesterday's bedtime (sleepTimeStart)
-                    if (yesterdayStat != null && yesterdayStat.sleepTimeStart > 0 && stat.sleepTimeEnd > 0) {
-                        val totalSleepWindow = stat.sleepTimeEnd - yesterdayStat.sleepTimeStart
-                        // Subtract time user was on phone after bedtime and before wakeup
+                    val bedtime = if (yesterdayStat != null && yesterdayStat.sleepTimeStart > 0) {
+                        yesterdayStat.sleepTimeStart
+                    } else {
+                        // Fallback to Yesterday Target Bedtime (e.g. 22:00)
+                        try {
+                            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                            val d = sdf.parse(stat.date)
+                            val cal = Calendar.getInstance()
+                            cal.time = d!!
+                            cal.add(Calendar.DAY_OF_YEAR, -1)
+                            cal.set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_BEDTIME_HOUR)
+                            cal.set(Calendar.MINUTE, 0)
+                            cal.set(Calendar.SECOND, 0)
+                            cal.timeInMillis
+                        } catch (e: Exception) { 0L }
+                    }
+                    
+                    val wakeup = if (stat.sleepTimeEnd > 0) {
+                        stat.sleepTimeEnd
+                    } else {
+                        // Fallback to Today Target Wakeup (e.g. 07:00)
+                        try {
+                            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                            val d = sdf.parse(stat.date)
+                            val cal = Calendar.getInstance()
+                            cal.time = d!!
+                            cal.set(Calendar.HOUR_OF_DAY, com.focux.pulse.utilities.PULSE_SLEEP_TARGET_WAKEUP_HOUR)
+                            cal.set(Calendar.MINUTE, 0)
+                            cal.set(Calendar.SECOND, 0)
+                            cal.timeInMillis
+                        } catch (e: Exception) { 0L }
+                    }
+
+                    if (bedtime > 0 && wakeup > 0) {
+                        val totalSleepWindow = wakeup - bedtime
                         val realSleep = totalSleepWindow - stat.sleepPhoneDuration
                         
-                        // Basic validation: Sleep should be between 1 and 16 hours
                         if (realSleep in 1..(16 * 3600 * 1000L)) {
                             totalSleep += realSleep
                             sleepDaysCount++
