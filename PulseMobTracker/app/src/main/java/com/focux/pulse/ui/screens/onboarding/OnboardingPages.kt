@@ -112,6 +112,11 @@ fun WelcomeFeaturesGraphic() {
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         FeatureRow(
+            icon = Icons.Default.Check,
+            title = "Your Focus Score",
+            description = "Rewards mindful mornings and penalizes endless scrolling."
+        )
+        FeatureRow(
             icon = Icons.Default.DateRange,
             title = "Track Your Habits",
             description = "Visualize daily screen time and Focus Score."
@@ -140,7 +145,7 @@ fun TimelineScreenshotGraphic() {
             .clip(RoundedCornerShape(PulseAppCornerRadiusLarge))
             .border(1.dp, PulseAppColorPrimary.copy(alpha=0.3f), RoundedCornerShape(PulseAppCornerRadiusLarge)),
         contentScale = ContentScale.Crop,
-        alignment = androidx.compose.ui.BiasAlignment(0f, -0.2f) // Shift crop to focus on the middle/top timeline area
+        alignment = androidx.compose.ui.BiasAlignment(0f, -0.6f) // Shift crop higher to chop off more of the bottom
     )
 }
 
@@ -152,12 +157,12 @@ fun IntroPager(onNext: () -> Unit) {
     val pages = listOf(
         TutorialPage(
             title = "Welcome to Pulse",
-            description = "Your Focus Score (0-100) rewards mindful mornings and deep work while penalizing endless scrolling.",
+            description = "",
             graphic = { WelcomeFeaturesGraphic() }
         ),
         TutorialPage(
             title = "The Timeline",
-            description = "🟢 Productive: Essential apps\n🔴 Distracting: Apps that break focus\n⚪ Neutral: System/Background apps\n\nTip: You can change an app's category by tapping Edit!",
+            description = "The timeline shows how you use apps throughout the day. Each app category has its own color: Green for Productive, Red for Distracting, and Grey for Neutral. These can be configured in settings.",
             graphic = { TimelineScreenshotGraphic() }
         ),
         TutorialPage(
@@ -185,23 +190,12 @@ fun IntroPager(onNext: () -> Unit) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 8.dp)
-                    .padding(top = 16.dp),
+                    .padding(horizontal = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
+                verticalArrangement = Arrangement.Center
             ) {
-                // Graphic Container (Fixed height to ensure text aligns perfectly across all pages)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(260.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    pages[page].graphic?.invoke()
-                }
+                Spacer(modifier = Modifier.height(16.dp))
                 
-                Spacer(modifier = Modifier.height(32.dp))
-
                 Text(
                     text = pages[page].title,
                     style = PulseAppFontHeader.copy(fontSize = 28.sp),
@@ -211,12 +205,30 @@ fun IntroPager(onNext: () -> Unit) {
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                Text(
-                    text = pages[page].description,
-                    style = PulseAppFontBody.copy(fontSize = 16.sp, lineHeight = 24.sp),
-                    color = PulseAppColorSecondary,
-                    textAlign = TextAlign.Center
-                )
+                if (pages[page].description.isNotEmpty()) {
+                    Text(
+                        text = pages[page].description,
+                        style = PulseAppFontBody.copy(fontSize = 16.sp, lineHeight = 24.sp),
+                        color = PulseAppColorSecondary,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                
+                if (pages[page].graphic != null) {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    
+                    // Graphic Container
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(280.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        pages[page].graphic?.invoke()
+                    }
+                }
             }
         }
 
