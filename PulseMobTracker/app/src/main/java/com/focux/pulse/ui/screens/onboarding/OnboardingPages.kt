@@ -127,7 +127,7 @@ fun WelcomeFeaturesGraphic() {
             description = "Pulse catches you when opening distracting apps."
         )
         FeatureRow(
-            icon = Icons.Default.Favorite,
+            icon = Icons.Default.Notifications,
             title = "Mindful Interventions",
             description = "Redirect attention with breathing exercises."
         )
@@ -163,7 +163,7 @@ fun IntroPager(onNext: () -> Unit) {
         TutorialPage(
             title = "The Timeline",
             description = "The timeline shows how you use apps throughout the day. Each app category has its own color: Green for Productive, Red for Distracting, and Grey for Neutral. These can be configured in settings.",
-            graphic = { TimelineScreenshotGraphic() }
+            graphic = null
         ),
         TutorialPage(
             title = "Configuration",
@@ -232,19 +232,35 @@ fun IntroPager(onNext: () -> Unit) {
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         // Bottom Controls
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (pagerState.currentPage == pages.size - 1) {
+                Button(
+                    onClick = { onNext() },
+                    colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
+                ) {
+                    Text(
+                        text = "Get Started",
+                        color = PulseAppColorBackground,
+                        style = PulseAppFontHeader.copy(fontSize = 18.sp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
             // Page Indicators
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 repeat(pages.size) { iteration ->
                     val color = if (pagerState.currentPage == iteration) PulseAppColorPrimary else PulseAppColorSurface
@@ -255,25 +271,6 @@ fun IntroPager(onNext: () -> Unit) {
                             .background(color)
                     )
                 }
-            }
-            
-            // Next / Finish Button
-            Button(
-                onClick = {
-                    if (pagerState.currentPage == pages.size - 1) {
-                        onNext()
-                    } else {
-                        scope.launch {
-                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                        }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)
-            ) {
-                Text(
-                    text = if (pagerState.currentPage == pages.size - 1) "Get Started" else "Next",
-                    color = PulseAppColorBackground
-                )
             }
         }
     }
