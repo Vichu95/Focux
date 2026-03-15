@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
 import com.focux.pulse.R
 import com.focux.pulse.ui.theme.*
 import kotlinx.coroutines.delay
@@ -127,7 +128,7 @@ fun WelcomeFeaturesGraphic() {
             description = "Pulse catches you when opening distracting apps."
         )
         FeatureRow(
-            icon = Icons.Default.Notifications,
+            icon = Icons.Default.Info,
             title = "Mindful Interventions",
             description = "Redirect attention with breathing exercises."
         )
@@ -229,6 +230,22 @@ fun IntroPager(onNext: () -> Unit) {
                         pages[page].graphic?.invoke()
                     }
                 }
+
+                if (page == pages.size - 1) {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Button(
+                        onClick = { onNext() },
+                        colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
+                    ) {
+                        Text(
+                            text = "Get Started",
+                            color = PulseAppColorBackground,
+                            style = PulseAppFontHeader.copy(fontSize = 18.sp)
+                        )
+                    }
+                }
             }
         }
 
@@ -241,22 +258,6 @@ fun IntroPager(onNext: () -> Unit) {
                 .padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (pagerState.currentPage == pages.size - 1) {
-                Button(
-                    onClick = { onNext() },
-                    colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary),
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
-                ) {
-                    Text(
-                        text = "Get Started",
-                        color = PulseAppColorBackground,
-                        style = PulseAppFontHeader.copy(fontSize = 18.sp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
             // Page Indicators
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
