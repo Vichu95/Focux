@@ -36,8 +36,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
     var hasUsageAccess by remember { mutableStateOf(checkUsageAccess(context)) }
     var hasAccessibilityAccess by remember { mutableStateOf(checkAccessibilityAccess(context)) }
     
-    // Dialog state for accessibility
-    var showAccessibilityDialog by remember { mutableStateOf(false) }
+    // Check permissions when returning from settings
 
     // Check permissions when returning from settings
     DisposableEffect(lifecycleOwner) {
@@ -94,13 +93,9 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     
                     OnboardingStep.ACCESSIBILITY_ACCESS -> AccessibilityAccessPage(
                         isGranted = hasAccessibilityAccess,
-                        showDisclosureDialog = showAccessibilityDialog,
-                        onGrantClick = { showAccessibilityDialog = true },
-                        onDialogConfirm = {
-                            showAccessibilityDialog = false
+                        onGrantClick = {
                             context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                         },
-                        onDialogDismiss = { showAccessibilityDialog = false },
                         onNextClick = { currentStep = OnboardingStep.READY }
                     )
                     

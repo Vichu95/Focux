@@ -383,10 +383,7 @@ fun UsageAccessPage(isGranted: Boolean, onGrantClick: () -> Unit, onNextClick: (
 @Composable
 fun AccessibilityAccessPage(
     isGranted: Boolean, 
-    showDisclosureDialog: Boolean,
     onGrantClick: () -> Unit,
-    onDialogConfirm: () -> Unit,
-    onDialogDismiss: () -> Unit,
     onNextClick: () -> Unit
 ) {
     Column(
@@ -425,7 +422,7 @@ fun AccessibilityAccessPage(
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "To actively detect rapid app switching (doom scrolling) and help you regain focus by stepping in right when you open a distracting app, Pulse needs Accessibility Service.",
+            text = "To actively detect rapid app switching (doom scrolling) and help you regain focus by stepping in right when you open a distracting app, Pulse needs Accessibility Service.\n\nWe do not view, collect, or transmit any of your personal data or screen content. All processing is strictly local.",
             style = PulseAppFontBody,
             textAlign = TextAlign.Center,
             color = Color.LightGray
@@ -452,27 +449,6 @@ fun AccessibilityAccessPage(
                 Text("Finish Setup", color = PulseAppColorBackground, style = PulseAppFontHeader.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold))
             }
         }
-    }
-    
-    if (showDisclosureDialog) {
-        AlertDialog(
-            onDismissRequest = onDialogDismiss,
-            title = {
-                Text("Accessibility Service Required", style = PulseAppFontSubHeader)
-            },
-            text = {
-                Text(
-                    text = "Pulse needs Accessibility Service access to detect when you open distracting apps and show a mindful breathing screen. Pulse does not view, collect, or transmit the content of your screen.",
-                    style = PulseAppFontBody
-                )
-            },
-            confirmButton = {
-                Button(onClick = onDialogConfirm) { Text("Continue") }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = onDialogDismiss) { Text("Cancel") }
-            }
-        )
     }
 }
 
