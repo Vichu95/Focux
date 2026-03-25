@@ -7,7 +7,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,7 +60,7 @@ fun TimelineHeader(
                 color = PulseAppColorSurface,
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium),
                 modifier = Modifier
-                    .width(40.dp)
+                    .width(36.dp)
                     .height(PulseAppTimelineFilterButtonHeight)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
                     .clickable { onSortToggleClick() }
@@ -81,30 +80,17 @@ fun TimelineHeader(
                 color = PulseAppColorSurface, // #2B4555
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium),
                 modifier = Modifier
-                    .width(100.dp) // Adjusted width to fit both
+                    .width(36.dp) 
                     .height(PulseAppTimelineFilterButtonHeight)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
                     .clickable { onEditClick() }
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
                         painter = painterResource(id = if (isEditMode) com.focux.pulse.R.drawable.close_icon else com.focux.pulse.R.drawable.edit_icon),
                         contentDescription = if (isEditMode) "Close" else "Edit",
                         tint = PulseAppColorPrimary,
                         modifier = Modifier.size(PulseAppTimelineFilterIconSize)
-                    )
-                    Spacer(modifier = Modifier.width(PulseAppPaddingSmall))
-                    Text(
-                        text = if (isEditMode) "Close" else "Edit",
-                        style = androidx.compose.ui.text.TextStyle(
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            fontSize = 15.sp,
-                            color = PulseAppColorSecondary
-                        )
                     )
                 }
             }
@@ -114,32 +100,19 @@ fun TimelineHeader(
                 color = PulseAppColorSurface, // #2B4555
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium),
                 modifier = Modifier
-                    .width(100.dp)
+                    .width(36.dp)
                     .height(PulseAppTimelineFilterButtonHeight)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
                     .clickable { 
                         if (isEditMode) onSaveClick() else onFilterClick() 
                     }
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
                         painter = painterResource(id = if (isEditMode) com.focux.pulse.R.drawable.save_icon else com.focux.pulse.R.drawable.filter_icon),
                         contentDescription = if (isEditMode) "Save" else "Filter",
                         tint = PulseAppColorPrimary,
                         modifier = Modifier.size(PulseAppTimelineFilterIconSize)
-                    )
-                    Spacer(modifier = Modifier.width(PulseAppPaddingSmall))
-                    Text(
-                        text = if (isEditMode) "Save" else "Filter",
-                        style = androidx.compose.ui.text.TextStyle(
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            fontSize = 15.sp,
-                            color = PulseAppColorSecondary
-                        )
                     )
                 }
             }
