@@ -42,24 +42,50 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PulseTheme {
-                val hasUsageAccess = checkUsageStatsPermission()
-                val hasAccessibilityAccess = com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)
+                var isSetupCompleted by remember { mutableStateOf<Boolean?>(null) }
                 
-                var isOnboardingCompleted by remember { mutableStateOf(hasUsageAccess && hasAccessibilityAccess) }
+                LaunchedEffect(Unit) {
+                    val db = com.focux.pulse.data.local.PulseDatabase.getDatabase(applicationContext)
+                    val completed = db.analyticsDao().getState("setup_completed")?.toBoolean() ?: false
+                    isSetupCompleted = completed
+                }
 
-                if (!isOnboardingCompleted) {
-                    com.focux.pulse.ui.screens.onboarding.OnboardingScreen(
-                        onFinish = {
-                            val finalUsageAccess = checkUsageStatsPermission()
-                            val finalAccessibilityAccess = com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)
-                            if (finalUsageAccess && finalAccessibilityAccess) {
-                                initDataCollection()
-                                isOnboardingCompleted = true
-                            }
-                        }
-                    )
-                } else {
+                // Keep a reactive state for permissions so we can trigger the UI update
+                // when returning from OnboardingScreen's final step.
+                var permissionsGranted by remember { 
+                    mutableStateOf(checkUsageStatsPermission() && com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)) 
+                }
+
+                if (isSetupCompleted == null) {
+                    // Loading state
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = PulseAppColorPrimary)
+                    }
+                } else if (isSetupCompleted == true) {
                     MainAppStructure()
+                } else {
+                    if (!permissionsGranted) {
+                        com.focux.pulse.ui.screens.onboarding.OnboardingScreen(
+                            onFinish = {
+                                val finalUsageAccess = checkUsageStatsPermission()
+                                val finalAccessibilityAccess = com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)
+                                if (finalUsageAccess && finalAccessibilityAccess) {
+                                    permissionsGranted = true
+                                }
+                            }
+                        )
+                    } else {
+                        com.focux.pulse.ui.screens.onboarding.OnboardingSetupFlow(
+                            onFinish = {
+                                initDataCollection()
+                                lifecycleScope.launch {
+                                    val db = com.focux.pulse.data.local.PulseDatabase.getDatabase(applicationContext)
+                                    db.analyticsDao().updateState(com.focux.pulse.data.local.entities.SystemState("setup_completed", "true"))
+                                    isSetupCompleted = true
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }

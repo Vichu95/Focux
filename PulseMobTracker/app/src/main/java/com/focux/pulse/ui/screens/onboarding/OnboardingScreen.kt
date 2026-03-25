@@ -22,8 +22,7 @@ enum class OnboardingStep {
     SPLASH,
     VALUE_PROP,
     USAGE_ACCESS,
-    ACCESSIBILITY_ACCESS,
-    READY
+    ACCESSIBILITY_ACCESS
 }
 
 @Composable
@@ -49,7 +48,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                 if (currentStep == OnboardingStep.USAGE_ACCESS && hasUsageAccess) {
                     currentStep = OnboardingStep.ACCESSIBILITY_ACCESS
                 } else if (currentStep == OnboardingStep.ACCESSIBILITY_ACCESS && hasAccessibilityAccess) {
-                    currentStep = OnboardingStep.READY
+                    onFinish()
                 }
             }
         }
@@ -76,10 +75,12 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     
                     OnboardingStep.VALUE_PROP -> IntroPager {
                         // Skip steps if already granted (e.g., re-installing)
-                        currentStep = when {
-                            !hasUsageAccess -> OnboardingStep.USAGE_ACCESS
-                            !hasAccessibilityAccess -> OnboardingStep.ACCESSIBILITY_ACCESS
-                            else -> OnboardingStep.READY
+                        if (!hasUsageAccess) {
+                            currentStep = OnboardingStep.USAGE_ACCESS
+                        } else if (!hasAccessibilityAccess) {
+                            currentStep = OnboardingStep.ACCESSIBILITY_ACCESS
+                        } else {
+                            onFinish()
                         }
                     }
                     
@@ -96,12 +97,8 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                         onGrantClick = {
                             context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                         },
-                        onNextClick = { currentStep = OnboardingStep.READY }
+                        onNextClick = { onFinish() }
                     )
-                    
-                    OnboardingStep.READY -> ReadyPage {
-                        onFinish()
-                    }
                 }
             }
         }

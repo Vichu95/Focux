@@ -37,6 +37,9 @@ import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
+import com.focux.pulse.ui.screens.components.Particle
+import com.focux.pulse.ui.screens.components.BreathingParticleAnimation
+import com.focux.pulse.ui.screens.components.generateParticles
 
 class BreathingActivity : ComponentActivity() {
 
@@ -187,12 +190,6 @@ class BreathingActivity : ComponentActivity() {
     }
 }
 
-data class Particle(
-    val angle: Float,
-    val radiusRatio: Float,
-    val size: Float,
-    val speed: Float
-)
 
 fun getOrdinal(n: Int): String {
     val suffix = if (n in 11..13) "th" else when (n % 10) {
@@ -277,17 +274,7 @@ fun BreathingScreen(
     }
 
     // Particle Setup
-    val particleCount = 180
-    val particles = remember {
-        List(particleCount) {
-            Particle(
-                angle = Random.nextFloat() * 2f * Math.PI.toFloat(),
-                radiusRatio = Random.nextFloat() * 0.7f + 0.3f, // Avoid clump in center
-                size = Random.nextFloat() * 6f + 2f,
-                speed = Random.nextFloat() * 0.5f + 0.1f
-            )
-        }
-    }
+    val particles = remember { generateParticles(180) }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         Column(
@@ -319,34 +306,12 @@ fun BreathingScreen(
             Spacer(modifier = Modifier.weight(0.5f))
             
             // Breathing Particle Sphere
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(300.dp)
-            ) {
-                val primaryColor = PulseAppColorPrimary
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val center = Offset(size.width / 2, size.height / 2)
-                    val maxRadius = size.width / 2
-                    val minRadius = maxRadius * 0.4f
-                    val currentRadius = minRadius + (maxRadius - minRadius) * (0.1f + 0.9f * currentPhaseScale)
-                    
-                    particles.forEach { p ->
-                        val r = currentRadius * p.radiusRatio
-                        val theta = p.angle + rotation * p.speed
-                        val x = center.x + r * cos(theta)
-                        val y = center.y + r * sin(theta)
-                        
-                        // slight pulsing opacity based on scale
-                        val alpha = 0.3f + 0.7f * currentPhaseScale
-                        drawCircle(
-                            color = primaryColor.copy(alpha = alpha),
-                            radius = p.size,
-                            center = Offset(x, y)
-                        )
-                    }
-                }
-            }
+            BreathingParticleAnimation(
+                modifier = Modifier.size(300.dp),
+                currentPhaseScale = currentPhaseScale,
+                rotation = rotation,
+                particles = particles
+            )
             
             Spacer(modifier = Modifier.height(24.dp))
             

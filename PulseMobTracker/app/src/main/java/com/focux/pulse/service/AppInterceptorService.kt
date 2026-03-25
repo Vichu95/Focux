@@ -99,6 +99,13 @@ class AppInterceptorService : AccessibilityService() {
         scope.launch {
             try {
                 val db = PulseDatabase.getDatabase(applicationContext)
+                
+                val isMasterEnabled = db.analyticsDao().getState("pulse_master_enabled")?.toBoolean() ?: true
+                if (!isMasterEnabled) return@launch
+                
+                val isLimitsEnabled = db.analyticsDao().getState("pulse_app_limits_enabled")?.toBoolean() ?: true
+                val isDoomScrollEnabled = db.analyticsDao().getState("pulse_doomscroll_enabled")?.toBoolean() ?: true
+                
                 val appInfo = db.appInfoDao().getAppInfo(packageName)
                 val category = appInfo?.category ?: AppCategory.NEUTRAL
                 val isSpeedbump = category == AppCategory.DISTRACTING
@@ -124,8 +131,8 @@ class AppInterceptorService : AccessibilityService() {
                 val usedDailyMins = if (actualDailyMins != com.focux.pulse.utilities.NO_LIMIT) db.analyticsDao().getAppUsageMinsForDay(packageName, todayStr) else 0
                 val usedOpens = if (actualOpens != com.focux.pulse.utilities.NO_LIMIT) db.analyticsDao().getAppOpensForDay(packageName, todayStr) else 0
 
-                val isDailyExceeded = actualDailyMins != com.focux.pulse.utilities.NO_LIMIT && usedDailyMins >= actualDailyMins
-                val isOpensExceeded = actualOpens != com.focux.pulse.utilities.NO_LIMIT && usedOpens >= actualOpens
+                val isDailyExceeded = isLimitsEnabled && actualDailyMins != com.focux.pulse.utilities.NO_LIMIT && usedDailyMins >= actualDailyMins
+                val isOpensExceeded = isLimitsEnabled && actualOpens != com.focux.pulse.utilities.NO_LIMIT && usedOpens >= actualOpens
                 
                 val finalBreathingDuration = baseBreathingDuration ?: 4
                 val finalBreathingCycles = if (isDailyExceeded || isOpensExceeded) (penaltyMultiplier ?: 3) else 1
@@ -148,7 +155,7 @@ class AppInterceptorService : AccessibilityService() {
 
                 if (packageName == exemptPackage && System.currentTimeMillis() < exemptExpiry) {
                     Logger.d("AppInterceptor", "App $packageName is currently exempt.")
-                    if (actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
+                    if (isLimitsEnabled && actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
                         val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
                         startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
                     }
@@ -160,7 +167,7 @@ class AppInterceptorService : AccessibilityService() {
                     exemptPackage = packageName
                     exemptExpiry = System.currentTimeMillis() + 10_000L // 10s Exemption cooldown
                     
-                    if (actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
+                    if (isLimitsEnabled && actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
                         val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
                         startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
                     }
@@ -168,14 +175,14 @@ class AppInterceptorService : AccessibilityService() {
                 }
                 
                 // Doom Scroll Check (Only trigger for distracting apps)
-                if (isSpeedbump && recentSwitches.size >= doomThreshold) {
+                if (isDoomScrollEnabled && isSpeedbump && recentSwitches.size >= doomThreshold) {
                     recentSwitches.clear()
                     activeSessionJob?.cancel()
                     launchDoomScrollBreathing(packageName, finalBreathingDuration)
                     return@launch
                 }
 
-                if (isSpeedbump || isDailyExceeded || isOpensExceeded) {
+                if (isLimitsEnabled && (isSpeedbump || isDailyExceeded || isOpensExceeded)) {
                     activeSessionJob?.cancel()
                     launchBreathingScreen(
                         targetPackage = packageName, 
@@ -188,7 +195,7 @@ class AppInterceptorService : AccessibilityService() {
                         breathingCycles = finalBreathingCycles,
                         isTimeout = false
                     )
-                } else if (actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
+                } else if (isLimitsEnabled && actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
                         val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
                         startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
                     } else {

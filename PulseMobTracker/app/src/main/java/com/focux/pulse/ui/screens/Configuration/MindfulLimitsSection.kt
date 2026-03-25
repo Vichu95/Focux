@@ -84,6 +84,10 @@ fun MindfulLimitsSection(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+            MasterTogglesCard(state = state, onUpdate = { m, a, d -> viewModel.updateMasterToggles(m, a, d) })
+            Spacer(modifier = Modifier.height(16.dp))
+
             if (state.isEditMode) {
                 MindfulLimitsEditMode(state, viewModel, onTuneApp = { appToTune = it }, onTuneGlobals = { tuningGlobals = true })
             } else {
@@ -114,6 +118,51 @@ fun MindfulLimitsSection(
                 viewModel.updateMindfulInterventions(breathing, penalty, exemption, doomWindowSecs, doomThreshold)
             }
         )
+    }
+}
+
+@Composable
+private fun MasterTogglesCard(state: MindfulLimitsUiState, onUpdate: (Boolean, Boolean, Boolean) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = PulseAppColorSurface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Master Controls", style = PulseAppFontSubHeader, color = PulseAppColorPrimary)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            val switchColors = androidx.compose.material3.SwitchDefaults.colors(
+                checkedThumbColor = PulseAppColorBackground,
+                checkedTrackColor = PulseAppColorPrimary,
+                uncheckedThumbColor = PulseAppColorBackground,
+                uncheckedTrackColor = PulseAppColorSecondary
+            )
+            
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Enable Pulse Tracking", style = PulseAppFontBody, color = PulseAppColorSecondary)
+                androidx.compose.material3.Switch(
+                    checked = state.isMasterEnabled, 
+                    onCheckedChange = { onUpdate(it, state.isAppLimitsEnabled, state.isDoomScrollEnabled) },
+                    colors = switchColors
+                )
+            }
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Enable App Limits (Reminders)", style = PulseAppFontBody, color = PulseAppColorSecondary)
+                androidx.compose.material3.Switch(
+                    checked = state.isAppLimitsEnabled, 
+                    onCheckedChange = { onUpdate(state.isMasterEnabled, it, state.isDoomScrollEnabled) },
+                    colors = switchColors
+                )
+            }
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Enable Doom Scroll Detection", style = PulseAppFontBody, color = PulseAppColorSecondary)
+                androidx.compose.material3.Switch(
+                    checked = state.isDoomScrollEnabled, 
+                    onCheckedChange = { onUpdate(state.isMasterEnabled, state.isAppLimitsEnabled, it) },
+                    colors = switchColors
+                )
+            }
+        }
     }
 }
 

@@ -15,6 +15,11 @@ data class MindfulLimitsUiState(
     val selectedFilters: Set<String> = setOf("Distracting", "Productive", "Neutral"),
     val searchQuery: String = "",
     
+    // Master Toggles
+    val isMasterEnabled: Boolean = true,
+    val isAppLimitsEnabled: Boolean = true,
+    val isDoomScrollEnabled: Boolean = true,
+    
     // Global defaults
     val distSession: Int = com.focux.pulse.utilities.NO_LIMIT,
     val distDaily: Int = com.focux.pulse.utilities.NO_LIMIT,
@@ -89,6 +94,10 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
             }
             
             _globalLimits.value = _globalLimits.value.copy(
+                isMasterEnabled = analyticsDao.getState("pulse_master_enabled")?.toBoolean() ?: true,
+                isAppLimitsEnabled = analyticsDao.getState("pulse_app_limits_enabled")?.toBoolean() ?: true,
+                isDoomScrollEnabled = analyticsDao.getState("pulse_doomscroll_enabled")?.toBoolean() ?: true,
+                
                 distSession = parse(analyticsDao.getState("limit_distracting_session")),
                 distDaily = parse(analyticsDao.getState("limit_distracting_daily")),
                 distOpens = parse(analyticsDao.getState("limit_distracting_opens")),
@@ -176,6 +185,19 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
             analyticsDao.updateState(SystemState("mindful_exemption_window_secs", exemption.toString()))
             analyticsDao.updateState(SystemState("mindful_doomscroll_window_secs", doomWindowSecs.toString()))
             analyticsDao.updateState(SystemState("mindful_doomscroll_threshold", doomThreshold.toString()))
+            loadGlobalLimits()
+            loadGlobalLimits()
+        }
+    }
+    
+    fun updateMasterToggles(master: Boolean, appLimits: Boolean, doomScroll: Boolean) {
+        val finalAppLimits = if (!master) false else appLimits
+        val finalDoomScroll = if (!master) false else doomScroll
+        
+        viewModelScope.launch {
+            analyticsDao.updateState(SystemState("pulse_master_enabled", master.toString()))
+            analyticsDao.updateState(SystemState("pulse_app_limits_enabled", finalAppLimits.toString()))
+            analyticsDao.updateState(SystemState("pulse_doomscroll_enabled", finalDoomScroll.toString()))
             loadGlobalLimits()
         }
     }

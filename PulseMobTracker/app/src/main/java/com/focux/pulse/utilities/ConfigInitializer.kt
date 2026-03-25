@@ -23,7 +23,10 @@ object ConfigInitializer {
                 "mindful_doomscroll_window_secs" to "60",
                 "mindful_exemption_window_secs" to "10",
                 "mindful_base_duration" to "4",
-                "mindful_penalty_multiplier" to "3"
+                "mindful_penalty_multiplier" to "3",
+                "pulse_master_enabled" to "true",
+                "pulse_app_limits_enabled" to "true",
+                "pulse_doomscroll_enabled" to "true"
             )
             
             for ((key, value) in defaults) {
