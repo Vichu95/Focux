@@ -62,3 +62,8 @@ const val PULSE_UNMATCHED_SKIP_THRESHOLD = 15
  * Gaps smaller than this are ignored/merged to reduce jitter.
  */
 const val PULSE_MIN_OFFLINE_THRESHOLD_MS = 60 * 1000L // 1 minute
+
+/**
+ * Value representing "No Limit" natively instead of relying on null pointers.
+ */
+const val NO_LIMIT = -99

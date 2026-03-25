@@ -27,10 +27,18 @@ import com.focux.pulse.utilities.PulseAppDataLoggingFrequency
 
 import com.focux.pulse.ui.theme.PulseTheme
 import com.focux.pulse.ui.theme.PulseAppColorPrimary
+import androidx.lifecycle.lifecycleScope
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            com.focux.pulse.utilities.ConfigInitializer.initializeDefaults(
+                com.focux.pulse.data.local.PulseDatabase.getDatabase(applicationContext)
+            )
+        }
+        
         enableEdgeToEdge()
         setContent {
             PulseTheme {

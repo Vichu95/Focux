@@ -120,8 +120,8 @@ fun MindfulLimitsSection(
 @Composable
 private fun MindfulLimitsViewMode(state: MindfulLimitsUiState) {
     Column {
-        fun formatMin(value: Int?) = if (value == null) "-" else "${value}m"
-        fun formatX(value: Int?) = if (value == null) "-" else "${value}x"
+        fun formatMin(value: Int?) = if (value == null || value == com.focux.pulse.utilities.NO_LIMIT) "-" else "${value}m"
+        fun formatX(value: Int?) = if (value == null || value == com.focux.pulse.utilities.NO_LIMIT) "-" else "${value}x"
         
         Text("Central Configurations", style = PulseAppFontSubHeader, color = PulseAppColorPrimary)
         Spacer(modifier = Modifier.height(4.dp))
@@ -277,12 +277,12 @@ private fun MindfulLimitsEditMode(
 private fun MindfulAppTuneSheet(
     app: AppInfo,
     onDismiss: () -> Unit,
-    onConfirm: (session: Int?, daily: Int?, opens: Int?) -> Unit
+    onConfirm: (session: Int, daily: Int, opens: Int) -> Unit
 ) {
     val modalBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var session by remember { mutableStateOf(app.sessionLimitMins) }
-    var daily by remember { mutableStateOf(app.dailyLimitMins) }
-    var opens by remember { mutableStateOf(app.dailyOpensLimit) }
+    var session by remember { mutableStateOf(app.sessionLimitMins.takeIf { it != com.focux.pulse.utilities.NO_LIMIT }) }
+    var daily by remember { mutableStateOf(app.dailyLimitMins.takeIf { it != com.focux.pulse.utilities.NO_LIMIT }) }
+    var opens by remember { mutableStateOf(app.dailyOpensLimit.takeIf { it != com.focux.pulse.utilities.NO_LIMIT }) }
     
     var useCustom by remember { mutableStateOf(session != null || daily != null || opens != null) }
 
@@ -327,8 +327,16 @@ private fun MindfulAppTuneSheet(
                 
                 Button(
                     onClick = {
-                        if (useCustom) onConfirm(session, daily, opens)
-                        else onConfirm(null, null, null)
+                        if (useCustom) onConfirm(
+                            session ?: com.focux.pulse.utilities.NO_LIMIT, 
+                            daily ?: com.focux.pulse.utilities.NO_LIMIT, 
+                            opens ?: com.focux.pulse.utilities.NO_LIMIT
+                        )
+                        else onConfirm(
+                            com.focux.pulse.utilities.NO_LIMIT, 
+                            com.focux.pulse.utilities.NO_LIMIT, 
+                            com.focux.pulse.utilities.NO_LIMIT
+                        )
                     },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)
@@ -346,7 +354,7 @@ private fun MindfulAppTuneSheet(
 private fun MindfulGlobalTuneSheet(
     state: MindfulLimitsUiState,
     onDismiss: () -> Unit,
-    onConfirm: (category: String, session: Int?, daily: Int?, opens: Int?) -> Unit,
+    onConfirm: (category: String, session: Int, daily: Int, opens: Int) -> Unit,
     onConfirmMindful: (breathing: Int, penalty: Int, exemption: Int, doomWindowSecs: Int, doomThreshold: Int) -> Unit
 ) {
     val modalBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -383,22 +391,22 @@ private fun MindfulGlobalTuneSheet(
                     item {
                         Text("Breathing Limits", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
                         Text("Base Pause Duration", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
-                        CounterBox(value = breathing, suffix = "secs", onValueChange = { breathing = it ?: 4 }, allowNull = false)
+                        CounterBox(value = breathing, suffix = "secs", onValueChange = { breathing = it ?: 0 }, allowNull = false)
                         
                         Text("Over-Limit Penalty Multiplier", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
-                        CounterBox(value = penalty, suffix = "x", onValueChange = { penalty = it ?: 3 }, allowNull = false)
+                        CounterBox(value = penalty, suffix = "x", onValueChange = { penalty = it ?: 0 }, allowNull = false)
                         
                         Text("Post-Breathing Exemption", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
-                        CounterBox(value = exemption, suffix = "secs", onValueChange = { exemption = it ?: 10 }, allowNull = false)
+                        CounterBox(value = exemption, suffix = "secs", onValueChange = { exemption = it ?: 0 }, allowNull = false)
                         
                         Divider(color = PulseAppColorBackground, modifier = Modifier.padding(vertical = 8.dp))
                         
                         Text("Doom Scroll Detection", style = PulseAppFontSubHeader, color = PulseAppColorSecondary)
                         Text("Detection Time Window", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
-                        CounterBox(value = windowSecs, suffix = "secs", onValueChange = { windowSecs = it ?: 30 }, allowNull = false)
+                        CounterBox(value = windowSecs, suffix = "secs", onValueChange = { windowSecs = it ?: 0 }, allowNull = false)
                         
                         Text("Rapid Switch Threshold", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
-                        CounterBox(value = threshold, suffix = "switches", onValueChange = { threshold = it ?: 5 }, allowNull = false)
+                        CounterBox(value = threshold, suffix = "switches", onValueChange = { threshold = it ?: 0 }, allowNull = false)
                     }
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -412,9 +420,9 @@ private fun MindfulGlobalTuneSheet(
                 var opens by remember { mutableStateOf<Int?>(null) }
                 
                 LaunchedEffect(selectedTab) {
-                    session = when (selectedTab) { "Productive" -> state.prodSession; "Neutral" -> state.neutSession; else -> state.distSession }
-                    daily = when (selectedTab) { "Productive" -> state.prodDaily; "Neutral" -> state.neutDaily; else -> state.distDaily }
-                    opens = when (selectedTab) { "Productive" -> state.prodOpens; "Neutral" -> state.neutOpens; else -> state.distOpens }
+                    session = when (selectedTab) { "Productive" -> state.prodSession; "Neutral" -> state.neutSession; else -> state.distSession }.takeIf { it != com.focux.pulse.utilities.NO_LIMIT }
+                    daily = when (selectedTab) { "Productive" -> state.prodDaily; "Neutral" -> state.neutDaily; else -> state.distDaily }.takeIf { it != com.focux.pulse.utilities.NO_LIMIT }
+                    opens = when (selectedTab) { "Productive" -> state.prodOpens; "Neutral" -> state.neutOpens; else -> state.distOpens }.takeIf { it != com.focux.pulse.utilities.NO_LIMIT }
                     initialLoaded = true
                 }
                 
@@ -428,7 +436,15 @@ private fun MindfulGlobalTuneSheet(
                     
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorDistracting)) { Text("Cancel") }
-                        Button(onClick = { onConfirm(selectedTab, session, daily, opens); onDismiss() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save Limits", color = PulseAppColorBackground) }
+                        Button(onClick = { 
+                            onConfirm(
+                                selectedTab, 
+                                session ?: com.focux.pulse.utilities.NO_LIMIT, 
+                                daily ?: com.focux.pulse.utilities.NO_LIMIT, 
+                                opens ?: com.focux.pulse.utilities.NO_LIMIT
+                            )
+                            onDismiss() 
+                        }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary)) { Text("Save Limits", color = PulseAppColorBackground) }
                     }
                 }
             }

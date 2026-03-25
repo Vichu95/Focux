@@ -47,6 +47,12 @@ class AppInterceptorService : AccessibilityService() {
         } catch (e: Exception) {
             Logger.e("AppInterceptor", "Failed to get IME packages", e)
         }
+        
+        scope.launch {
+            com.focux.pulse.utilities.ConfigInitializer.initializeDefaults(
+                com.focux.pulse.data.local.PulseDatabase.getDatabase(applicationContext)
+            )
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -84,10 +90,8 @@ class AppInterceptorService : AccessibilityService() {
             scope.launch {
                 try {
                     val db = PulseDatabase.getDatabase(applicationContext)
-                    val windowSecs = db.analyticsDao().getState("mindful_doomscroll_window_secs")?.toLongOrNull()
-                    val threshold = db.analyticsDao().getState("mindful_doomscroll_threshold")?.toIntOrNull()
-                    if (windowSecs != null) doomWindowMs = windowSecs * 1000L
-                    if (threshold != null) doomThreshold = threshold
+                    db.analyticsDao().getState("mindful_doomscroll_window_secs")?.toLongOrNull()?.let { doomWindowMs = it * 1000L }
+                    db.analyticsDao().getState("mindful_doomscroll_threshold")?.toIntOrNull()?.let { doomThreshold = it }
                 } catch (e: Exception) {}
             }
         }
@@ -100,31 +104,31 @@ class AppInterceptorService : AccessibilityService() {
                 val isSpeedbump = category == AppCategory.DISTRACTING
 
                 val customSession = appInfo?.sessionLimitMins
-                val globalSessionStr = db.analyticsDao().getState("limit_${category.lowercase()}_session")
-                val actualSessionMins = customSession ?: globalSessionStr?.toIntOrNull() ?: if (isSpeedbump) 5 else null
+                val globalSession = db.analyticsDao().getState("limit_${category.lowercase()}_session")?.toIntOrNull() ?: com.focux.pulse.utilities.NO_LIMIT
+                val actualSessionMins = customSession ?: globalSession
                     
                 val customDaily = appInfo?.dailyLimitMins
-                val globalDailyStr = db.analyticsDao().getState("limit_${category.lowercase()}_daily")
-                val actualDailyMins = customDaily ?: globalDailyStr?.toIntOrNull() ?: if (isSpeedbump) 30 else null
+                val globalDaily = db.analyticsDao().getState("limit_${category.lowercase()}_daily")?.toIntOrNull() ?: com.focux.pulse.utilities.NO_LIMIT
+                val actualDailyMins = customDaily ?: globalDaily
 
                 val customOpens = appInfo?.dailyOpensLimit
-                val globalOpensStr = db.analyticsDao().getState("limit_${category.lowercase()}_opens")
-                val actualOpens = customOpens ?: globalOpensStr?.toIntOrNull() ?: if (isSpeedbump) 10 else null
+                val globalOpens = db.analyticsDao().getState("limit_${category.lowercase()}_opens")?.toIntOrNull() ?: com.focux.pulse.utilities.NO_LIMIT
+                val actualOpens = customOpens ?: globalOpens
 
-                val baseBreathingDuration = db.analyticsDao().getState("mindful_base_duration")?.toIntOrNull() ?: 4
-                val penaltyMultiplier = db.analyticsDao().getState("mindful_penalty_multiplier")?.toIntOrNull() ?: 3
+                val baseBreathingDuration = db.analyticsDao().getState("mindful_base_duration")?.toIntOrNull()
+                val penaltyMultiplier = db.analyticsDao().getState("mindful_penalty_multiplier")?.toIntOrNull()
                 
                 val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
                 val todayStr = sdf.format(java.util.Date())
                 
-                val usedDailyMins = if (actualDailyMins != null) db.analyticsDao().getAppUsageMinsForDay(packageName, todayStr) else 0
-                val usedOpens = if (actualOpens != null) db.analyticsDao().getAppOpensForDay(packageName, todayStr) else 0
+                val usedDailyMins = if (actualDailyMins != com.focux.pulse.utilities.NO_LIMIT) db.analyticsDao().getAppUsageMinsForDay(packageName, todayStr) else 0
+                val usedOpens = if (actualOpens != com.focux.pulse.utilities.NO_LIMIT) db.analyticsDao().getAppOpensForDay(packageName, todayStr) else 0
 
-                val isDailyExceeded = actualDailyMins != null && usedDailyMins >= actualDailyMins
-                val isOpensExceeded = actualOpens != null && usedOpens >= actualOpens
+                val isDailyExceeded = actualDailyMins != com.focux.pulse.utilities.NO_LIMIT && usedDailyMins >= actualDailyMins
+                val isOpensExceeded = actualOpens != com.focux.pulse.utilities.NO_LIMIT && usedOpens >= actualOpens
                 
-                val finalBreathingDuration = baseBreathingDuration
-                val finalBreathingCycles = if (isDailyExceeded || isOpensExceeded) penaltyMultiplier else 1
+                val finalBreathingDuration = baseBreathingDuration ?: 4
+                val finalBreathingCycles = if (isDailyExceeded || isOpensExceeded) (penaltyMultiplier ?: 3) else 1
                 
                 // --- Cold-Start Free Pass Detection ---
                 val lastDbEndTime = db.analyticsDao().getLastSessionEndTime(packageName) ?: 0L
@@ -144,7 +148,7 @@ class AppInterceptorService : AccessibilityService() {
 
                 if (packageName == exemptPackage && System.currentTimeMillis() < exemptExpiry) {
                     Logger.d("AppInterceptor", "App $packageName is currently exempt.")
-                    if (actualSessionMins != null) {
+                    if (actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
                         val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
                         startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
                     }
@@ -156,7 +160,7 @@ class AppInterceptorService : AccessibilityService() {
                     exemptPackage = packageName
                     exemptExpiry = System.currentTimeMillis() + 10_000L // 10s Exemption cooldown
                     
-                    if (actualSessionMins != null) {
+                    if (actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
                         val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
                         startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
                     }
@@ -184,10 +188,10 @@ class AppInterceptorService : AccessibilityService() {
                         breathingCycles = finalBreathingCycles,
                         isTimeout = false
                     )
-                } else if (actualSessionMins != null) {
-                    val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
-                    startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
-                } else {
+                } else if (actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
+                        val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
+                        startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
+                    } else {
                     activeSessionJob?.cancel()
                 }
             } catch (e: Exception) {

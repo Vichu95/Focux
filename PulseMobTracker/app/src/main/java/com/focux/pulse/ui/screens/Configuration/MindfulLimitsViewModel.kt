@@ -16,23 +16,23 @@ data class MindfulLimitsUiState(
     val searchQuery: String = "",
     
     // Global defaults
-    val distSession: Int? = 5,
-    val distDaily: Int? = 30,
-    val distOpens: Int? = 10,
+    val distSession: Int = com.focux.pulse.utilities.NO_LIMIT,
+    val distDaily: Int = com.focux.pulse.utilities.NO_LIMIT,
+    val distOpens: Int = com.focux.pulse.utilities.NO_LIMIT,
     
-    val prodSession: Int? = null,
-    val prodDaily: Int? = null,
-    val prodOpens: Int? = null,
+    val prodSession: Int = com.focux.pulse.utilities.NO_LIMIT,
+    val prodDaily: Int = com.focux.pulse.utilities.NO_LIMIT,
+    val prodOpens: Int = com.focux.pulse.utilities.NO_LIMIT,
     
-    val neutSession: Int? = null,
-    val neutDaily: Int? = null,
-    val neutOpens: Int? = null,
+    val neutSession: Int = com.focux.pulse.utilities.NO_LIMIT,
+    val neutDaily: Int = com.focux.pulse.utilities.NO_LIMIT,
+    val neutOpens: Int = com.focux.pulse.utilities.NO_LIMIT,
     
-    val breathingDuration: Int = 4, // 4s per phase
-    val penaltyMultiplier: Int = 3, // 3x multiplier when daily limit exceeded
-    val exemptionWindowSecs: Int = 10, // Seconds to bypass double speedbump
-    val doomScrollWindowSecs: Int = 30, // sliding window for doom scroll detection
-    val doomScrollThreshold: Int = 5  // number of switches within the window to trigger
+    val breathingDuration: Int = 0,
+    val penaltyMultiplier: Int = 0,
+    val exemptionWindowSecs: Int = 0,
+    val doomScrollWindowSecs: Int = 0,
+    val doomScrollThreshold: Int = 0
 )
 
 class MindfulLimitsViewModel(application: Application) : AndroidViewModel(application) {
@@ -83,12 +83,15 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
 
     private fun loadGlobalLimits() {
         viewModelScope.launch {
-            fun parse(s: String?): Int? = s?.takeIf { it.isNotBlank() }?.toIntOrNull()
+            fun parse(s: String?): Int {
+                val value = s?.takeIf { it.isNotBlank() }?.toIntOrNull()
+                return value ?: com.focux.pulse.utilities.NO_LIMIT
+            }
             
             _globalLimits.value = _globalLimits.value.copy(
-                distSession = parse(analyticsDao.getState("limit_distracting_session")) ?: 5,
-                distDaily = parse(analyticsDao.getState("limit_distracting_daily")) ?: 30,
-                distOpens = parse(analyticsDao.getState("limit_distracting_opens")) ?: 10,
+                distSession = parse(analyticsDao.getState("limit_distracting_session")),
+                distDaily = parse(analyticsDao.getState("limit_distracting_daily")),
+                distOpens = parse(analyticsDao.getState("limit_distracting_opens")),
 
                 prodSession = parse(analyticsDao.getState("limit_productive_session")),
                 prodDaily = parse(analyticsDao.getState("limit_productive_daily")),
@@ -98,11 +101,11 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
                 neutDaily = parse(analyticsDao.getState("limit_neutral_daily")),
                 neutOpens = parse(analyticsDao.getState("limit_neutral_opens")),
 
-                breathingDuration = parse(analyticsDao.getState("mindful_base_duration")) ?: 4,
-                penaltyMultiplier = parse(analyticsDao.getState("mindful_penalty_multiplier")) ?: 3,
-                exemptionWindowSecs = parse(analyticsDao.getState("mindful_exemption_window_secs")) ?: 10,
-                doomScrollWindowSecs = parse(analyticsDao.getState("mindful_doomscroll_window_secs")) ?: 30,
-                doomScrollThreshold = parse(analyticsDao.getState("mindful_doomscroll_threshold")) ?: 5
+                breathingDuration = analyticsDao.getState("mindful_base_duration")?.toIntOrNull() ?: 0,
+                penaltyMultiplier = analyticsDao.getState("mindful_penalty_multiplier")?.toIntOrNull() ?: 0,
+                exemptionWindowSecs = analyticsDao.getState("mindful_exemption_window_secs")?.toIntOrNull() ?: 0,
+                doomScrollWindowSecs = analyticsDao.getState("mindful_doomscroll_window_secs")?.toIntOrNull() ?: 0,
+                doomScrollThreshold = analyticsDao.getState("mindful_doomscroll_threshold")?.toIntOrNull() ?: 0
             )
         }
     }
@@ -147,21 +150,17 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
         _searchQuery.value = query
     }
 
-    fun updateAppLimits(packageName: String, session: Int?, daily: Int?, opens: Int?) {
+    fun updateAppLimits(packageName: String, session: Int, daily: Int, opens: Int) {
         viewModelScope.launch {
             appInfoDao.updateAppLimits(packageName, session, daily, opens)
         }
     }
 
-    fun updateGlobalLimits(category: String, session: Int?, daily: Int?, opens: Int?) {
+    fun updateGlobalLimits(category: String, session: Int, daily: Int, opens: Int) {
         viewModelScope.launch {
             val prefix = "limit_${category.lowercase()}"
-            suspend fun save(key: String, value: Int?) {
-                if (value == null) {
-                    analyticsDao.updateState(SystemState("${prefix}_$key", ""))
-                } else {
-                    analyticsDao.updateState(SystemState("${prefix}_$key", value.toString()))
-                }
+            suspend fun save(key: String, value: Int) {
+                analyticsDao.updateState(SystemState("${prefix}_$key", value.toString()))
             }
             save("session", session)
             save("daily", daily)
