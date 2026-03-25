@@ -66,11 +66,11 @@ fun OnboardingSetupFlow(onFinish: () -> Unit) {
     var isAppLimitsEnabled by remember { mutableStateOf(true) }
     var isDoomScrollEnabled by remember { mutableStateOf(true) }
 
-    // Configurations
-    var breathingTime by remember { mutableStateOf(4) }
-    var distSessionLimit by remember { mutableStateOf<Int?>(5) }
-    var distDailyLimit by remember { mutableStateOf<Int?>(30) }
-    var distOpensLimit by remember { mutableStateOf<Int?>(10) }
+    // Configurations — must match ConfigInitializer defaults
+    var breathingTime by remember { mutableStateOf(2) }
+    var distSessionLimit by remember { mutableStateOf<Int?>(10) }
+    var distDailyLimit by remember { mutableStateOf<Int?>(60) }
+    var distOpensLimit by remember { mutableStateOf<Int?>(50) }
     var doomScrollWindow by remember { mutableStateOf(10) }
     var doomScrollThreshold by remember { mutableStateOf(15) }
 

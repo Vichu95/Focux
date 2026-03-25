@@ -216,7 +216,7 @@ private fun MindfulLimitsViewMode(state: MindfulLimitsUiState) {
         Spacer(modifier = Modifier.height(2.dp))
         Text("• Neutral Apps Limit:\n  Session: ${formatMin(state.neutSession)} | Daily: ${formatMin(state.neutDaily)} | Opens: ${formatX(state.neutOpens)}", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
         Spacer(modifier = Modifier.height(2.dp))
-        Text("• Mindful Interventions:\n  Pause: ${state.breathingDuration}s | Over-limit Penalty: ${state.penaltyMultiplier}x | Exemption: ${state.exemptionWindowSecs}s\n  Doom Scroll: ${state.doomScrollThreshold} switches in ${state.doomScrollWindowSecs}s", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
+        Text("• Mindful Interventions:\n  Pause: ${state.breathingDuration}s | Over-limit Penalty: ${state.penaltyMultiplier}x | Exemption: ${state.exemptionWindowMins}min\n  Doom Scroll: ${state.doomScrollThreshold} switches in ${state.doomScrollWindowSecs}s", style = PulseAppFontBody.copy(fontSize = PulseAppFontSizeSmall), color = PulseAppColorSecondary)
         
         Spacer(modifier = Modifier.height(12.dp))
         
@@ -468,7 +468,7 @@ private fun MindfulGlobalTuneSheet(
             if (selectedTab == "Mindful Interventions") {
                 var breathing by remember { mutableStateOf(state.breathingDuration) }
                 var penalty by remember { mutableStateOf(state.penaltyMultiplier) }
-                var exemption by remember { mutableStateOf(state.exemptionWindowSecs) }
+                var exemption by remember { mutableStateOf(state.exemptionWindowMins) }
                 var windowSecs by remember { mutableStateOf(state.doomScrollWindowSecs) }
                 var threshold by remember { mutableStateOf(state.doomScrollThreshold) }
                 

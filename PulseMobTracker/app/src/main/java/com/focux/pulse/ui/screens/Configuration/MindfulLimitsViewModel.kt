@@ -35,7 +35,7 @@ data class MindfulLimitsUiState(
     
     val breathingDuration: Int = 0,
     val penaltyMultiplier: Int = 0,
-    val exemptionWindowSecs: Int = 0,
+    val exemptionWindowMins: Int = 0,
     val doomScrollWindowSecs: Int = 0,
     val doomScrollThreshold: Int = 0
 )
@@ -112,7 +112,7 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
 
                 breathingDuration = analyticsDao.getState("mindful_base_duration")?.toIntOrNull() ?: 0,
                 penaltyMultiplier = analyticsDao.getState("mindful_penalty_multiplier")?.toIntOrNull() ?: 0,
-                exemptionWindowSecs = analyticsDao.getState("mindful_exemption_window_secs")?.toIntOrNull() ?: 0,
+                exemptionWindowMins = analyticsDao.getState("mindful_exemption_window_mins")?.toIntOrNull() ?: 5,
                 doomScrollWindowSecs = analyticsDao.getState("mindful_doomscroll_window_secs")?.toIntOrNull() ?: 0,
                 doomScrollThreshold = analyticsDao.getState("mindful_doomscroll_threshold")?.toIntOrNull() ?: 0
             )
@@ -182,7 +182,7 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             analyticsDao.updateState(SystemState("mindful_base_duration", breathing.toString()))
             analyticsDao.updateState(SystemState("mindful_penalty_multiplier", penalty.toString()))
-            analyticsDao.updateState(SystemState("mindful_exemption_window_secs", exemption.toString()))
+            analyticsDao.updateState(SystemState("mindful_exemption_window_mins", exemption.toString()))
             analyticsDao.updateState(SystemState("mindful_doomscroll_window_secs", doomWindowSecs.toString()))
             analyticsDao.updateState(SystemState("mindful_doomscroll_threshold", doomThreshold.toString()))
             loadGlobalLimits()

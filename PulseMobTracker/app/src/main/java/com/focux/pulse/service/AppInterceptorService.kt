@@ -54,9 +54,9 @@ class AppInterceptorService : AccessibilityService() {
         scope.launch {
             try {
                 val db = PulseDatabase.getDatabase(applicationContext)
-                val exemptionSecs = db.analyticsDao().getState("mindful_exemption_window_secs")?.toLongOrNull() ?: 10L
-                globalCooldownExpiry = System.currentTimeMillis() + (exemptionSecs * 1000L)
-                Logger.d("AppInterceptor", "Post-breathing global cooldown set: ${exemptionSecs}s")
+                val exemptionMins = db.analyticsDao().getState("mindful_exemption_window_mins")?.toLongOrNull() ?: 5L
+                globalCooldownExpiry = System.currentTimeMillis() + (exemptionMins * 60_000L)
+                Logger.d("AppInterceptor", "Post-breathing global cooldown set: ${exemptionMins}min")
             } catch (e: Exception) {
                 Logger.e("AppInterceptor", "Failed to load exemption window", e)
             }
@@ -163,7 +163,7 @@ class AppInterceptorService : AccessibilityService() {
                 // ── Load breathing config ─────────────────────────────────
                 val breathingDuration = dao.getState("mindful_base_duration")?.toIntOrNull() ?: 4
                 val penaltyMultiplier = dao.getState("mindful_penalty_multiplier")?.toIntOrNull() ?: 3
-                val exemptionWindowSecs = dao.getState("mindful_exemption_window_secs")?.toLongOrNull() ?: 10L
+                val exemptionWindowMins = dao.getState("mindful_exemption_window_mins")?.toLongOrNull() ?: 5L
 
                 // ── Check user-configured ignored packages (AppCategory.IGNORED in DB) ──
                 val appInfoForPackage = db.appInfoDao().getAppInfo(packageName)
