@@ -62,7 +62,8 @@ class MainActivity : ComponentActivity() {
                         CircularProgressIndicator(color = PulseAppColorPrimary)
                     }
                 } else if (isSetupCompleted == true) {
-                    MainAppStructure()
+                    val openConfig = intent.getBooleanExtra("OPEN_CONFIG", false)
+                    MainAppStructure(initialTab = if (openConfig) 3 else 0)
                 } else {
                     if (!permissionsGranted) {
                         com.focux.pulse.ui.screens.onboarding.OnboardingScreen(
@@ -128,9 +129,9 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainAppStructure() {
-    var selectedTab by remember { mutableStateOf(0) }
-    val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 4 })
+fun MainAppStructure(initialTab: Int = 0) {
+    var selectedTab by remember { mutableStateOf(initialTab) }
+    val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = initialTab, pageCount = { 4 })
     val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
 
     // Sync Pager -> Tab

@@ -482,7 +482,7 @@ private fun MindfulGlobalTuneSheet(
                         CounterBox(value = penalty, suffix = "x", onValueChange = { penalty = it ?: 0 }, allowNull = false)
                         
                         Text("Post-Breathing Exemption", style = PulseAppFontBody.copy(fontSize = 12.sp), color = Color.Gray)
-                        CounterBox(value = exemption, suffix = "secs", onValueChange = { exemption = it ?: 0 }, allowNull = false)
+                        CounterBox(value = exemption, suffix = "mins", onValueChange = { exemption = it ?: 0 }, allowNull = false)
                         
                         Divider(color = PulseAppColorBackground, modifier = Modifier.padding(vertical = 8.dp))
                         

@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.focux.pulse.data.local.PulseDatabase
 import com.focux.pulse.data.local.entities.AppSession
 import com.focux.pulse.service.AppInterceptorService
@@ -276,7 +278,33 @@ fun BreathingScreen(
     // Particle Setup
     val particles = remember { generateParticles(180) }
 
+    var showPauseOptions by remember { mutableStateOf(false) }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+
+        // ── Top-right Settings Icon (always visible, overlaid) ─────────
+        val context = androidx.compose.ui.platform.LocalContext.current
+        IconButton(
+            onClick = {
+                val intent = Intent(context, com.focux.pulse.MainActivity::class.java).apply {
+                    putExtra("OPEN_CONFIG", true)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(intent)
+            },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 36.dp, end = 20.dp)
+                .zIndex(10f)
+                .size(44.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Settings",
+                tint = Color.White.copy(alpha = 0.5f),
+                modifier = Modifier.size(22.dp)
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -354,19 +382,47 @@ fun BreathingScreen(
                         }
                     }
                     
-                    // Smaller Buttons
+                    // Pause options (only for non-doom-scroll)
                     if (!isDoomScroll) {
-                        OutlinedButton(
-                            onClick = {
-                                com.focux.pulse.service.AppInterceptorService.instance?.pauseInterventions(5)
-                                onProceed()
-                            },
-                            modifier = Modifier.padding(bottom = 16.dp).height(36.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, PulseAppColorSecondary.copy(alpha = 0.6f)),
-                            shape = RoundedCornerShape(18.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp)
-                        ) {
-                            Text("Snooze Interventions (5m)", color = PulseAppColorSecondary, style = PulseAppFontLabel.copy(fontSize = 12.sp))
+                        if (!showPauseOptions) {
+                            // Single compact "Pause" text link
+                            TextButton(
+                                onClick = { showPauseOptions = true },
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            ) {
+                                Text(
+                                    "Pause interventions",
+                                    color = PulseAppColorSecondary.copy(alpha = 0.7f),
+                                    style = PulseAppFontLabel.copy(fontSize = 12.sp)
+                                )
+                            }
+                        } else {
+                            // Expanded: 3 pill buttons in a row
+                            Row(
+                                modifier = Modifier.padding(bottom = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Pause:",
+                                    color = PulseAppColorSecondary.copy(alpha = 0.6f),
+                                    style = PulseAppFontLabel.copy(fontSize = 11.sp)
+                                )
+                                listOf(5L, 10L, 15L).forEach { mins ->
+                                    OutlinedButton(
+                                        onClick = {
+                                            com.focux.pulse.service.AppInterceptorService.instance?.pauseInterventions(mins)
+                                            onProceed()
+                                        },
+                                        modifier = Modifier.height(30.dp),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, PulseAppColorSecondary.copy(alpha = 0.4f)),
+                                        shape = RoundedCornerShape(15.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                                    ) {
+                                        Text("${mins}m", color = PulseAppColorSecondary, style = PulseAppFontLabel.copy(fontSize = 11.sp))
+                                    }
+                                }
+                            }
                         }
                     }
                     
