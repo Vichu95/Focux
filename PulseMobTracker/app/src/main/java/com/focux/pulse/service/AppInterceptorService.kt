@@ -2,11 +2,12 @@ package com.focux.pulse.service
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
-import com.focux.pulse.utilities.Logger
 import android.view.accessibility.AccessibilityEvent
 import com.focux.pulse.data.local.PulseDatabase
 import com.focux.pulse.data.local.entities.AppCategory
 import com.focux.pulse.ui.screens.Breathing.BreathingActivity
+import com.focux.pulse.utilities.Logger
+import com.focux.pulse.utilities.NO_LIMIT
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,232 +21,313 @@ class AppInterceptorService : AccessibilityService() {
     private var lastInterceptedPackage: String = ""
     private val scope = CoroutineScope(Dispatchers.IO)
     private var activeSessionJob: kotlinx.coroutines.Job? = null
-    
-    @Volatile private var exemptPackage: String? = null
-    @Volatile private var exemptExpiry: Long = 0L
-    
-    private val recentSwitches = ArrayDeque<Long>()
-    @Volatile private var doomWindowMs: Long = 60_000L
-    @Volatile private var doomThreshold: Int = 8
-    @Volatile private var mindfulConfigLoadedAt: Long = 0L
-    private var imePackages: List<String> = emptyList()
 
+    // ── Global Cooldowns (RAM-only, volatile for thread safety) ───────────
+    // Set when user taps "Snooze" in breathing screen
     @Volatile private var globalPauseExpiry: Long = 0L
-    private val lastCloseTimestampMap = mutableMapOf<String, Long>()
-    private val sessionStartTimes = mutableMapOf<String, Long>()
+    // Set automatically after ANY breathing is shown (doom or app limit)
+    @Volatile private var globalCooldownExpiry: Long = 0L
 
+    // ── Doom Scroll State ─────────────────────────────────────────────────
+    private val recentSwitches = ArrayDeque<Long>()
+    @Volatile private var doomWindowMs: Long = 10_000L
+    @Volatile private var doomThreshold: Int = 15
+
+    // ── System App Filtering ──────────────────────────────────────────────
+    private var imePackages: Set<String> = emptySet()
+    private var launcherPackages: Set<String> = emptySet()
+
+    // ── Session Tracking (RAM for performance, per-app) ───────────────────
+    private val sessionStartTimes = mutableMapOf<String, Long>()
+    private val lastCloseTimestampMap = mutableMapOf<String, Long>()
+
+    // Called by breathingScreen "Snooze" button
     fun pauseInterventions(minutes: Long) {
         globalPauseExpiry = System.currentTimeMillis() + (minutes * 60_000L)
+        Logger.d("AppInterceptor", "Interventions snoozed for ${minutes}m")
     }
-    
+
+    // Called by BreathingActivity when user completes the breathing exercise
+    fun notifyBreathingCompleted(packageName: String) {
+        // Use a temporary 10s cooldown immediately; real value loaded async
+        globalCooldownExpiry = System.currentTimeMillis() + 10_000L
+        scope.launch {
+            try {
+                val db = PulseDatabase.getDatabase(applicationContext)
+                val exemptionSecs = db.analyticsDao().getState("mindful_exemption_window_secs")?.toLongOrNull() ?: 10L
+                globalCooldownExpiry = System.currentTimeMillis() + (exemptionSecs * 1000L)
+                Logger.d("AppInterceptor", "Post-breathing global cooldown set: ${exemptionSecs}s")
+            } catch (e: Exception) {
+                Logger.e("AppInterceptor", "Failed to load exemption window", e)
+            }
+        }
+    }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
+
+        // Detect IME (keyboard) packages
         try {
             val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-            imePackages = imm.enabledInputMethodList.map { it.packageName }
+            imePackages = imm.enabledInputMethodList.map { it.packageName }.toSet()
         } catch (e: Exception) {
             Logger.e("AppInterceptor", "Failed to get IME packages", e)
         }
-        
+
+        // Detect launcher/home screen packages
+        try {
+            val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+            launcherPackages = packageManager.queryIntentActivities(homeIntent, 0)
+                .map { it.activityInfo.packageName }.toSet()
+        } catch (e: Exception) {
+            Logger.e("AppInterceptor", "Failed to get launcher packages", e)
+        }
+
         scope.launch {
             com.focux.pulse.utilities.ConfigInitializer.initializeDefaults(
-                com.focux.pulse.data.local.PulseDatabase.getDatabase(applicationContext)
+                PulseDatabase.getDatabase(applicationContext)
             )
         }
+
+        Logger.d("AppInterceptor", "Service connected. IME: $imePackages | Launchers: $launcherPackages")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
-        
-        val packageName = event.packageName?.toString() ?: return
-        if (packageName == "com.focux.pulse") return
-        if (packageName == "com.android.systemui" || packageName == "android" || packageName in imePackages) return
-        if (packageName == lastInterceptedPackage) return
-        
-        val now = System.currentTimeMillis()
-        val lastLeftPackage = lastInterceptedPackage
-        if (lastLeftPackage.isNotEmpty()) {
-            lastCloseTimestampMap[lastLeftPackage] = now
-        }
 
+        val packageName = event.packageName?.toString() ?: return
+
+        // ── Step 1: Filter system/app/ignored packages (fast path, no DB) ──
+        if (packageName == "com.focux.pulse") return
+        if (packageName == "com.android.systemui" || packageName == "android") return
+        if (packageName in imePackages) return
+        if (packageName in launcherPackages) return
+        if (packageName == lastInterceptedPackage) return
+
+        val now = System.currentTimeMillis()
+
+        // Track when last app was closed (for cold-start & session reset)
+        val previousPackage = lastInterceptedPackage
+        if (previousPackage.isNotEmpty()) {
+            lastCloseTimestampMap[previousPackage] = now
+        }
         lastInterceptedPackage = packageName
 
-        // ── Global Snooze/Pause Interventions Check ────────────────────
-        if (now < globalPauseExpiry) {
-            Logger.d("AppInterceptor", "Interventions paused. Skipping checks.")
+        // ── Step 2: Track switch for Doom Scroll (ALL non-ignored apps) ────
+        val switchCountSnapshot: Int
+        synchronized(recentSwitches) {
+            recentSwitches.addLast(now)
+            while (recentSwitches.isNotEmpty() && (now - recentSwitches.first()) > doomWindowMs) {
+                recentSwitches.removeFirst()
+            }
+            switchCountSnapshot = recentSwitches.size
+        }
+
+        Logger.d("AppInterceptor", "→ $packageName | switches in window: $switchCountSnapshot/$doomThreshold")
+
+        // ── Step 3+: All decisions after loading DB config ─────────────────
+        scope.launch {
+            try {
+                val db = PulseDatabase.getDatabase(applicationContext)
+                val dao = db.analyticsDao()
+
+                // ── Load master toggle ────────────────────────────────────
+                val isMasterEnabled = dao.getState("pulse_master_enabled")?.toBoolean() ?: true
+                if (!isMasterEnabled) {
+                    Logger.d("AppInterceptor", "Master disabled, skipping")
+                    return@launch
+                }
+
+                // ── Check global pause (user-initiated snooze) ────────────
+                if (System.currentTimeMillis() < globalPauseExpiry) {
+                    Logger.d("AppInterceptor", "Global pause active, skipping")
+                    return@launch
+                }
+
+                // ── Check global post-breathing cooldown ──────────────────
+                if (System.currentTimeMillis() < globalCooldownExpiry) {
+                    Logger.d("AppInterceptor", "Global cooldown active, skipping")
+                    return@launch
+                }
+
+                // ── Load feature toggles ──────────────────────────────────
+                val isLimitsEnabled = dao.getState("pulse_app_limits_enabled")?.toBoolean() ?: true
+                val isDoomScrollEnabled = dao.getState("pulse_doomscroll_enabled")?.toBoolean() ?: true
+
+                // ── Load fresh doom config (always fresh so changes apply immediately) ──
+                dao.getState("mindful_doomscroll_window_secs")?.toLongOrNull()?.let { doomWindowMs = it * 1000L }
+                dao.getState("mindful_doomscroll_threshold")?.toIntOrNull()?.let { doomThreshold = it }
+
+                // ── Load breathing config ─────────────────────────────────
+                val breathingDuration = dao.getState("mindful_base_duration")?.toIntOrNull() ?: 4
+                val penaltyMultiplier = dao.getState("mindful_penalty_multiplier")?.toIntOrNull() ?: 3
+                val exemptionWindowSecs = dao.getState("mindful_exemption_window_secs")?.toLongOrNull() ?: 10L
+
+                // ── Check user-configured ignored packages ────────────────
+                val ignoredPackages = dao.getState("user_ignored_packages")
+                    ?.split(",")?.map { it.trim() }?.toSet() ?: emptySet()
+                if (packageName in ignoredPackages) {
+                    Logger.d("AppInterceptor", "$packageName is user-ignored, skipping")
+                    return@launch
+                }
+
+                // ─────────────────────────────────────────────────────────
+                // PRIORITY 1: DOOM SCROLL CHECK (any non-ignored app)
+                // ─────────────────────────────────────────────────────────
+                if (isDoomScrollEnabled && switchCountSnapshot >= doomThreshold) {
+                    Logger.d("AppInterceptor", "🌀 DOOM SCROLL! $switchCountSnapshot switches >= threshold $doomThreshold")
+                    synchronized(recentSwitches) { recentSwitches.clear() }
+                    activeSessionJob?.cancel()
+                    launchDoomScrollBreathing(packageName, breathingDuration)
+                    return@launch
+                }
+
+                // ─────────────────────────────────────────────────────────
+                // APP CATEGORY LOGIC
+                // ─────────────────────────────────────────────────────────
+                val appInfo = db.appInfoDao().getAppInfo(packageName)
+                val category = appInfo?.category ?: AppCategory.NEUTRAL
+                val isDistracting = category == AppCategory.DISTRACTING
+
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                val todayStr = sdf.format(java.util.Date())
+
+                // Resolve session/daily/opens limits (per-app override, else global category default)
+                val sessionLimitMins = appInfo?.sessionLimitMins
+                    ?: dao.getState("limit_${category.lowercase()}_session")?.toIntOrNull() ?: NO_LIMIT
+                val dailyLimitMins = appInfo?.dailyLimitMins
+                    ?: dao.getState("limit_${category.lowercase()}_daily")?.toIntOrNull() ?: NO_LIMIT
+                val opensLimit = appInfo?.dailyOpensLimit
+                    ?: dao.getState("limit_${category.lowercase()}_opens")?.toIntOrNull() ?: NO_LIMIT
+
+                val usedDailyMins = if (dailyLimitMins != NO_LIMIT) dao.getAppUsageMinsForDay(packageName, todayStr) else 0
+                val usedOpens = if (opensLimit != NO_LIMIT) dao.getAppOpensForDay(packageName, todayStr) else 0
+
+                val isDailyExceeded = isLimitsEnabled && dailyLimitMins != NO_LIMIT && usedDailyMins >= dailyLimitMins
+                val isOpensExceeded = isLimitsEnabled && opensLimit != NO_LIMIT && usedOpens >= opensLimit
+                val isAnyLimitExceeded = isDailyExceeded || isOpensExceeded
+
+                // When limits are exceeded, multiply breathing cycles as a penalty
+                val breathingCycles = if (isAnyLimitExceeded) penaltyMultiplier else 1
+
+                // ─────────────────────────────────────────────────────────
+                // PRIORITY 2: DISTRACTING APP → breathing on open
+                // (Unless it's a cold start for this specific app)
+                // ─────────────────────────────────────────────────────────
+                if (isDistracting && isLimitsEnabled) {
+                    // Cold-start = this specific distracting app not used for > 1 hour
+                    val lastDbEndTime = dao.getLastSessionEndTime(packageName) ?: 0L
+                    val lastRamEndTime = lastCloseTimestampMap[packageName] ?: 0L
+                    val lastEndTime = maxOf(lastDbEndTime, lastRamEndTime)
+                    val isColdStart = lastEndTime == 0L || (System.currentTimeMillis() - lastEndTime) >= 3_600_000L
+
+                    if (isColdStart && !isAnyLimitExceeded) {
+                        Logger.d("AppInterceptor", "❄️ Cold start for $packageName, skipping opening breathing")
+                        // Still set up session timer (so if they stay too long, it fires)
+                        setupSessionTimer(packageName, sessionLimitMins, breathingDuration, breathingCycles)
+                        return@launch
+                    }
+
+                    // Not cold start (or limits exceeded) → show breathing
+                    Logger.d("AppInterceptor", "🔴 Distracting app opening: $packageName (cycles: $breathingCycles)")
+                    activeSessionJob?.cancel()
+                    launchBreathingScreen(
+                        targetPackage = packageName,
+                        sessionLimitMins = sessionLimitMins,
+                        dailyLimitMins = dailyLimitMins,
+                        usedDailyMins = usedDailyMins,
+                        opensLimit = opensLimit,
+                        usedOpens = usedOpens,
+                        breathingDuration = breathingDuration,
+                        breathingCycles = breathingCycles,
+                        isTimeout = false
+                    )
+                    return@launch
+                }
+
+                // ─────────────────────────────────────────────────────────
+                // PRIORITY 3: NON-DISTRACTING APPS — breathing only if limits hit
+                // ─────────────────────────────────────────────────────────
+                if (isLimitsEnabled && isAnyLimitExceeded) {
+                    Logger.d("AppInterceptor", "🟡 $category app $packageName exceeded limits (cycles: $breathingCycles)")
+                    activeSessionJob?.cancel()
+                    launchBreathingScreen(
+                        targetPackage = packageName,
+                        sessionLimitMins = sessionLimitMins,
+                        dailyLimitMins = dailyLimitMins,
+                        usedDailyMins = usedDailyMins,
+                        opensLimit = opensLimit,
+                        usedOpens = usedOpens,
+                        breathingDuration = breathingDuration,
+                        breathingCycles = breathingCycles,
+                        isTimeout = false
+                    )
+                    return@launch
+                }
+
+                // ─────────────────────────────────────────────────────────
+                // ALL APP TYPES: Start/resume session timer if applicable
+                // ─────────────────────────────────────────────────────────
+                setupSessionTimer(packageName, sessionLimitMins, breathingDuration, breathingCycles)
+
+            } catch (e: Exception) {
+                Logger.e("AppInterceptor", "Error in event handler", e)
+            }
+        }
+    }
+
+    /**
+     * Starts a countdown for session-based breathing.
+     * Resets session if the user was away from this app for >= 5 minutes.
+     * Fires breathing when the session time limit is reached.
+     */
+    private fun setupSessionTimer(
+        packageName: String,
+        sessionLimitMins: Int,
+        breathingDuration: Int,
+        breathingCycles: Int
+    ) {
+        if (sessionLimitMins <= 0 || sessionLimitMins == NO_LIMIT) {
+            activeSessionJob?.cancel()
             return
         }
 
-        recentSwitches.addLast(now)
-        while (recentSwitches.isNotEmpty() && (now - recentSwitches.first()) > doomWindowMs) {
-            recentSwitches.removeFirst()
-        }
-        
-        // Doom scroll tracking is now checked inside the coroutine after resolving category
+        val now = System.currentTimeMillis()
+        val lastCloseTime = lastCloseTimestampMap[packageName] ?: 0L
+        val msSinceClose = if (lastCloseTime > 0) now - lastCloseTime else Long.MAX_VALUE
 
-        if (now - mindfulConfigLoadedAt > 60_000L) {
-            mindfulConfigLoadedAt = now
-            scope.launch {
-                try {
-                    val db = PulseDatabase.getDatabase(applicationContext)
-                    db.analyticsDao().getState("mindful_doomscroll_window_secs")?.toLongOrNull()?.let { doomWindowMs = it * 1000L }
-                    db.analyticsDao().getState("mindful_doomscroll_threshold")?.toIntOrNull()?.let { doomThreshold = it }
-                } catch (e: Exception) {}
-            }
+        // If away for >= 5 min, reset the session clock for this app
+        if (msSinceClose >= 300_000L) {
+            sessionStartTimes[packageName] = now
+            Logger.d("AppInterceptor", "Session reset for $packageName (was away ${msSinceClose / 1000}s)")
         }
 
-        scope.launch {
-            try {
-                val db = PulseDatabase.getDatabase(applicationContext)
-                
-                val isMasterEnabled = db.analyticsDao().getState("pulse_master_enabled")?.toBoolean() ?: true
-                if (!isMasterEnabled) return@launch
-                
-                val isLimitsEnabled = db.analyticsDao().getState("pulse_app_limits_enabled")?.toBoolean() ?: true
-                val isDoomScrollEnabled = db.analyticsDao().getState("pulse_doomscroll_enabled")?.toBoolean() ?: true
-                
-                val appInfo = db.appInfoDao().getAppInfo(packageName)
-                val category = appInfo?.category ?: AppCategory.NEUTRAL
-                val isSpeedbump = category == AppCategory.DISTRACTING
+        val sessionStart = sessionStartTimes.getOrPut(packageName) { now }
+        val elapsedMs = now - sessionStart
+        val remainingMs = (sessionLimitMins * 60_000L) - elapsedMs
 
-                val customSession = appInfo?.sessionLimitMins
-                val globalSession = db.analyticsDao().getState("limit_${category.lowercase()}_session")?.toIntOrNull() ?: com.focux.pulse.utilities.NO_LIMIT
-                val actualSessionMins = customSession ?: globalSession
-                    
-                val customDaily = appInfo?.dailyLimitMins
-                val globalDaily = db.analyticsDao().getState("limit_${category.lowercase()}_daily")?.toIntOrNull() ?: com.focux.pulse.utilities.NO_LIMIT
-                val actualDailyMins = customDaily ?: globalDaily
-
-                val customOpens = appInfo?.dailyOpensLimit
-                val globalOpens = db.analyticsDao().getState("limit_${category.lowercase()}_opens")?.toIntOrNull() ?: com.focux.pulse.utilities.NO_LIMIT
-                val actualOpens = customOpens ?: globalOpens
-
-                val baseBreathingDuration = db.analyticsDao().getState("mindful_base_duration")?.toIntOrNull()
-                val penaltyMultiplier = db.analyticsDao().getState("mindful_penalty_multiplier")?.toIntOrNull()
-                
-                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                val todayStr = sdf.format(java.util.Date())
-                
-                val usedDailyMins = if (actualDailyMins != com.focux.pulse.utilities.NO_LIMIT) db.analyticsDao().getAppUsageMinsForDay(packageName, todayStr) else 0
-                val usedOpens = if (actualOpens != com.focux.pulse.utilities.NO_LIMIT) db.analyticsDao().getAppOpensForDay(packageName, todayStr) else 0
-
-                val isDailyExceeded = isLimitsEnabled && actualDailyMins != com.focux.pulse.utilities.NO_LIMIT && usedDailyMins >= actualDailyMins
-                val isOpensExceeded = isLimitsEnabled && actualOpens != com.focux.pulse.utilities.NO_LIMIT && usedOpens >= actualOpens
-                
-                val finalBreathingDuration = baseBreathingDuration ?: 4
-                val finalBreathingCycles = if (isDailyExceeded || isOpensExceeded) (penaltyMultiplier ?: 3) else 1
-                
-                // --- Cold-Start Free Pass Detection ---
-                val lastDbEndTime = db.analyticsDao().getLastSessionEndTime(packageName) ?: 0L
-                val lastRamEndTime = lastCloseTimestampMap[packageName] ?: 0L
-                val lastEndTime = maxOf(lastDbEndTime, lastRamEndTime)
-                
-                val msSinceLastClose = System.currentTimeMillis() - lastEndTime
-                val isColdStart = usedOpens == 0 || (lastEndTime > 0L && msSinceLastClose >= 3_600_000L) // 1 Hour
-
-                // If user was away for more than 5 minutes, reset their contiguous session time
-                if (msSinceLastClose >= 300_000L) {
-                    sessionStartTimes[packageName] = System.currentTimeMillis()
-                }
-                val sessionStartTime = sessionStartTimes[packageName] ?: System.currentTimeMillis()
-                sessionStartTimes[packageName] = sessionStartTime
-                val elapsedSessionMs = System.currentTimeMillis() - sessionStartTime
-
-                if (packageName == exemptPackage && System.currentTimeMillis() < exemptExpiry) {
-                    Logger.d("AppInterceptor", "App $packageName is currently exempt.")
-                    if (isLimitsEnabled && actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
-                        val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
-                        startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
-                    }
-                    return@launch
-                }
-
-                if (isSpeedbump && isColdStart && !isDailyExceeded && !isOpensExceeded) {
-                    Logger.d("AppInterceptor", "Cold start for $packageName. Opening straight with 10s cooldown.")
-                    exemptPackage = packageName
-                    exemptExpiry = System.currentTimeMillis() + 10_000L // 10s Exemption cooldown
-                    
-                    if (isLimitsEnabled && actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
-                        val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
-                        startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
-                    }
-                    return@launch
-                }
-                
-                // Doom Scroll Check (Only trigger for distracting apps)
-                if (isDoomScrollEnabled && isSpeedbump && recentSwitches.size >= doomThreshold) {
-                    recentSwitches.clear()
-                    activeSessionJob?.cancel()
-                    launchDoomScrollBreathing(packageName, finalBreathingDuration)
-                    return@launch
-                }
-
-                if (isLimitsEnabled && (isSpeedbump || isDailyExceeded || isOpensExceeded)) {
-                    activeSessionJob?.cancel()
-                    launchBreathingScreen(
-                        targetPackage = packageName, 
-                        sessionLimitMins = actualSessionMins, 
-                        dailyLimitMins = actualDailyMins, 
-                        usedDailyMins = usedDailyMins, 
-                        opensLimit = actualOpens, 
-                        usedOpens = usedOpens, 
-                        breathingDuration = finalBreathingDuration,
-                        breathingCycles = finalBreathingCycles,
-                        isTimeout = false
-                    )
-                } else if (isLimitsEnabled && actualSessionMins != com.focux.pulse.utilities.NO_LIMIT) {
-                        val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
-                        startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
-                    } else {
-                    activeSessionJob?.cancel()
-                }
-            } catch (e: Exception) {
-                Logger.e("AppInterceptor", "Error querying app limits", e)
-            }
-        }
+        startSessionTimer(packageName, remainingMs, sessionLimitMins, breathingDuration, breathingCycles)
     }
 
-    // Keep rest of the file
-
-    override fun onInterrupt() {
-        Logger.d("AppInterceptor", "Service interrupted")
-        instance = null
-    }
-    
-    override fun onDestroy() {
-        super.onDestroy()
-        instance = null
-        activeSessionJob?.cancel()
-    }
-    
-    fun notifyBreathingCompleted(packageName: String) {
-        exemptPackage = packageName
-        exemptExpiry = System.currentTimeMillis() + 10_000L // Instant fallback to block race conditions
-        
-        scope.launch {
-            try {
-                val db = PulseDatabase.getDatabase(applicationContext)
-                val exemptionSecs = db.analyticsDao().getState("mindful_exemption_window_secs")?.toLongOrNull() ?: 10L
-                exemptExpiry = System.currentTimeMillis() + (exemptionSecs * 1000L)
-            } catch (e: Exception) {
-                // Ignore
-            }
-        }
-    }
-    
-    fun startSessionTimer(packageName: String, remainingMs: Long, sessionLimitMins: Int, breathingDuration: Int, breathingCycles: Int) {
+    fun startSessionTimer(
+        packageName: String,
+        remainingMs: Long,
+        sessionLimitMins: Int,
+        breathingDuration: Int,
+        breathingCycles: Int
+    ) {
         activeSessionJob?.cancel()
         if (sessionLimitMins <= 0 || remainingMs <= 0) return
-        
-        Logger.d("AppInterceptor", "Starting session timer for $packageName (${remainingMs/1000}s remaining)")
+
+        Logger.d("AppInterceptor", "⏱ Session timer started for $packageName (${remainingMs / 1000}s remaining)")
         activeSessionJob = scope.launch(Dispatchers.Main) {
             kotlinx.coroutines.delay(remainingMs)
-            
-            // If they are still using this same app when the timer fires
+
+            // Session limit always fires regardless of global cooldown — priority over doom/app-limit cooldown
             if (lastInterceptedPackage == packageName) {
-                Logger.d("AppInterceptor", "Session expired for $packageName!")
+                Logger.d("AppInterceptor", "⏱ Session expired for $packageName!")
                 launchBreathingScreen(
                     targetPackage = packageName,
                     sessionLimitMins = sessionLimitMins,
@@ -262,7 +344,7 @@ class AppInterceptorService : AccessibilityService() {
     }
 
     private fun launchBreathingScreen(
-        targetPackage: String, 
+        targetPackage: String,
         sessionLimitMins: Int?,
         dailyLimitMins: Int?,
         usedDailyMins: Int,
@@ -303,5 +385,16 @@ class AppInterceptorService : AccessibilityService() {
             putExtra("IS_TIMEOUT", false)
         }
         startActivity(intent)
+    }
+
+    override fun onInterrupt() {
+        Logger.d("AppInterceptor", "Service interrupted")
+        instance = null
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        instance = null
+        activeSessionJob?.cancel()
     }
 }
