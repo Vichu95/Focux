@@ -165,11 +165,10 @@ class AppInterceptorService : AccessibilityService() {
                 val penaltyMultiplier = dao.getState("mindful_penalty_multiplier")?.toIntOrNull() ?: 3
                 val exemptionWindowSecs = dao.getState("mindful_exemption_window_secs")?.toLongOrNull() ?: 10L
 
-                // ── Check user-configured ignored packages ────────────────
-                val ignoredPackages = dao.getState("user_ignored_packages")
-                    ?.split(",")?.map { it.trim() }?.toSet() ?: emptySet()
-                if (packageName in ignoredPackages) {
-                    Logger.d("AppInterceptor", "$packageName is user-ignored, skipping")
+                // ── Check user-configured ignored packages (AppCategory.IGNORED in DB) ──
+                val appInfoForPackage = db.appInfoDao().getAppInfo(packageName)
+                if (appInfoForPackage?.category == AppCategory.IGNORED) {
+                    Logger.d("AppInterceptor", "$packageName is user-ignored (IGNORED category), skipping")
                     return@launch
                 }
 
