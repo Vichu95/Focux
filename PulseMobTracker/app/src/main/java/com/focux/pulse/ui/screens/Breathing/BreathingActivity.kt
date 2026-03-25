@@ -61,6 +61,21 @@ class BreathingActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // Recreate the activity so all state variables refresh with new intent extras
+        recreate()
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // If the user presses Home or Recents, we consider focus retained and close the activity cleanly
+        val targetPackageName = intent.getStringExtra("TARGET_PACKAGE") ?: "Unknown App"
+        logBreathingDecision(targetPackageName, "FOCUS_RETAINED")
+        finish()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -143,6 +158,7 @@ class BreathingActivity : ComponentActivity() {
                             if (sessionLimitMins > 0) {
                                 com.focux.pulse.service.AppInterceptorService.instance?.startSessionTimer(
                                     targetPackageName,
+                                    sessionLimitMins * 60_000L,
                                     sessionLimitMins,
                                     breathingDuration,
                                     breathingCycles

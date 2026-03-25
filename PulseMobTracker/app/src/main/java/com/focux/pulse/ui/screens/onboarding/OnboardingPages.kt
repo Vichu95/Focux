@@ -422,7 +422,7 @@ fun AccessibilityAccessPage(
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "To actively detect rapid app switching (doom scrolling) and help you regain focus by stepping in right when you open a distracting app, Pulse needs Accessibility Service.\n\nWe do not view, collect, or transmit any of your personal data or screen content. All processing is strictly local.",
+            text = "Pulse needs Accessibility Access strictly to detect when distracting apps are opened so it can step in and help you regain focus.\n\nPulse CANNOT read your messages, view your screen content, or collect your personal data. All processing happens 100% securely on your device.",
             style = PulseAppFontBody,
             textAlign = TextAlign.Center,
             color = Color.LightGray

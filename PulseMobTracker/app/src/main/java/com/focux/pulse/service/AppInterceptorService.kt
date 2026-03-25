@@ -25,13 +25,14 @@ class AppInterceptorService : AccessibilityService() {
     @Volatile private var exemptExpiry: Long = 0L
     
     private val recentSwitches = ArrayDeque<Long>()
-    @Volatile private var doomWindowMs: Long = 30_000L
-    @Volatile private var doomThreshold: Int = 5
+    @Volatile private var doomWindowMs: Long = 60_000L
+    @Volatile private var doomThreshold: Int = 8
     @Volatile private var mindfulConfigLoadedAt: Long = 0L
     private var imePackages: List<String> = emptyList()
 
     @Volatile private var globalPauseExpiry: Long = 0L
     private val lastCloseTimestampMap = mutableMapOf<String, Long>()
+    private val sessionStartTimes = mutableMapOf<String, Long>()
 
     fun pauseInterventions(minutes: Long) {
         globalPauseExpiry = System.currentTimeMillis() + (minutes * 60_000L)
@@ -76,15 +77,7 @@ class AppInterceptorService : AccessibilityService() {
             recentSwitches.removeFirst()
         }
         
-        if (recentSwitches.size >= doomThreshold) {
-            recentSwitches.clear()
-            scope.launch {
-                val db = PulseDatabase.getDatabase(applicationContext)
-                val breathingDuration = db.analyticsDao().getState("limit_breathing_duration")?.toIntOrNull() ?: 4
-                launchDoomScrollBreathing(packageName, breathingDuration)
-            }
-            return
-        }
+        // Doom scroll tracking is now checked inside the coroutine after resolving category
 
         if (now - mindfulConfigLoadedAt > 60_000L) {
             mindfulConfigLoadedAt = now
@@ -141,25 +134,43 @@ class AppInterceptorService : AccessibilityService() {
                 val msSinceLastClose = System.currentTimeMillis() - lastEndTime
                 val isColdStart = usedOpens == 0 || (lastEndTime > 0L && msSinceLastClose >= 3_600_000L) // 1 Hour
 
+                // If user was away for more than 5 minutes, reset their contiguous session time
+                if (msSinceLastClose >= 300_000L) {
+                    sessionStartTimes[packageName] = System.currentTimeMillis()
+                }
+                val sessionStartTime = sessionStartTimes[packageName] ?: System.currentTimeMillis()
+                sessionStartTimes[packageName] = sessionStartTime
+                val elapsedSessionMs = System.currentTimeMillis() - sessionStartTime
+
+                if (packageName == exemptPackage && System.currentTimeMillis() < exemptExpiry) {
+                    Logger.d("AppInterceptor", "App $packageName is currently exempt.")
+                    if (actualSessionMins != null) {
+                        val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
+                        startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
+                    }
+                    return@launch
+                }
+
                 if (isSpeedbump && isColdStart && !isDailyExceeded && !isOpensExceeded) {
                     Logger.d("AppInterceptor", "Cold start for $packageName. Opening straight with 10s cooldown.")
                     exemptPackage = packageName
                     exemptExpiry = System.currentTimeMillis() + 10_000L // 10s Exemption cooldown
                     
                     if (actualSessionMins != null) {
-                        startSessionTimer(packageName, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
-                    }
-                    return@launch
-                }
-
-                if (packageName == exemptPackage && System.currentTimeMillis() < exemptExpiry) {
-                    Logger.d("AppInterceptor", "App $packageName is currently exempt.")
-                    if (actualSessionMins != null) {
-                        startSessionTimer(packageName, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
+                        val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
+                        startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
                     }
                     return@launch
                 }
                 
+                // Doom Scroll Check (Only trigger for distracting apps)
+                if (isSpeedbump && recentSwitches.size >= doomThreshold) {
+                    recentSwitches.clear()
+                    activeSessionJob?.cancel()
+                    launchDoomScrollBreathing(packageName, finalBreathingDuration)
+                    return@launch
+                }
+
                 if (isSpeedbump || isDailyExceeded || isOpensExceeded) {
                     activeSessionJob?.cancel()
                     launchBreathingScreen(
@@ -174,7 +185,8 @@ class AppInterceptorService : AccessibilityService() {
                         isTimeout = false
                     )
                 } else if (actualSessionMins != null) {
-                    startSessionTimer(packageName, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
+                    val remainingMs = (actualSessionMins * 60_000L) - elapsedSessionMs
+                    startSessionTimer(packageName, remainingMs, actualSessionMins, finalBreathingDuration, finalBreathingCycles)
                 } else {
                     activeSessionJob?.cancel()
                 }
@@ -212,13 +224,13 @@ class AppInterceptorService : AccessibilityService() {
         }
     }
     
-    fun startSessionTimer(packageName: String, sessionLimitMins: Int, breathingDuration: Int, breathingCycles: Int) {
+    fun startSessionTimer(packageName: String, remainingMs: Long, sessionLimitMins: Int, breathingDuration: Int, breathingCycles: Int) {
         activeSessionJob?.cancel()
-        if (sessionLimitMins <= 0) return
+        if (sessionLimitMins <= 0 || remainingMs <= 0) return
         
-        Logger.d("AppInterceptor", "Starting session timer for $packageName (${sessionLimitMins}m)")
+        Logger.d("AppInterceptor", "Starting session timer for $packageName (${remainingMs/1000}s remaining)")
         activeSessionJob = scope.launch(Dispatchers.Main) {
-            kotlinx.coroutines.delay(sessionLimitMins * 60 * 1000L)
+            kotlinx.coroutines.delay(remainingMs)
             
             // If they are still using this same app when the timer fires
             if (lastInterceptedPackage == packageName) {
@@ -250,7 +262,7 @@ class AppInterceptorService : AccessibilityService() {
         isTimeout: Boolean
     ) {
         val intent = Intent(this, BreathingActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             putExtra("TARGET_PACKAGE", targetPackage)
             putExtra("SESSION_LIMIT_MINS", sessionLimitMins ?: -1)
             putExtra("DAILY_LIMIT_MINS", dailyLimitMins ?: -1)
@@ -267,7 +279,7 @@ class AppInterceptorService : AccessibilityService() {
 
     private fun launchDoomScrollBreathing(targetPackage: String, breathingDuration: Int) {
         val intent = Intent(this, BreathingActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             putExtra("TARGET_PACKAGE", targetPackage)
             putExtra("SESSION_LIMIT_MINS", -1)
             putExtra("DAILY_LIMIT_MINS", -1)

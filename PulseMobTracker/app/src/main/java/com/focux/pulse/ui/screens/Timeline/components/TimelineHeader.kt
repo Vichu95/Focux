@@ -4,6 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,7 +29,9 @@ fun TimelineHeader(
     isEditMode: Boolean,
     onEditClick: () -> Unit,
     onSaveClick: () -> Unit,
-    onFilterClick: () -> Unit
+    onFilterClick: () -> Unit,
+    isSortDescending: Boolean,
+    onSortToggleClick: () -> Unit
 ) {
     // Frame Date Filter
     Row(
@@ -51,6 +56,26 @@ fun TimelineHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Sort Button
+            androidx.compose.material3.Surface(
+                color = PulseAppColorSurface,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium),
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(PulseAppTimelineFilterButtonHeight)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(PulseAppCornerRadiusMedium))
+                    .clickable { onSortToggleClick() }
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (isSortDescending) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowUp,
+                        contentDescription = "Toggle Sort",
+                        tint = PulseAppColorPrimary,
+                        modifier = Modifier.size(PulseAppTimelineFilterIconSize)
+                    )
+                }
+            }
+            
             // Button 1: Edit / Close
             androidx.compose.material3.Surface(
                 color = PulseAppColorSurface, // #2B4555

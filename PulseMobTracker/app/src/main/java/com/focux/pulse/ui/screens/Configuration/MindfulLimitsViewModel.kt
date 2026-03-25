@@ -39,6 +39,39 @@ class MindfulLimitsViewModel(application: Application) : AndroidViewModel(applic
     private val database = PulseDatabase.getDatabase(application)
     private val appInfoDao = database.appInfoDao()
     private val analyticsDao = database.analyticsDao()
+    // Pre-calculate lists to avoid recalculating on every emission if possible
+    // (For now doing it inline in the combine bloc due to fast list sizes)
+
+    init {
+        // Automatically seed the DB with all install apps (with launcher intents) 
+        // so they appear in this configuration list even if the user hasn't opened them yet.
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val pm = application.packageManager
+                val intent = android.content.Intent(android.content.Intent.ACTION_MAIN, null).apply {
+                    addCategory(android.content.Intent.CATEGORY_LAUNCHER)
+                }
+                val resolveInfos = pm.queryIntentActivities(intent, 0)
+                
+                val appInfos = resolveInfos.mapNotNull { resolveInfo ->
+                    val packageName = resolveInfo.activityInfo.packageName
+                    if (packageName == application.packageName) return@mapNotNull null
+                    
+                    val label = resolveInfo.loadLabel(pm).toString()
+                    com.focux.pulse.data.local.entities.AppInfo(
+                        packageName = packageName,
+                        appName = label,
+                        category = com.focux.pulse.data.local.entities.AppCategory.NEUTRAL
+                    )
+                }
+                
+                appInfoDao.insertAllIfNotExists(appInfos)
+            } catch (e: Exception) {
+                com.focux.pulse.utilities.Logger.e("MindfulLimitsViewModel", "Failed to seed installed apps", e)
+            }
+        }
+    }
+
     private val _isEditMode = MutableStateFlow(false)
     private val _selectedFilters = MutableStateFlow(setOf("Distracting", "Productive", "Neutral"))
     private val _searchQuery = MutableStateFlow("")

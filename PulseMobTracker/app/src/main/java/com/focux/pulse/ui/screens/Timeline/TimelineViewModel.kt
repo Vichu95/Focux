@@ -58,7 +58,9 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
     private val _pendingOverrides = MutableStateFlow<Map<Long, String>>(emptyMap())
     val pendingOverrides: StateFlow<Map<Long, String>> = _pendingOverrides
     
-
+    // Sort Order
+    private val _isSortDescending = MutableStateFlow(true) // Default to newest on top (desc)
+    val isSortDescending: StateFlow<Boolean> = _isSortDescending
 
     init {
         viewModelScope.launch {
@@ -80,10 +82,11 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
         
         // Combine allEvents and filterState to produce timelineEvents
         viewModelScope.launch {
-            kotlinx.coroutines.flow.combine(_allDayEvents, _filterState) { events, filter ->
-                filterEvents(events, filter)
-            }.collect { filtered ->
-                _timelineEvents.value = mergeAdjacentDeepWork(filtered)
+            kotlinx.coroutines.flow.combine(_allDayEvents, _filterState, _isSortDescending) { events, filter, descending ->
+                val filtered = filterEvents(events, filter)
+                if (descending) filtered.reversed() else filtered
+            }.collect { sorted ->
+                _timelineEvents.value = mergeAdjacentDeepWork(sorted)
             }
         }
     }
@@ -391,6 +394,10 @@ class TimelineViewModel(application: Application) : AndroidViewModel(application
     }
 
     // --- Filter Actions ---
+    fun toggleSortOrder() {
+        _isSortDescending.value = !_isSortDescending.value
+    }
+    
     fun updateTimeRange(range: ClosedFloatingPointRange<Float>) {
         _filterState.value = _filterState.value.copy(timeRange = range)
     }

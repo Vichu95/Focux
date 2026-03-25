@@ -39,6 +39,8 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
     val canGoNext = selectedDate.isBefore(today)
     val canGoPrev = earliestDate == null || selectedDate.isAfter(earliestDate)
     
+    val isSortDescending by viewModel.isSortDescending.collectAsState()
+    
     // State for Filter Sheet
     var showFilterSheet by remember { mutableStateOf(false) }
     
@@ -93,7 +95,9 @@ fun TimelineScreen(viewModel: TimelineViewModel = viewModel()) {
                 onSaveClick = {
                     viewModel.saveSessionChanges()
                     isEditMode = false
-                }
+                },
+                isSortDescending = isSortDescending,
+                onSortToggleClick = { viewModel.toggleSortOrder() }
             )
         }
         
