@@ -91,10 +91,9 @@ fun ConfigurationScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ── Help & Guides Section ──
-        HelpSection(
-            onShowGuide = { showUserGuide = true }
-        )
+        // ── Mindful Limits Section ──
+        MindfulLimitsSection(viewModel = limitsViewModel)
+
         // ── App Category Section ──
         AppCategorySection(
             state = categoryState,
@@ -105,9 +104,6 @@ fun ConfigurationScreen() {
             onToggleFilter = { categoryViewModel.toggleFilter(it) },
             onCategoryChanged = { pkg, cat -> categoryViewModel.updateCategory(pkg, cat) }
         )
-        
-        // ── Mindful Limits Section ──
-        MindfulLimitsSection(viewModel = limitsViewModel)
         
         // ── System Permissions Section ──
         SystemPermissionsSection()
@@ -242,6 +238,11 @@ fun ConfigurationScreen() {
                 }
             }
         }
+
+        // ── User Guide Section ──
+        HelpSection(
+            onShowGuide = { showUserGuide = true }
+        )
     }
     
     // Clear Database Confirmation Dialog
@@ -489,7 +490,7 @@ fun HelpSection(
         ) {
             Text(
                 "Help & Guides",
-                style = PulseAppFontHeader,
+                style = PulseAppFontSubHeader,
                 color = PulseAppColorPrimary
             )
         }
