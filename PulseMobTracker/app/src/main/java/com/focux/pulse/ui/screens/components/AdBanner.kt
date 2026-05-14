@@ -1,4 +1,4 @@
-﻿package com.focux.pulse.ui.screens.components
+package com.focux.pulse.ui.screens.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -8,7 +8,6 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 
-// Production Ad Unit ID
 private const val BANNER_AD_UNIT_ID = "ca-app-pub-9432084133566924/5394522398"
 
 /**

@@ -1,4 +1,4 @@
-﻿package com.focux.pulse
+package com.focux.pulse
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -15,6 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import kotlinx.coroutines.launch
@@ -24,9 +25,8 @@ import com.focux.pulse.ui.screens.Summary.SummaryScreen
 import com.focux.pulse.ui.screens.Timeline.TimelineScreen
 import com.focux.pulse.ui.screens.components.BottomNavBar
 import com.focux.pulse.ui.screens.components.AdBanner
-import androidx.compose.foundation.layout.Column
-import com.google.android.gms.ads.MobileAds
 import com.focux.pulse.utilities.PulseAppDataLoggingFrequency
+import com.google.android.gms.ads.MobileAds
 
 import com.focux.pulse.ui.theme.PulseTheme
 import com.focux.pulse.ui.theme.PulseAppColorPrimary
@@ -36,32 +36,29 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MobileAds.initialize(this) {}
-        
+
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             com.focux.pulse.utilities.ConfigInitializer.initializeDefaults(
                 com.focux.pulse.data.local.PulseDatabase.getDatabase(applicationContext)
             )
         }
-        
+
         enableEdgeToEdge()
         setContent {
             PulseTheme {
                 var isSetupCompleted by remember { mutableStateOf<Boolean?>(null) }
-                
+
                 LaunchedEffect(Unit) {
                     val db = com.focux.pulse.data.local.PulseDatabase.getDatabase(applicationContext)
                     val completed = db.analyticsDao().getState("setup_completed")?.toBoolean() ?: false
                     isSetupCompleted = completed
                 }
 
-                // Keep a reactive state for permissions so we can trigger the UI update
-                // when returning from OnboardingScreen's final step.
-                var permissionsGranted by remember { 
-                    mutableStateOf(checkUsageStatsPermission() && com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)) 
+                var permissionsGranted by remember {
+                    mutableStateOf(checkUsageStatsPermission() && com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity))
                 }
 
                 if (isSetupCompleted == null) {
-                    // Loading state
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = PulseAppColorPrimary)
                     }
@@ -109,7 +106,6 @@ class MainActivity : ComponentActivity() {
     private fun initDataCollection() {
         val workManager = androidx.work.WorkManager.getInstance(this)
 
-        // 1. Periodic Work (Every 15 mins) - The heartbeat
         val periodicRequest = androidx.work.PeriodicWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>(
             PulseAppDataLoggingFrequency.toLong(), java.util.concurrent.TimeUnit.MINUTES
         ).build()
@@ -120,13 +116,12 @@ class MainActivity : ComponentActivity() {
             periodicRequest
         )
 
-        // 2. Immediate Work (App Open / Triggered) - Capture data right now
         val oneTimeRequest = androidx.work.OneTimeWorkRequestBuilder<com.focux.pulse.data.workers.DataCollectionWorker>()
             .build()
-            
+
         workManager.enqueueUniqueWork(
             "ImmediateDataSync",
-            androidx.work.ExistingWorkPolicy.KEEP, // If one is already running/enqueued, don't spam
+            androidx.work.ExistingWorkPolicy.KEEP,
             oneTimeRequest
         )
     }
@@ -151,25 +146,25 @@ fun MainAppStructure(initialTab: Int = 0) {
             Column {
                 AdBanner()
                 BottomNavBar(
-                selectedTab = selectedTab,
-                onTabSelected = { index ->
-                    selectedTab = index
-                    coroutineScope.launch {
-                        pagerState.scrollToPage(index)
+                    selectedTab = selectedTab,
+                    onTabSelected = { index ->
+                        selectedTab = index
+                        coroutineScope.launch {
+                            pagerState.scrollToPage(index)
+                        }
                     }
-                }
-            )
-        }
+                )
             }
+        }
     ) { innerPadding ->
-        
+
         val contentModifier = Modifier.padding(innerPadding)
-        
+
         // Wraps the screen content in a Box to apply the Scaffold padding
         androidx.compose.foundation.layout.Box(modifier = contentModifier) {
             androidx.compose.foundation.pager.HorizontalPager(
                 state = pagerState,
-                userScrollEnabled = true 
+                userScrollEnabled = true
             ) { page ->
                 when (page) {
                     0 -> SummaryScreen()
@@ -182,4 +177,3 @@ fun MainAppStructure(initialTab: Int = 0) {
 
     }
 }
-

@@ -63,6 +63,9 @@ dependencies {
     // ViewModel Compose
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
+    // Google Mobile Ads (AdMob)
+    implementation(libs.play.services.ads)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
