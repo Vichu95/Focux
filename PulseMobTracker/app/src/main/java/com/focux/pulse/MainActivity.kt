@@ -1,4 +1,4 @@
-package com.focux.pulse
+﻿package com.focux.pulse
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -23,6 +23,9 @@ import com.focux.pulse.ui.screens.Insights.InsightsScreen
 import com.focux.pulse.ui.screens.Summary.SummaryScreen
 import com.focux.pulse.ui.screens.Timeline.TimelineScreen
 import com.focux.pulse.ui.screens.components.BottomNavBar
+import com.focux.pulse.ui.screens.components.AdBanner
+import androidx.compose.foundation.layout.Column
+import com.google.android.gms.ads.MobileAds
 import com.focux.pulse.utilities.PulseAppDataLoggingFrequency
 
 import com.focux.pulse.ui.theme.PulseTheme
@@ -32,6 +35,7 @@ import androidx.lifecycle.lifecycleScope
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        MobileAds.initialize(this) {}
         
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             com.focux.pulse.utilities.ConfigInitializer.initializeDefaults(
@@ -144,7 +148,9 @@ fun MainAppStructure(initialTab: Int = 0) {
 
     Scaffold(
         bottomBar = {
-            BottomNavBar(
+            Column {
+                AdBanner()
+                BottomNavBar(
                 selectedTab = selectedTab,
                 onTabSelected = { index ->
                     selectedTab = index
@@ -154,6 +160,7 @@ fun MainAppStructure(initialTab: Int = 0) {
                 }
             )
         }
+            }
     ) { innerPadding ->
         
         val contentModifier = Modifier.padding(innerPadding)
@@ -175,3 +182,4 @@ fun MainAppStructure(initialTab: Int = 0) {
 
     }
 }
+

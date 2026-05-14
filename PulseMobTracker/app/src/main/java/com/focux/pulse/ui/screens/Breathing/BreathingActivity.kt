@@ -1,4 +1,4 @@
-package com.focux.pulse.ui.screens.Breathing
+﻿package com.focux.pulse.ui.screens.Breathing
 
 import android.content.Intent
 import android.os.Bundle
@@ -42,6 +42,7 @@ import kotlin.random.Random
 import com.focux.pulse.ui.screens.components.Particle
 import com.focux.pulse.ui.screens.components.BreathingParticleAnimation
 import com.focux.pulse.ui.screens.components.generateParticles
+import com.focux.pulse.ui.screens.components.AdBanner
 
 class BreathingActivity : ComponentActivity() {
 
@@ -282,7 +283,7 @@ fun BreathingScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
 
-        // ── Top-right Settings Icon (always visible, overlaid) ─────────
+        // â”€â”€ Top-right Settings Icon (always visible, overlaid) â”€â”€â”€â”€â”€â”€â”€â”€â”€
         val context = androidx.compose.ui.platform.LocalContext.current
         IconButton(
             onClick = {
@@ -461,7 +462,11 @@ fun BreathingScreen(
                 }
             }
             
+            // Banner ad shown at bottom of breathing screen
+            AdBanner()
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
+
