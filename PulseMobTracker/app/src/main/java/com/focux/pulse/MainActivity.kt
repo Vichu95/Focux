@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 var permissionsGranted by remember {
-                    mutableStateOf(checkUsageStatsPermission() && com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity))
+                    mutableStateOf(checkUsageStatsPermission())
                 }
 
                 if (isSetupCompleted == null) {
@@ -69,9 +69,7 @@ class MainActivity : ComponentActivity() {
                     if (!permissionsGranted) {
                         com.focux.pulse.ui.screens.onboarding.OnboardingScreen(
                             onFinish = {
-                                val finalUsageAccess = checkUsageStatsPermission()
-                                val finalAccessibilityAccess = com.focux.pulse.ui.screens.Configuration.checkAccessibilityAccess(this@MainActivity)
-                                if (finalUsageAccess && finalAccessibilityAccess) {
+                                if (checkUsageStatsPermission()) {
                                     permissionsGranted = true
                                 }
                             }
