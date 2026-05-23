@@ -431,13 +431,27 @@ fun AccessibilityAccessPage(
         Spacer(modifier = Modifier.height(48.dp))
         
         if (!isGranted) {
-            Button(
-                onClick = onGrantClick,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary),
-                shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Grant Accessibility Access", color = PulseAppColorBackground, style = PulseAppFontHeader.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                Button(
+                    onClick = onGrantClick,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PulseAppColorPrimary),
+                    shape = RoundedCornerShape(PulseAppCornerRadiusMedium)
+                ) {
+                    Text("Accept & Enable", color = PulseAppColorBackground, style = PulseAppFontHeader.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                }
+
+                OutlinedButton(
+                    onClick = onNextClick,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(PulseAppCornerRadiusMedium),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PulseAppColorPrimary)
+                ) {
+                    Text("Decline", style = PulseAppFontHeader.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                }
             }
         } else {
             Button(

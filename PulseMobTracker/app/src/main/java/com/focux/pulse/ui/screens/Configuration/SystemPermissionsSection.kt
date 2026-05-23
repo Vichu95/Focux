@@ -95,13 +95,17 @@ fun SystemPermissionsSection() {
 
     if (showAccessibilityDialog) {
         androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showAccessibilityDialog = false },
+            onDismissRequest = { /* Enforce explicit choice */ },
+            properties = androidx.compose.ui.window.DialogProperties(
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false
+            ),
             title = {
-                Text("Accessibility Service Required", style = PulseAppFontSubHeader)
+                Text("Accessibility Service Consent", style = PulseAppFontSubHeader)
             },
             text = {
                 Text(
-                    text = "Pulse needs Accessibility Service access to detect when you open distracting apps and show a mindful breathing screen. Pulse does not view, collect, or transmit the content of your screen.",
+                    text = "Pulse requests the Accessibility Service API permission strictly to monitor when distracting apps are opened and display a mindful breathing screen to help you pause and refocus.\n\nPulse does NOT view, collect, or transmit any screen content, personal information, or active data. All processing occurs 100% locally and offline on your device.",
                     style = PulseAppFontBody
                 )
             },
@@ -112,14 +116,14 @@ fun SystemPermissionsSection() {
                         context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     }
                 ) {
-                    Text("Continue")
+                    Text("Accept & Enable")
                 }
             },
             dismissButton = {
                 androidx.compose.material3.OutlinedButton(
                     onClick = { showAccessibilityDialog = false }
                 ) {
-                    Text("Cancel")
+                    Text("Decline")
                 }
             }
         )
